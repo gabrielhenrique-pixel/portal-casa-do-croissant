@@ -31,6 +31,23 @@ export default {
         return currentUser(request, env);
       }
 
+      if (url.pathname === '/api/users' && request.method === 'GET') {
+        return listUsers(request, env);
+      }
+
+      if (url.pathname === '/api/users' && request.method === 'POST') {
+        return createUser(request, env);
+      }
+
+      const permissionMatch = url.pathname.match(/^\/api\/users\/([^/]+)\/permissions$/);
+      if (permissionMatch && request.method === 'GET') {
+        return userPermissions(request, env, permissionMatch[1]);
+      }
+
+      if (permissionMatch && request.method === 'PUT') {
+        return saveUserPermissions(request, env, permissionMatch[1]);
+      }
+
       return new Response(APP_HTML, {
         headers: {
           'content-type': 'text/html; charset=UTF-8',
@@ -39,6 +56,7 @@ export default {
         }
       });
     } catch (error) {
+      if (error instanceof Response) return error;
       console.error(error);
       return json({ error: 'Não foi possível concluir esta ação.' }, 500);
     }
@@ -137,6 +155,116 @@ async function currentUser(request, env) {
     },
     modules
   });
+}
+
+async function requireAdministrator(request, env) {
+  const session = await getSession(request, env);
+  if (!session) throw new Response(JSON.stringify({ error: 'Sessão não encontrada.' }), { status: 401 });
+  if (session.role !== 'Administrador') {
+    throw new Response(JSON.stringify({ error: 'Apenas administradores podem concluir esta ação.' }), { status: 403 });
+  }
+  return session;
+}
+
+async function listUsers(request, env) {
+  await requireAdministrator(request, env);
+  const result = await env.DB.prepare(
+    `SELECT users.id, users.username, users.email, users.role, users.created_at,
+       COUNT(user_module_permissions.module_id) AS permission_count
+     FROM users
+     LEFT JOIN user_module_permissions ON user_module_permissions.user_id = users.id
+     GROUP BY users.id
+     ORDER BY LOWER(users.username)`
+  ).all();
+  return json({ users: result.results });
+}
+
+async function createUser(request, env) {
+  const administrator = await requireAdministrator(request, env);
+  const data = await bodyAsJson(request);
+  const username = normalizeUsername(data.username);
+  const email = normalizeEmail(data.email);
+  const password = String(data.password || '');
+  const role = String(data.role || 'Colaborador');
+  validateAccount(username, email, password);
+  if (!['Administrador', 'Gestor', 'Colaborador'].includes(role)) {
+    return json({ error: 'Perfil de usuário inválido.' }, 400);
+  }
+
+  const id = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  const salt = randomToken(16);
+  const passwordHash = await hashPassword(password, salt);
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO users
+         (id, username, email, role, password_hash, password_salt, password_algorithm, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'pbkdf2-sha256', ?)`
+      ).bind(id, username, email, role, passwordHash, salt, createdAt),
+      env.DB.prepare(
+        'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
+      ).bind(crypto.randomUUID(), createdAt, administrator.username, 'USUARIO_CRIADO', `Usuário ${username} criado com perfil ${role}.`)
+    ]);
+  } catch (error) {
+    if (String(error.message || '').includes('UNIQUE constraint failed')) {
+      return json({ error: 'Já existe um usuário com este nome ou e-mail.' }, 409);
+    }
+    throw error;
+  }
+  return json({ user: { id, username, email, role, created_at: createdAt } }, 201);
+}
+
+async function userPermissions(request, env, userId) {
+  await requireAdministrator(request, env);
+  const user = await env.DB.prepare('SELECT id, username, role FROM users WHERE id = ?').bind(userId).first();
+  if (!user) return json({ error: 'Usuário não encontrado.' }, 404);
+  const result = await env.DB.prepare(
+    `SELECT modules.id, modules.name, modules.sort_order,
+       COALESCE(user_module_permissions.can_view, 0) AS can_view,
+       COALESCE(user_module_permissions.can_create, 0) AS can_create,
+       COALESCE(user_module_permissions.can_update, 0) AS can_update,
+       COALESCE(user_module_permissions.can_delete, 0) AS can_delete,
+       COALESCE(user_module_permissions.can_configure, 0) AS can_configure
+     FROM modules
+     LEFT JOIN user_module_permissions
+       ON user_module_permissions.module_id = modules.id
+      AND user_module_permissions.user_id = ?
+     ORDER BY modules.sort_order`
+  ).bind(userId).all();
+  return json({ user, modules: result.results });
+}
+
+async function saveUserPermissions(request, env, userId) {
+  const administrator = await requireAdministrator(request, env);
+  const targetUser = await env.DB.prepare('SELECT id, username, role FROM users WHERE id = ?').bind(userId).first();
+  if (!targetUser) return json({ error: 'Usuário não encontrado.' }, 404);
+  if (targetUser.role === 'Administrador') {
+    return json({ error: 'As permissões de administradores são completas e não precisam ser alteradas.' }, 400);
+  }
+  const data = await bodyAsJson(request);
+  const incoming = Array.isArray(data.permissions) ? data.permissions : [];
+  const available = await env.DB.prepare('SELECT id FROM modules').all();
+  const availableIds = new Set(available.results.map((module) => module.id));
+  const timestamp = new Date().toISOString();
+  const commands = [];
+  for (const item of incoming) {
+    if (!availableIds.has(item.moduleId)) continue;
+    const allowed = (value) => value ? 1 : 0;
+    commands.push(env.DB.prepare(
+      `INSERT INTO user_module_permissions
+       (user_id, module_id, can_view, can_create, can_update, can_delete, can_configure, updated_at, updated_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, module_id) DO UPDATE SET
+         can_view = excluded.can_view, can_create = excluded.can_create,
+         can_update = excluded.can_update, can_delete = excluded.can_delete,
+         can_configure = excluded.can_configure, updated_at = excluded.updated_at,
+         updated_by = excluded.updated_by`
+    ).bind(userId, item.moduleId, allowed(item.view), allowed(item.create), allowed(item.update), allowed(item.delete), allowed(item.configure), timestamp, administrator.username));
+  }
+  if (commands.length) await env.DB.batch(commands);
+  await writeAudit(env, administrator.username, 'PERMISSOES_ATUALIZADAS', `Permissões atualizadas para ${targetUser.username}.`);
+  return json({ ok: true });
 }
 
 async function getModulesForUser(env, user) {
@@ -340,9 +468,9 @@ const APP_HTML = `<!doctype html>
       .cartao { width:min(100%,440px); background:#fff; border:1px solid #d6e4dd; border-radius:18px; padding:34px; box-shadow:0 16px 42px rgba(5,57,37,.12); }
       .cartao label { display:block; margin:16px 0 7px; font-size:13px; font-weight:700; }.cartao input{width:100%;padding:13px 14px;border:1px solid #bdd1c7;border-radius:9px;font-size:16px;}.cartao button{width:100%;border:0;border-radius:9px;padding:13px 16px;margin-top:22px;background:#075638;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
       .link { display:block; width:100%; margin-top:14px; background:transparent!important; color:#075638!important; text-decoration:underline; }.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
-      .painel { min-height:100vh; padding:36px; background:#f4f8f6; color:#102d24; }.topo{display:flex;align-items:center;justify-content:space-between;gap:20px;}.topo button{width:auto;margin:0;border:0;border-radius:9px;padding:12px 16px;background:#075638;color:#fff;font-weight:700;}.boas-vindas{max-width:720px;margin:70px auto;padding:38px;text-align:center;background:#fff;border:1px solid #d6e4dd;border-radius:18px;}.tag{display:inline-block;margin-top:12px;padding:6px 10px;border-radius:999px;background:#e9f4ee;color:#075638;font-weight:700;font-size:13px;}
+      .painel { min-height:100vh; display:flex; background:#f6f8f7; color:#183128; }.menu { width:250px; min-height:100vh; flex-shrink:0; padding:28px 16px; background:#123d2d; color:#fff; }.marca-portal { padding:4px 12px 28px; font-size:20px; font-weight:700; }.marca-portal small { display:block; margin-top:6px; color:#b7d7c6; font-size:12px; font-weight:400; }.nav-btn { display:block; width:100%; margin:4px 0; padding:13px 12px; border:0; border-radius:8px; background:transparent; color:#d7e9df; text-align:left; font-size:14px; cursor:pointer; }.nav-btn:hover,.nav-btn.ativo { background:#256e50; color:#fff; }.nav-btn--sair { margin-top:24px; border-top:1px solid rgba(255,255,255,.18); border-radius:0; padding-top:19px; }.conteudo { flex:1; min-width:0; padding:38px; }.topo{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}.topo h1{margin:0 0 8px;font-size:27px;}.topo p{margin:0;color:#66746d;}.tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#e9f4ee;color:#075638;font-weight:700;font-size:13px;}.visao{max-width:940px;margin:42px auto 0;}.boas-vindas{padding:38px;text-align:center;background:#fff;border:1px solid #d6e4dd;border-radius:18px;}.boas-vindas p{max-width:620px;margin:12px auto;color:#52665d;}.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-top:22px;}.cartao-modulo{padding:20px;border:1px solid #d6e4dd;border-radius:14px;background:#fff;}.cartao-modulo strong{display:block;color:#123d2d;}.cartao-modulo span{display:block;margin-top:7px;color:#66746d;font-size:13px;}.acao{border:0;border-radius:8px;padding:11px 14px;background:#075638;color:#fff;font-weight:700;cursor:pointer;}.acao-secundaria{border:1px solid #a8c5b5;border-radius:8px;padding:10px 13px;background:#fff;color:#075638;font-weight:700;cursor:pointer;}.painel-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;}.tabela-wrap{overflow:auto;border:1px solid #d6e4dd;border-radius:12px;background:#fff;}.tabela{width:100%;border-collapse:collapse;min-width:640px;}.tabela th,.tabela td{padding:14px 16px;border-bottom:1px solid #edf2ef;text-align:left;font-size:14px;}.tabela th{color:#52665d;font-size:12px;text-transform:uppercase;letter-spacing:.04em;}.formulario{max-width:640px;padding:24px;border:1px solid #d6e4dd;border-radius:14px;background:#fff;}.linha-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.formulario label{display:block;margin:14px 0 6px;font-size:13px;font-weight:700;}.formulario input,.formulario select{width:100%;padding:11px 12px;border:1px solid #bdd1c7;border-radius:8px;font:inherit;}.acoes-form{display:flex;gap:10px;margin-top:20px;}.permissoes{display:grid;gap:12px;}.permissao-item{padding:16px;border:1px solid #d6e4dd;border-radius:12px;background:#fff;}.permissao-titulo{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;font-weight:700;}.checks{display:flex;flex-wrap:wrap;gap:13px;}.checks label{display:flex;gap:5px;align-items:center;font-size:13px;color:#52665d;}.vazio{padding:30px;text-align:center;color:#66746d;border:1px dashed #bdd1c7;border-radius:12px;background:#fff;}.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
       @keyframes girarLogin { to { transform:rotate(360deg); } }
-      @media (max-width:600px) { .painel { padding:22px; }.topo { align-items:flex-start; flex-direction:column; }.cartao { padding:26px; } }
+      @media (max-width:700px) { .painel{display:block;}.menu{width:100%;min-height:auto;padding:16px;}.marca-portal{padding:4px 8px 12px;}.menu nav{display:flex;overflow:auto;gap:4px;}.nav-btn{width:auto;white-space:nowrap;margin:0;}.nav-btn--sair{margin-top:0;border-top:0;padding-top:13px;}.conteudo{padding:22px;}.topo{align-items:flex-start;flex-direction:column;}.linha-form{grid-template-columns:1fr;}.cartao { padding:26px; } }
     </style>
   </head>
   <body>
@@ -374,22 +502,80 @@ const APP_HTML = `<!doctype html>
     </section>
 
     <main id="dashboard" class="painel oculto">
-      <header class="topo"><div><h1>Página inicial</h1><p id="greeting"></p></div><button id="logout" type="button">Sair</button></header>
-      <section class="boas-vindas"><h2>Fundação do portal pronta</h2><p>Login, sessão segura e permissões já estão sendo migrados. Os módulos de devoluções, investimentos e administração entrarão nas próximas etapas.</p><span id="role" class="tag"></span></section>
+      <aside class="menu">
+        <div class="marca-portal">Casa do Croissant<small>Portal interno</small></div>
+        <nav id="menuPortal">
+          <button class="nav-btn ativo" type="button" data-view="inicio">Página inicial</button>
+          <button class="nav-btn" type="button" data-view="investimentos" data-module="INVESTIMENTOS">Investimentos</button>
+          <button class="nav-btn" type="button" data-view="pendentes" data-module="INVESTIMENTOS_PENDENTES">Investimentos pendentes</button>
+          <button class="nav-btn" type="button" data-view="devolucoes" data-module="DEVOLUCOES">Painel de devoluções</button>
+          <button id="navUsuarios" class="nav-btn" type="button" data-view="usuarios" data-module="USUARIOS">Usuários cadastrados</button>
+          <button class="nav-btn" type="button" data-view="historico" data-module="HISTORICO">Histórico de ações</button>
+          <button id="navAcessos" class="nav-btn" type="button" data-view="acessos" data-module="ACESSOS">Acessos</button>
+          <button id="logout" class="nav-btn nav-btn--sair" type="button">Sair</button>
+        </nav>
+      </aside>
+      <section class="conteudo">
+        <header class="topo"><div><h1 id="tituloPagina">Página inicial</h1><p id="greeting"></p></div><span id="role" class="tag"></span></header>
+        <section id="viewInicio" class="visao">
+          <div class="boas-vindas"><h2>Portal em migração</h2><p>A autenticação e as permissões já estão protegidas no novo portal. Agora você pode cadastrar usuários e controlar o acesso de cada pessoa.</p></div>
+          <div class="grade"><div class="cartao-modulo"><strong>Usuários</strong><span>Cadastre a equipe no novo portal.</span></div><div class="cartao-modulo"><strong>Acessos</strong><span>Defina quais módulos cada pessoa pode utilizar.</span></div><div class="cartao-modulo"><strong>Próximas etapas</strong><span>Investimentos, devoluções e histórico serão migrados a seguir.</span></div></div>
+        </section>
+        <section id="viewUsuarios" class="visao oculto">
+          <div class="painel-cabecalho"><div><h2>Usuários cadastrados</h2><p>Cadastre os acessos da equipe ao novo portal.</p></div><button id="novoUsuario" class="acao" type="button">Novo usuário</button></div>
+          <form id="formUsuario" class="formulario oculto">
+            <h3>Novo usuário</h3>
+            <div class="linha-form"><div><label for="novoNome">Usuário</label><input id="novoNome" required minlength="3" autocomplete="username"></div><div><label for="novoPerfil">Perfil</label><select id="novoPerfil"><option>Colaborador</option><option>Gestor</option><option>Administrador</option></select></div></div>
+            <label for="novoEmail">E-mail</label><input id="novoEmail" type="email" required autocomplete="email">
+            <label for="novaSenha">Senha inicial</label><input id="novaSenha" type="password" required minlength="8" autocomplete="new-password">
+            <div id="erroUsuario" class="erro" role="alert"></div><div class="acoes-form"><button class="acao" type="submit">Cadastrar usuário</button><button id="cancelarUsuario" class="acao-secundaria" type="button">Cancelar</button></div>
+          </form>
+          <div id="listaUsuarios" class="tabela-wrap"></div>
+        </section>
+        <section id="viewAcessos" class="visao oculto">
+          <div class="painel-cabecalho"><div><h2>Acessos</h2><p>Escolha quais operações cada usuário poderá realizar.</p></div></div>
+          <div class="formulario"><label for="usuarioPermissoes">Usuário</label><select id="usuarioPermissoes"></select><div id="permissoesUsuario" class="permissoes" style="margin-top:20px"></div><div id="erroPermissoes" class="erro" role="alert"></div><button id="salvarPermissoes" class="acao" type="button">Salvar acessos</button></div>
+        </section>
+        <section id="viewEmMigracao" class="visao oculto"><div class="boas-vindas"><h2 id="tituloMigracao">Módulo em migração</h2><p>Este módulo será incluído depois de concluirmos a adaptação segura dos dados e integrações do portal anterior.</p></div></section>
+      </section>
     </main>
 
     <script>
       const $ = (id) => document.getElementById(id);
       const login = $('login'), setup = $('setup'), dashboard = $('dashboard');
+      let sessionData = null, cachedUsers = [], permissionModules = [];
+      const moduleTitles = { investimentos:'Investimentos', pendentes:'Investimentos pendentes', devolucoes:'Painel de devoluções', historico:'Histórico de ações' };
       function show(view) { login.classList.toggle('oculto', view !== 'login'); setup.classList.toggle('oculto', view !== 'setup'); dashboard.classList.toggle('oculto', view !== 'dashboard'); }
       function error(id, message) { $(id).textContent = message || ''; }
       async function request(path, options = {}) { const response = await fetch(path, { headers: {'content-type':'application/json', ...(options.headers || {})}, ...options }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Não foi possível concluir esta ação.'); return data; }
-      async function loadSession() { try { const data = await request('/api/me'); $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; show('dashboard'); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
+      function html(value) { const node = document.createElement('span'); node.textContent = value || ''; return node.innerHTML; }
+      function hasModule(id) { return sessionData && sessionData.modules.some((module) => module.id === id); }
+      function openView(view) {
+        document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
+        document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
+        if (view === 'inicio') { $('tituloPagina').textContent = 'Página inicial'; $('viewInicio').classList.remove('oculto'); return; }
+        if (view === 'usuarios') { $('tituloPagina').textContent = 'Usuários cadastrados'; $('viewUsuarios').classList.remove('oculto'); loadUsers(); return; }
+        if (view === 'acessos') { $('tituloPagina').textContent = 'Acessos'; $('viewAcessos').classList.remove('oculto'); loadUsers(); return; }
+        $('tituloPagina').textContent = moduleTitles[view] || 'Módulo em migração'; $('tituloMigracao').textContent = $('tituloPagina').textContent; $('viewEmMigracao').classList.remove('oculto');
+      }
+      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') { $('navUsuarios').classList.add('oculto'); $('navAcessos').classList.add('oculto'); } show('dashboard'); openView('inicio'); }
+      async function loadSession() { try { startDashboard(await request('/api/me')); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
+      async function loadUsers() { if (!sessionData || sessionData.user.role !== 'Administrador') return; try { const data = await request('/api/users'); cachedUsers = data.users; renderUsers(); renderUserSelector(); } catch (err) { error('erroUsuario', err.message); } }
+      function renderUsers() { const target = $('listaUsuarios'); if (!cachedUsers.length) { target.innerHTML = '<div class="vazio">Nenhum usuário cadastrado.</div>'; return; } target.innerHTML = '<table class="tabela"><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Acessos configurados</th></tr></thead><tbody>' + cachedUsers.map((user) => '<tr><td><strong>' + html(user.username) + '</strong></td><td>' + html(user.email) + '</td><td>' + html(user.role) + '</td><td>' + Number(user.permission_count || 0) + '</td></tr>').join('') + '</tbody></table>'; }
+      function renderUserSelector() { const select = $('usuarioPermissoes'); const previous = select.value; const nonAdmins = cachedUsers.filter((user) => user.role !== 'Administrador'); select.innerHTML = '<option value="">Selecione um usuário</option>' + nonAdmins.map((user) => '<option value="' + html(user.id) + '">' + html(user.username) + ' — ' + html(user.role) + '</option>').join(''); if (nonAdmins.some((user) => user.id === previous)) select.value = previous; }
+      async function loadPermissions() { const userId = $('usuarioPermissoes').value; $('permissoesUsuario').innerHTML = ''; error('erroPermissoes'); if (!userId) return; try { const data = await request('/api/users/' + encodeURIComponent(userId) + '/permissions'); permissionModules = data.modules; $('permissoesUsuario').innerHTML = data.modules.map((module) => '<div class="permissao-item" data-permission="' + html(module.id) + '"><div class="permissao-titulo">' + html(module.name) + '</div><div class="checks"><label><input data-key="view" type="checkbox" ' + (module.can_view ? 'checked' : '') + '> Consultar</label><label><input data-key="create" type="checkbox" ' + (module.can_create ? 'checked' : '') + '> Incluir</label><label><input data-key="update" type="checkbox" ' + (module.can_update ? 'checked' : '') + '> Alterar</label><label><input data-key="delete" type="checkbox" ' + (module.can_delete ? 'checked' : '') + '> Excluir</label><label><input data-key="configure" type="checkbox" ' + (module.can_configure ? 'checked' : '') + '> Configurar</label></div></div>').join(''); } catch (err) { error('erroPermissoes', err.message); } }
+      async function savePermissions() { const userId = $('usuarioPermissoes').value; if (!userId) { error('erroPermissoes', 'Selecione um usuário.'); return; } const permissions = Array.from(document.querySelectorAll('[data-permission]')).map((item) => { const checked = (key) => item.querySelector('[data-key="' + key + '"]').checked; return { moduleId:item.dataset.permission, view:checked('view'), create:checked('create'), update:checked('update'), delete:checked('delete'), configure:checked('configure') }; }); try { await request('/api/users/' + encodeURIComponent(userId) + '/permissions', { method:'PUT', body:JSON.stringify({permissions}) }); error('erroPermissoes', 'Acessos salvos.'); $('erroPermissoes').style.color = '#075638'; await loadUsers(); } catch (err) { $('erroPermissoes').style.color = ''; error('erroPermissoes', err.message); } }
       $('formLogin').addEventListener('submit', async (event) => { event.preventDefault(); error('loginError'); const button = $('loginButton'); button.disabled = true; button.classList.add('entrando'); button.textContent = 'Entrando...'; try { await request('/api/login', {method:'POST', body:JSON.stringify({username:$('username').value, password:$('password').value})}); await loadSession(); } catch (err) { error('loginError', err.message); } finally { button.disabled = false; button.classList.remove('entrando'); button.textContent = '↪ Entrar'; } });
       $('setupLink').addEventListener('click', () => show('setup'));
       $('forgotPassword').addEventListener('click', () => error('loginError', 'A recuperação de senha será migrada após a configuração do envio de e-mails.'));
       $('backToLogin').addEventListener('click', () => show('login'));
       $('formSetup').addEventListener('submit', async (event) => { event.preventDefault(); error('setupError'); const button = $('setupButton'); button.disabled = true; try { await request('/api/bootstrap', {method:'POST', body:JSON.stringify({username:$('setupUsername').value, email:$('setupEmail').value, password:$('setupPassword').value, setupToken:$('setupToken').value})}); await loadSession(); } catch (err) { error('setupError', err.message); } finally { button.disabled = false; } });
+      document.addEventListener('click', (event) => { const button = event.target.closest('[data-view]'); if (button && !button.classList.contains('oculto')) openView(button.dataset.view); });
+      $('novoUsuario').addEventListener('click', () => { $('formUsuario').reset(); error('erroUsuario'); $('formUsuario').classList.remove('oculto'); $('novoNome').focus(); });
+      $('cancelarUsuario').addEventListener('click', () => $('formUsuario').classList.add('oculto'));
+      $('formUsuario').addEventListener('submit', async (event) => { event.preventDefault(); error('erroUsuario'); try { await request('/api/users', {method:'POST', body:JSON.stringify({username:$('novoNome').value, email:$('novoEmail').value, password:$('novaSenha').value, role:$('novoPerfil').value})}); $('formUsuario').classList.add('oculto'); await loadUsers(); } catch (err) { error('erroUsuario', err.message); } });
+      $('usuarioPermissoes').addEventListener('change', loadPermissions);
+      $('salvarPermissoes').addEventListener('click', savePermissions);
       $('logout').addEventListener('click', async () => { await request('/api/logout', {method:'POST'}); await loadSession(); });
       loadSession();
     </script>
