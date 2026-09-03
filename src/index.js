@@ -315,38 +315,47 @@ const APP_HTML = `<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Portal Casa do Croissant</title>
     <style>
-      :root { color-scheme: light; --verde:#075638; --verde-claro:#e9f4ee; --vermelho:#dc3030; --texto:#102d24; --borda:#d6e4dd; }
+      :root { color-scheme:light; --verde:#1b744d; --texto:#123d2d; --erro:#a52b20; }
       * { box-sizing:border-box; }
-      body { margin:0; min-height:100vh; font-family:Arial, sans-serif; color:var(--texto); background:linear-gradient(135deg,#f5faf7,#eef4f1); }
-      .tela { min-height:100vh; display:grid; place-items:center; padding:24px; }
-      .cartao { width:min(100%,440px); background:#fff; border:1px solid var(--borda); border-radius:18px; padding:34px; box-shadow:0 16px 42px rgba(5,57,37,.12); }
-      .marca { display:flex; align-items:center; gap:12px; margin-bottom:26px; }
-      .marca__icone { width:44px; height:44px; border-radius:13px; display:grid; place-items:center; color:#fff; background:var(--verde); font-size:23px; font-weight:700; }
-      h1 { margin:0; font-size:25px; } p { color:#577167; line-height:1.5; } label { display:block; margin:16px 0 7px; font-size:13px; font-weight:700; }
-      input { width:100%; padding:13px 14px; border:1px solid #bdd1c7; border-radius:9px; font-size:16px; }
-      input:focus { outline:3px solid #d9eee2; border-color:var(--verde); }
-      button { width:100%; border:0; border-radius:9px; padding:13px 16px; margin-top:22px; background:var(--verde); color:white; font-size:15px; font-weight:700; cursor:pointer; }
-      button:hover { background:#06462f; } button:disabled { opacity:.6; cursor:wait; }
-      .link { display:block; width:100%; margin-top:14px; background:transparent; color:var(--verde); text-decoration:underline; }
-      .erro { min-height:20px; margin-top:14px; color:var(--vermelho); font-size:14px; }
-      .sucesso { color:var(--verde); } .oculto { display:none !important; }
-      .painel { min-height:100vh; padding:36px; } .topo { display:flex; align-items:center; justify-content:space-between; gap:20px; }
-      .topo button { width:auto; margin:0; } .boas-vindas { max-width:720px; margin:70px auto; padding:38px; text-align:center; background:#fff; border:1px solid var(--borda); border-radius:18px; }
-      .tag { display:inline-block; margin-top:12px; padding:6px 10px; border-radius:999px; background:var(--verde-claro); color:var(--verde); font-weight:700; font-size:13px; }
-      @media (max-width:600px) { .painel { padding:22px; } .topo { align-items:flex-start; flex-direction:column; } .cartao { padding:26px; } }
+      body { margin:0; min-height:100vh; font-family:Arial,sans-serif; }
+      .tela-login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:linear-gradient(rgba(8,35,25,.58),rgba(8,35,25,.58)),url('https://drive.google.com/thumbnail?id=1x2lOopgDUcTsdDeytSn6Mo_-TgjlaS03&sz=w1920'); background-size:cover; background-position:center; }
+      .cartao-login { width:100%; max-width:390px; padding:30px; border-radius:14px; background:rgba(255,255,255,.90); box-shadow:0 15px 45px rgba(0,0,0,.35); text-align:center; }
+      .cartao-login h1 { color:var(--texto); margin:0 0 18px; font-size:28px; }
+      .logo-login { width:240px; max-width:100%; height:100px; object-fit:contain; margin:0 auto 18px; filter:brightness(0) saturate(100%) invert(20%) sepia(24%) saturate(1217%) hue-rotate(104deg); }
+      .campo-login { display:flex; align-items:center; height:40px; margin-bottom:24px; overflow:hidden; border:1px solid #d9dfe6; border-radius:6px; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.18); transition:.15s; }
+      .campo-login:focus-within { border-color:#76a9fa; box-shadow:0 0 0 3px rgba(118,169,250,.45); }
+      .campo-login span { display:flex; align-items:center; justify-content:center; width:42px; height:100%; flex-shrink:0; border-right:1px solid #d9dfe6; color:#000; }
+      .campo-login svg { width:26px; height:26px; fill:#000; }
+      .campo-login input { width:100%; height:100%; border:0; outline:0; padding:0 10px; color:#444; font-size:15px; background:#fff; }
+      .botao-entrar { width:100%; border:0; border-radius:7px; padding:12px; background:var(--verde); color:#fff; font-size:15px; font-weight:700; cursor:pointer; transition:transform .12s ease,background .18s ease,box-shadow .18s ease; }
+      .botao-entrar:hover { background:#35ad69; box-shadow:0 5px 12px rgba(27,116,77,.28); transform:translateY(-1px); }
+      .botao-entrar:active { transform:scale(.96); background:#126d37; box-shadow:none; }
+      .botao-entrar:disabled { cursor:wait; background:#126d37; }
+      .botao-entrar.entrando { display:flex; align-items:center; justify-content:center; gap:9px; }
+      .botao-entrar.entrando::before { content:''; width:14px; height:14px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:girarLogin .7s linear infinite; }
+      .link-recuperar { width:100%; margin-top:12px; border:0; background:transparent; color:var(--verde); font-size:14px; font-weight:bold; cursor:pointer; }
+      .mensagem { min-height:18px; margin-top:16px; color:var(--erro); font-size:14px; }
+      .oculto { display:none !important; }
+      .tela { min-height:100vh; display:grid; place-items:center; padding:24px; background:linear-gradient(135deg,#f5faf7,#eef4f1); }
+      .cartao { width:min(100%,440px); background:#fff; border:1px solid #d6e4dd; border-radius:18px; padding:34px; box-shadow:0 16px 42px rgba(5,57,37,.12); }
+      .cartao label { display:block; margin:16px 0 7px; font-size:13px; font-weight:700; }.cartao input{width:100%;padding:13px 14px;border:1px solid #bdd1c7;border-radius:9px;font-size:16px;}.cartao button{width:100%;border:0;border-radius:9px;padding:13px 16px;margin-top:22px;background:#075638;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
+      .link { display:block; width:100%; margin-top:14px; background:transparent!important; color:#075638!important; text-decoration:underline; }.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
+      .painel { min-height:100vh; padding:36px; background:#f4f8f6; color:#102d24; }.topo{display:flex;align-items:center;justify-content:space-between;gap:20px;}.topo button{width:auto;margin:0;border:0;border-radius:9px;padding:12px 16px;background:#075638;color:#fff;font-weight:700;}.boas-vindas{max-width:720px;margin:70px auto;padding:38px;text-align:center;background:#fff;border:1px solid #d6e4dd;border-radius:18px;}.tag{display:inline-block;margin-top:12px;padding:6px 10px;border-radius:999px;background:#e9f4ee;color:#075638;font-weight:700;font-size:13px;}
+      @keyframes girarLogin { to { transform:rotate(360deg); } }
+      @media (max-width:600px) { .painel { padding:22px; }.topo { align-items:flex-start; flex-direction:column; }.cartao { padding:26px; } }
     </style>
   </head>
   <body>
-    <section id="login" class="tela">
-      <form id="formLogin" class="cartao">
-        <div class="marca"><div class="marca__icone">C</div><div><h1>Casa do Croissant</h1><small>Portal interno</small></div></div>
-        <h2>Acessar portal</h2>
-        <p>Use seu usuário e senha para continuar.</p>
-        <label for="username">Usuário</label><input id="username" autocomplete="username" required>
-        <label for="password">Senha</label><input id="password" type="password" autocomplete="current-password" required>
-        <div id="loginError" class="erro" role="alert"></div>
-        <button id="loginButton" type="submit">Entrar</button>
+    <section id="login" class="tela-login">
+      <form id="formLogin" class="cartao-login">
+        <h1>Acesso Portal</h1>
+        <img class="logo-login" src="https://drive.google.com/thumbnail?id=1Y3rY3y3t4C636I2snLRVWHcNv4JZEaQt&sz=w1000" alt="Casa do Croissant">
+        <div class="campo-login"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"></path></svg></span><input id="username" placeholder="Usuário" autocomplete="username" required></div>
+        <div class="campo-login"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v10h14V10a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4V6zm3 9.73V18h-2v-2.27A2 2 0 1 1 13 15.73z"></path></svg></span><input id="password" type="password" placeholder="Senha" autocomplete="current-password" required></div>
+        <button id="loginButton" class="botao-entrar" type="submit">↪ Entrar</button>
+        <button id="forgotPassword" type="button" class="link-recuperar">Esqueci minha senha</button>
         <button id="setupLink" type="button" class="link oculto">Configurar primeiro acesso</button>
+        <div id="loginError" class="mensagem" role="alert"></div>
       </form>
     </section>
 
@@ -376,8 +385,9 @@ const APP_HTML = `<!doctype html>
       function error(id, message) { $(id).textContent = message || ''; }
       async function request(path, options = {}) { const response = await fetch(path, { headers: {'content-type':'application/json', ...(options.headers || {})}, ...options }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Não foi possível concluir esta ação.'); return data; }
       async function loadSession() { try { const data = await request('/api/me'); $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; show('dashboard'); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
-      $('formLogin').addEventListener('submit', async (event) => { event.preventDefault(); error('loginError'); const button = $('loginButton'); button.disabled = true; try { await request('/api/login', {method:'POST', body:JSON.stringify({username:$('username').value, password:$('password').value})}); await loadSession(); } catch (err) { error('loginError', err.message); } finally { button.disabled = false; } });
+      $('formLogin').addEventListener('submit', async (event) => { event.preventDefault(); error('loginError'); const button = $('loginButton'); button.disabled = true; button.classList.add('entrando'); button.textContent = 'Entrando...'; try { await request('/api/login', {method:'POST', body:JSON.stringify({username:$('username').value, password:$('password').value})}); await loadSession(); } catch (err) { error('loginError', err.message); } finally { button.disabled = false; button.classList.remove('entrando'); button.textContent = '↪ Entrar'; } });
       $('setupLink').addEventListener('click', () => show('setup'));
+      $('forgotPassword').addEventListener('click', () => error('loginError', 'A recuperação de senha será migrada após a configuração do envio de e-mails.'));
       $('backToLogin').addEventListener('click', () => show('login'));
       $('formSetup').addEventListener('submit', async (event) => { event.preventDefault(); error('setupError'); const button = $('setupButton'); button.disabled = true; try { await request('/api/bootstrap', {method:'POST', body:JSON.stringify({username:$('setupUsername').value, email:$('setupEmail').value, password:$('setupPassword').value, setupToken:$('setupToken').value})}); await loadSession(); } catch (err) { error('setupError', err.message); } finally { button.disabled = false; } });
       $('logout').addEventListener('click', async () => { await request('/api/logout', {method:'POST'}); await loadSession(); });
