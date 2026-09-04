@@ -1,3 +1,4 @@
+import { investimentosPage } from './pages/investimentos.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -29,6 +30,23 @@ export default {
 
       if (url.pathname === '/api/me' && request.method === 'GET') {
         return currentUser(request, env);
+      }
+
+            if (url.pathname === '/investimentos' && request.method === 'GET') {
+        const session = await getSession(request, env);
+
+        if (!session) {
+          return redirectToPortal();
+        }
+
+        const modules = await getModulesForUser(env, session);
+        const investimentos = modules.find((module) => module.id === 'INVESTIMENTOS');
+
+        if (!investimentos?.permissions.create) {
+          return redirectToPortal();
+        }
+
+        return investimentosPage(session.username);
       }
 
       if (url.pathname === '/api/users' && request.method === 'GET') {
@@ -436,6 +454,13 @@ function json(data, status = 200, extraHeaders = {}) {
   });
 }
 
+function redirectToPortal() {
+  return new Response(null, {
+    status: 302,
+    headers: { location: '/' }
+  });
+}
+
 const APP_HTML = `<!doctype html>
 <html lang="pt-BR">
   <head>
@@ -551,6 +576,10 @@ const APP_HTML = `<!doctype html>
       function html(value) { const node = document.createElement('span'); node.textContent = value || ''; return node.innerHTML; }
       function hasModule(id) { return sessionData && sessionData.modules.some((module) => module.id === id); }
       function openView(view) {
+                if (view === 'investimentos') {
+          window.location.href = '/investimentos';
+          return;
+        }
         document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
         document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
         if (view === 'inicio') { $('tituloPagina').textContent = 'Página inicial'; $('viewInicio').classList.remove('oculto'); return; }
