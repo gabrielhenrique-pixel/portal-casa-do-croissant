@@ -47,7 +47,7 @@ export function investimentosPage(username) {
       </nav>
     </aside>
     <main>
-      <div class="topo"><a class="voltar" href="/" aria-label="Voltar ao portal">↩</a><div><h1>Registro de investimento</h1><p class="subtitulo">Registre os investimentos comerciais realizados para cada rede.</p></div></div>
+      <div class="topo"><a class="voltar" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }" aria-label="Voltar ao portal">↩</a><div><h1>Registro de investimento</h1><p class="subtitulo">Registre os investimentos comerciais realizados para cada rede.</p></div></div>
       <section class="cartao">
         <form id="formulario">
           <div class="grade">
