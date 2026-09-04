@@ -2,11 +2,11 @@
   "name": "portal-casa-do-croissant",
   "main": "src/index.js",
   "compatibility_date": "2026-09-03",
- "d1_databases": [
+  "d1_databases": [
     {
       "binding": "DB",
       "database_name": "portal-casa-do-croissant-db",
-      "database_id": "127201af-7650-48f5-90cb-64d5da3acfd"
+      "database_id": "127201af-7650-48f5-90cb-64d5da3acfcd"
     }
   ]
 }
