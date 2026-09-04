@@ -39,19 +39,6 @@ export function investimentosPendentesPage() {
   </style>
 </head>
 <body>
-  <aside>
-    <div class="marca">Casa do Croissant<small>Portal interno</small></div>
-    <nav class="menu">
-      <a class="nav" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Página inicial</a>
-      <a class="nav" href="/investimentos">Investimentos</a>
-      <a class="nav ativo" href="/investimentos-pendentes">Investimentos pendentes</a>
-      <a class="nav" href="/">Painel de devoluções</a>
-      <a class="nav" href="/">Usuários cadastrados</a>
-      <a class="nav" href="/">Histórico de ações</a>
-      <a class="nav" href="/">Acessos</a>
-      <a class="nav sair" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Voltar ao portal</a>
-    </nav>
-  </aside>
 
   <main>
     <div class="topo">
