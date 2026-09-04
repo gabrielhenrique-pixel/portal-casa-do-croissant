@@ -1,4 +1,5 @@
 import { investimentosPage } from './pages/investimentos.js';
+import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -34,6 +35,26 @@ export default {
 
             if (url.pathname === '/investimentos' && request.method === 'GET') {
         const session = await getSession(request, env);
+
+              if (url.pathname === '/investimentos-pendentes' && request.method === 'GET') {
+        const session = await getSession(request, env);
+
+        if (!session) {
+          return redirectToPortal();
+        }
+
+        const modules = await getModulesForUser(env, session);
+        const pendentes = modules.find(
+          (module) => module.id === 'INVESTIMENTOS_PENDENTES'
+        );
+
+        if (!pendentes?.permissions.view) {
+          return redirectToPortal();
+        }
+
+        return investimentosPendentesPage();
+      }
+
 
         if (!session) {
           return redirectToPortal();
@@ -580,6 +601,9 @@ const APP_HTML = `<!doctype html>
           window.location.href = '/investimentos';
           return;
         }
+
+        
+        
         document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
         document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
         if (view === 'inicio') { $('tituloPagina').textContent = 'Página inicial'; $('viewInicio').classList.remove('oculto'); return; }
