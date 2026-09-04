@@ -33,10 +33,26 @@ export default {
         return currentUser(request, env);
       }
 
-            if (url.pathname === '/investimentos' && request.method === 'GET') {
+                  if (url.pathname === '/investimentos' && request.method === 'GET') {
         const session = await getSession(request, env);
 
-              if (url.pathname === '/investimentos-pendentes' && request.method === 'GET') {
+        if (!session) {
+          return redirectToPortal();
+        }
+
+        const modules = await getModulesForUser(env, session);
+        const investimentos = modules.find(
+          (module) => module.id === 'INVESTIMENTOS'
+        );
+
+        if (!investimentos?.permissions.create) {
+          return redirectToPortal();
+        }
+
+        return investimentosPage(session.username);
+      }
+
+      if (url.pathname === '/investimentos-pendentes' && request.method === 'GET') {
         const session = await getSession(request, env);
 
         if (!session) {
@@ -55,20 +71,6 @@ export default {
         return investimentosPendentesPage();
       }
 
-
-        if (!session) {
-          return redirectToPortal();
-        }
-
-        const modules = await getModulesForUser(env, session);
-        const investimentos = modules.find((module) => module.id === 'INVESTIMENTOS');
-
-        if (!investimentos?.permissions.create) {
-          return redirectToPortal();
-        }
-
-        return investimentosPage(session.username);
-      }
 
       if (url.pathname === '/api/users' && request.method === 'GET') {
         return listUsers(request, env);
