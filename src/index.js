@@ -7,6 +7,7 @@ import { devolucoesPage } from './pages/devolucoes.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
