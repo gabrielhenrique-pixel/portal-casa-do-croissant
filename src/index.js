@@ -766,6 +766,7 @@ if (!dados.responseBody || !Array.isArray(dados.responseBody.rows)) {
 }
 
 return dados.responseBody.rows;
+}
 
 function dataSankhyaValida(valor, padrao) {
   const texto = String(valor || '').trim();
