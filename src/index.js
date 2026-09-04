@@ -691,12 +691,12 @@ async function listarDevolucoesDoSankhya(request, env) {
       faturamento: faturamento
     });
   } catch (error) {
-    console.error('Falha na consulta ao Sankhya:', error);
+  console.error('Falha na consulta ao Sankhya:', error);
 
-    return json({
-      error: 'Não foi possível consultar as devoluções no Sankhya.'
-    }, 502);
-  }
+  return json({
+    error: error.message || 'Não foi possível consultar as devoluções no Sankhya.'
+  }, 502);
+}
 }
 
 async function obterTokenSankhya(env) {
@@ -751,12 +751,21 @@ async function executarConsultaSankhya(accessToken, sql) {
 
   const dados = await resposta.json();
 
-  if (!dados.responseBody || !Array.isArray(dados.responseBody.rows)) {
-    return [];
-  }
-
-  return dados.responseBody.rows;
+if (String(dados.status || '') === '0') {
+  throw new Error(
+    dados.statusMessage ||
+    'O Sankhya recusou a consulta.'
+  );
 }
+
+if (!dados.responseBody || !Array.isArray(dados.responseBody.rows)) {
+  throw new Error(
+    dados.statusMessage ||
+    'O Sankhya retornou uma resposta sem linhas.'
+  );
+}
+
+return dados.responseBody.rows;
 
 function dataSankhyaValida(valor, padrao) {
   const texto = String(valor || '').trim();
