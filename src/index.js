@@ -1,5 +1,7 @@
 import { investimentosPage } from './pages/investimentos.js';
 import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
+import { usuariosPage } from './pages/usuarios.js';
+import { registroUsuarioPage } from './pages/registro-usuario.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -71,6 +73,26 @@ export default {
         return investimentosPendentesPage();
       }
 
+            if (url.pathname === '/usuarios' && request.method === 'GET') {
+        const session = await getSession(request, env);
+
+        if (!session || session.role !== 'Administrador') {
+          return redirectToPortal();
+        }
+
+        return usuariosPage();
+      }
+
+      if (url.pathname === '/registro-usuario' && request.method === 'GET') {
+        const session = await getSession(request, env);
+
+        if (!session || session.role !== 'Administrador') {
+          return redirectToPortal();
+        }
+
+        return registroUsuarioPage();
+      }
+
 
       if (url.pathname === '/api/users' && request.method === 'GET') {
         return listUsers(request, env);
@@ -79,6 +101,17 @@ export default {
       if (url.pathname === '/api/users' && request.method === 'POST') {
         return createUser(request, env);
       }
+
+            const userMatch = url.pathname.match(/^\/api\/users\/([^/]+)$/);
+
+      if (userMatch && request.method === 'PUT') {
+        return updateUser(request, env, userMatch[1]);
+      }
+
+      if (userMatch && request.method === 'DELETE') {
+        return deleteUser(request, env, userMatch[1]);
+      }
+
 
       const permissionMatch = url.pathname.match(/^\/api\/users\/([^/]+)\/permissions$/);
       if (permissionMatch && request.method === 'GET') {
@@ -274,6 +307,118 @@ async function userPermissions(request, env, userId) {
      ORDER BY modules.sort_order`
   ).bind(userId).all();
   return json({ user, modules: result.results });
+}
+
+async function updateUser(request, env, userId) {
+  const administrator = await requireAdministrator(request, env);
+
+  const targetUser = await env.DB.prepare(
+    'SELECT id, username, email, role FROM users WHERE id = ?'
+  ).bind(userId).first();
+
+  if (!targetUser) {
+    return json({ error: 'Usuário não encontrado.' }, 404);
+  }
+
+  const data = await bodyAsJson(request);
+  const username = normalizeUsername(data.username);
+  const email = normalizeEmail(data.email);
+  const role = String(data.role || '');
+
+  if (username.length < 3) {
+    return json({ error: 'O usuário precisa ter pelo menos 3 caracteres.' }, 400);
+  }
+
+  if (!email.includes('@')) {
+    return json({ error: 'Informe um e-mail válido.' }, 400);
+  }
+
+  if (!['Administrador', 'Gestor', 'Colaborador'].includes(role)) {
+    return json({ error: 'Perfil de usuário inválido.' }, 400);
+  }
+
+  if (targetUser.id === administrator.user_id && role !== 'Administrador') {
+    return json({ error: 'Você não pode remover seu próprio perfil de administrador.' }, 400);
+  }
+
+  if (targetUser.role === 'Administrador' && role !== 'Administrador') {
+    const total = await env.DB.prepare(
+      "SELECT COUNT(*) AS total FROM users WHERE role = 'Administrador'"
+    ).first();
+
+    if (Number(total.total) <= 1) {
+      return json({ error: 'O último administrador não pode ter o perfil alterado.' }, 400);
+    }
+  }
+
+  try {
+    await env.DB.batch([
+      env.DB.prepare(
+        'UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?'
+      ).bind(username, email, role, userId),
+
+      env.DB.prepare(
+        'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
+      ).bind(
+        crypto.randomUUID(),
+        new Date().toISOString(),
+        administrator.username,
+        'USUARIO_ALTERADO',
+        'Usuário ' + targetUser.username + ' alterado para ' + username + '.'
+      )
+    ]);
+  } catch (error) {
+    if (String(error.message || '').includes('UNIQUE constraint failed')) {
+      return json({ error: 'Já existe um usuário com este nome ou e-mail.' }, 409);
+    }
+
+    throw error;
+  }
+
+  return json({ ok: true });
+}
+
+async function deleteUser(request, env, userId) {
+  const administrator = await requireAdministrator(request, env);
+
+  const targetUser = await env.DB.prepare(
+    'SELECT id, username, role FROM users WHERE id = ?'
+  ).bind(userId).first();
+
+  if (!targetUser) {
+    return json({ error: 'Usuário não encontrado.' }, 404);
+  }
+
+  if (targetUser.id === administrator.user_id) {
+    return json({ error: 'Você não pode excluir o próprio usuário.' }, 400);
+  }
+
+  if (targetUser.role === 'Administrador') {
+    const total = await env.DB.prepare(
+      "SELECT COUNT(*) AS total FROM users WHERE role = 'Administrador'"
+    ).first();
+
+    if (Number(total.total) <= 1) {
+      return json({ error: 'O último administrador não pode ser excluído.' }, 400);
+    }
+  }
+
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM sessions WHERE user_id = ?').bind(userId),
+    env.DB.prepare('DELETE FROM user_module_permissions WHERE user_id = ?').bind(userId),
+    env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId),
+    env.DB.prepare(
+      'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+      administrator.username,
+      'USUARIO_EXCLUIDO',
+      'Usuário ' + targetUser.username + ' excluído.'
+    )
+  ]);
+
+  return json({ ok: true });
 }
 
 async function saveUserPermissions(request, env, userId) {
@@ -608,6 +753,11 @@ const APP_HTML = `<!doctype html>
         window.location.href = '/investimentos-pendentes';
         return;
        }
+
+       if (view === 'usuarios') {
+  window.location.href = '/usuarios';
+  return;
+}
          
         document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
         document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
