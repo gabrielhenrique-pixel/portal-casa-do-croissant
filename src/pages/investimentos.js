@@ -36,7 +36,7 @@ export function investimentosPage(username) {
     <aside>
       <div class="marca">Casa do Croissant<small>Portal interno</small></div>
       <nav class="menu">
-        <a class="nav" href="/">Página inicial</a>
+        <a class="nav" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Página inicial</a>
         <a class="nav ativo" href="/investimentos">Investimentos</a>
         <a class="nav" href="/">Investimentos pendentes</a>
         <a class="nav" href="/">Painel de devoluções</a>
