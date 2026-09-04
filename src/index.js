@@ -649,7 +649,7 @@ async function listarDevolucoesDoSankhya(request, env) {
       "  AND CAB.TIPMOV = 'D'",
       "  AND CAB.STATUSNOTA = 'L'",
       'ORDER BY CAB.DTNEG DESC'
-    ].join('\\n');
+    ].join('\n');
 
     const sqlFaturamento = [
       'SELECT',
@@ -772,7 +772,7 @@ return dados.responseBody.rows;
 function dataSankhyaValida(valor, padrao) {
   const texto = String(valor || '').trim();
 
-  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(texto)) {
+if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
     return texto;
   }
 
@@ -780,14 +780,14 @@ function dataSankhyaValida(valor, padrao) {
 }
 
 function converterDataSankhya(valor) {
-  const texto = String(valor || '');
+  const formatoIso = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
   const formatoIso = texto.match(/(\\d{4})-(\\d{2})-(\\d{2})/);
 
   if (formatoIso) {
     return formatoIso[1] + '-' + formatoIso[2] + '-' + formatoIso[3];
   }
 
-  const numeros = texto.replace(/\\D/g, '');
+ const numeros = texto.replace(/\D/g, '');
 
   if (numeros.length >= 8) {
     return numeros.slice(4, 8) + '-' +
@@ -806,7 +806,7 @@ function numeroSankhya(valor) {
   let texto = String(valor || '').trim();
 
   if (texto.includes(',')) {
-    texto = texto.replace(/\\./g, '').replace(',', '.');
+  texto = texto.replace(/\./g, '').replace(',', '.');
   }
 
   const numero = Number(texto);
