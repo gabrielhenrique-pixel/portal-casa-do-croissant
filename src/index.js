@@ -3,6 +3,7 @@ import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
 import { usuariosPage } from './pages/usuarios.js';
 import { registroUsuarioPage } from './pages/registro-usuario.js';
 import { historicoAcoesPage } from './pages/historico-acoes.js';
+import { devolucoesPage } from './pages/devolucoes.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -138,6 +139,23 @@ export default {
 
 if (url.pathname === '/api/audit-log' && request.method === 'GET') {
   return listAuditLog(request, env);
+}
+
+      if (url.pathname === '/devolucoes' && request.method === 'GET') {
+  const session = await podeConsultarDevolucoes(request, env);
+
+  if (!session) {
+    return new Response(null, {
+      status: 302,
+      headers: { location: '/' }
+    });
+  }
+
+  return devolucoesPage();
+}
+
+if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
+  return listarDevolucoesDoSankhya(request, env);
 }
 
       return new Response(APP_HTML, {
@@ -556,6 +574,234 @@ async function listAuditLog(request, env) {
   return json({ items: resultado.results || [] });
 }
 
+async function podeConsultarDevolucoes(request, env) {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.role === 'Administrador') {
+    return session;
+  }
+
+  const modulos = await getModulesForUser(env, session);
+  const devolucoes = modulos.find(function(modulo) {
+    return modulo.id === 'DEVOLUCOES';
+  });
+
+  return devolucoes && devolucoes.permissions && devolucoes.permissions.view
+    ? session
+    : null;
+}
+
+async function listarDevolucoesDoSankhya(request, env) {
+  const session = await podeConsultarDevolucoes(request, env);
+
+  if (!session) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  if (!env.SANKHYA_CLIENT_ID ||
+      !env.SANKHYA_CLIENT_SECRET ||
+      !env.SANKHYA_X_TOKEN) {
+    return json({
+      error: 'A integração com o Sankhya ainda não foi configurada.'
+    }, 503);
+  }
+
+  const url = new URL(request.url);
+  const hoje = new Date();
+  const mesAnterior = new Date();
+  mesAnterior.setMonth(mesAnterior.getMonth() - 1);
+
+  const inicio = dataSankhyaValida(
+    url.searchParams.get('inicio'),
+    mesAnterior
+  );
+
+  const fim = dataSankhyaValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  try {
+    const accessToken = await obterTokenSankhya(env);
+
+    const sqlDevolucoes = [
+      'SELECT',
+      '  TRUNC(CAB.DTNEG) AS DATA,',
+      '  CAB.NUNOTA AS NUMERO_NOTA,',
+      '  PAR.CODPARC AS COD_PARCEIRO,',
+      '  PAR.NOMEPARC AS PARCEIRO,',
+      '  PRO.DESCRPROD AS PRODUTO,',
+      '  ITE.QTDNEG AS QTD_NEG,',
+      '  ITE.VLRUNIT AS VLR_UNITARIO,',
+      '  ITE.VLRTOT AS VALOR_TOTAL',
+      'FROM TGFITE ITE',
+      'INNER JOIN TGFCAB CAB ON CAB.NUNOTA = ITE.NUNOTA',
+      'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+      'LEFT JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC',
+      "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+      "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+      '  AND CAB.CODTIPOPER = 1202',
+      "  AND CAB.TIPMOV = 'D'",
+      "  AND CAB.STATUSNOTA = 'L'",
+      'ORDER BY CAB.DTNEG DESC'
+    ].join('\\n');
+
+    const sqlFaturamento = [
+      'SELECT',
+      '  NVL(SUM(CAB.VLRNOTA), 0) AS FATURAMENTO',
+      'FROM TGFCAB CAB',
+      'INNER JOIN TGFTOP TOP',
+      '  ON TOP.CODTIPOPER = CAB.CODTIPOPER',
+      ' AND TOP.DHALTER = CAB.DHTIPOPER',
+      "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+      "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+      "  AND CAB.TIPMOV = 'V'",
+      "  AND CAB.STATUSNOTA = 'L'",
+      "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'"
+    ].join('\\n');
+
+    const resultados = await Promise.all([
+      executarConsultaSankhya(accessToken, sqlDevolucoes),
+      executarConsultaSankhya(accessToken, sqlFaturamento)
+    ]);
+
+    const itens = resultados[0].map(function(linha) {
+      return {
+        data: converterDataSankhya(linha[0]),
+        numeroNota: String(linha[1] || ''),
+        codigoParceiro: String(linha[2] || ''),
+        parceiro: String(linha[3] || ''),
+        produto: String(linha[4] || ''),
+        quantidade: numeroSankhya(linha[5]),
+        valorUnitario: numeroSankhya(linha[6]),
+        valorTotal: numeroSankhya(linha[7])
+      };
+    });
+
+    const faturamento = resultados[1].length
+      ? numeroSankhya(resultados[1][0][0])
+      : 0;
+
+    return json({
+      items: itens,
+      faturamento: faturamento
+    });
+  } catch (error) {
+    console.error('Falha na consulta ao Sankhya:', error);
+
+    return json({
+      error: 'Não foi possível consultar as devoluções no Sankhya.'
+    }, 502);
+  }
+}
+
+async function obterTokenSankhya(env) {
+  const resposta = await fetch('https://api.sankhya.com.br/authenticate', {
+    method: 'POST',
+    headers: {
+      'X-Token': env.SANKHYA_X_TOKEN,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      client_id: env.SANKHYA_CLIENT_ID,
+      client_secret: env.SANKHYA_CLIENT_SECRET,
+      grant_type: 'client_credentials'
+    }).toString()
+  });
+
+  if (!resposta.ok) {
+    throw new Error('Autenticação Sankhya recusada.');
+  }
+
+  const dados = await resposta.json();
+
+  if (!dados.access_token) {
+    throw new Error('O Sankhya não retornou um token de acesso.');
+  }
+
+  return dados.access_token;
+}
+
+async function executarConsultaSankhya(accessToken, sql) {
+  const resposta = await fetch(
+    'https://api.sankhya.com.br/gateway/v1/mge/service.sbr' +
+    '?serviceName=DbExplorerSP.executeQuery&outputType=json',
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        serviceName: 'DbExplorerSP.executeQuery',
+        requestBody: {
+          sql: sql
+        }
+      })
+    }
+  );
+
+  if (!resposta.ok) {
+    throw new Error('Consulta Sankhya recusada.');
+  }
+
+  const dados = await resposta.json();
+
+  if (!dados.responseBody || !Array.isArray(dados.responseBody.rows)) {
+    return [];
+  }
+
+  return dados.responseBody.rows;
+}
+
+function dataSankhyaValida(valor, padrao) {
+  const texto = String(valor || '').trim();
+
+  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(texto)) {
+    return texto;
+  }
+
+  return padrao.toISOString().slice(0, 10);
+}
+
+function converterDataSankhya(valor) {
+  const texto = String(valor || '');
+  const formatoIso = texto.match(/(\\d{4})-(\\d{2})-(\\d{2})/);
+
+  if (formatoIso) {
+    return formatoIso[1] + '-' + formatoIso[2] + '-' + formatoIso[3];
+  }
+
+  const numeros = texto.replace(/\\D/g, '');
+
+  if (numeros.length >= 8) {
+    return numeros.slice(4, 8) + '-' +
+      numeros.slice(2, 4) + '-' +
+      numeros.slice(0, 2);
+  }
+
+  return '';
+}
+
+function numeroSankhya(valor) {
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) ? valor : 0;
+  }
+
+  let texto = String(valor || '').trim();
+
+  if (texto.includes(',')) {
+    texto = texto.replace(/\\./g, '').replace(',', '.');
+  }
+
+  const numero = Number(texto);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
 async function writeAudit(env, username, action, detail) {
   await env.DB.prepare(
     'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
@@ -820,6 +1066,11 @@ body.inicializando #inicializacao {
 
 if (view === 'historico') {
   window.location.href = '/historico-acoes';
+  return;
+}
+
+if (view === 'devolucoes') {
+  window.location.href = '/devolucoes';
   return;
 }
          
