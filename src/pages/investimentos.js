@@ -33,19 +33,6 @@ export function investimentosPage(username) {
     </style>
   </head>
   <body>
-    <aside>
-      <div class="marca">Casa do Croissant<small>Portal interno</small></div>
-      <nav class="menu">
-        <a class="nav" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }">Página inicial</a>
-        <a class="nav ativo" href="/investimentos">Investimentos</a>
-        <a class="nav" href="/">Investimentos pendentes</a>
-        <a class="nav" href="/">Painel de devoluções</a>
-        <a class="nav" href="/">Usuários cadastrados</a>
-        <a class="nav" href="/">Histórico de ações</a>
-        <a class="nav" href="/">Acessos</a>
-        <a class="nav sair" href="/">Voltar ao portal</a>
-      </nav>
-    </aside>
     <main>
       <div class="topo"><a class="voltar" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }" aria-label="Voltar ao portal">↩</a><div><h1>Registro de investimento</h1><p class="subtitulo">Registre os investimentos comerciais realizados para cada rede.</p></div></div>
       <section class="cartao">
