@@ -602,8 +602,11 @@ const APP_HTML = `<!doctype html>
           return;
         }
 
-        
-        
+        if (view === 'pendentes') {
+        window.location.href = '/investimentos-pendentes';
+        return;
+       }
+         
         document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
         document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
         if (view === 'inicio') { $('tituloPagina').textContent = 'Página inicial'; $('viewInicio').classList.remove('oculto'); return; }
