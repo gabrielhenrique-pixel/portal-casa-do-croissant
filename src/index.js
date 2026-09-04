@@ -2,6 +2,7 @@ import { investimentosPage } from './pages/investimentos.js';
 import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
 import { usuariosPage } from './pages/usuarios.js';
 import { registroUsuarioPage } from './pages/registro-usuario.js';
+import { historicoAcoesPage } from './pages/historico-acoes.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -122,6 +123,23 @@ export default {
         return saveUserPermissions(request, env, permissionMatch[1]);
       }
 
+      if (url.pathname === '/historico-acoes' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return new Response(null, {
+      status: 302,
+      headers: { location: '/' }
+    });
+  }
+
+  return historicoAcoesPage();
+}
+
+if (url.pathname === '/api/audit-log' && request.method === 'GET') {
+  return listAuditLog(request, env);
+}
+
       return new Response(APP_HTML, {
         headers: {
           'content-type': 'text/html; charset=UTF-8',
@@ -187,8 +205,6 @@ async function login(request, env) {
   ).bind(username).first();
 
   if (!user || !await verifyPassword(password, user)) {
-    await writeAudit(env, username || 'não identificado', 'LOGIN_NEGADO', 'Tentativa de login sem sucesso.');
-    return json({ error: 'Usuário ou senha inválidos.' }, 401);
   }
 
   await writeAudit(env, user.username, 'LOGIN_REALIZADO', 'Login realizado com sucesso.');
@@ -197,20 +213,18 @@ async function login(request, env) {
 
 async function logout(request, env) {
   const token = getCookie(request, 'portal_session');
+
   if (token) {
     const tokenHash = await sha256(token);
-    const session = await env.DB.prepare(
-      `SELECT users.username
-       FROM sessions JOIN users ON users.id = sessions.user_id
-       WHERE sessions.id = ?`
-    ).bind(tokenHash).first();
-    await env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(tokenHash).run();
-    if (session) {
-      await writeAudit(env, session.username, 'LOGOUT_REALIZADO', 'Usuário saiu do portal.');
-    }
+
+    await env.DB.prepare(
+      'DELETE FROM sessions WHERE id = ?'
+    ).bind(tokenHash).run();
   }
 
-  return json({ ok: true }, 200, { 'set-cookie': expiredSessionCookie() });
+  return json({ ok: true }, 200, {
+    'set-cookie': expiredSessionCookie()
+  });
 }
 
 async function currentUser(request, env) {
@@ -523,6 +537,25 @@ async function getSession(request, env) {
   return session || null;
 }
 
+async function listAuditLog(request, env) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const resultado = await env.DB.prepare(
+    `SELECT created_at, username, action, detail
+     FROM audit_log
+     WHERE UPPER(action) NOT LIKE '%LOGIN%'
+       AND UPPER(action) NOT LIKE '%LOGOUT%'
+     ORDER BY created_at DESC
+     LIMIT 500`
+  ).all();
+
+  return json({ items: resultado.results || [] });
+}
+
 async function writeAudit(env, username, action, detail) {
   await env.DB.prepare(
     'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
@@ -782,6 +815,11 @@ body.inicializando #inicializacao {
 
        if (view === 'usuarios') {
   window.location.href = '/usuarios';
+  return;
+}
+
+if (view === 'historico') {
+  window.location.href = '/historico-acoes';
   return;
 }
          
