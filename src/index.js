@@ -657,6 +657,25 @@ const APP_HTML = `<!doctype html>
       .link-recuperar { width:100%; margin-top:12px; border:0; background:transparent; color:var(--verde); font-size:14px; font-weight:bold; cursor:pointer; }
       .mensagem { min-height:18px; margin-top:16px; color:var(--erro); font-size:14px; }
       .oculto { display:none !important; }
+      body.inicializando #login,
+body.inicializando #setup,
+body.inicializando #dashboard {
+  display: none !important;
+}
+
+#inicializacao {
+  display: none;
+  min-height: 100vh;
+  place-items: center;
+  background: #f6f8f7;
+  color: #123d2d;
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+}
+
+body.inicializando #inicializacao {
+  display: grid;
+}
       .tela { min-height:100vh; display:grid; place-items:center; padding:24px; background:linear-gradient(135deg,#f5faf7,#eef4f1); }
       .cartao { width:min(100%,440px); background:#fff; border:1px solid #d6e4dd; border-radius:18px; padding:34px; box-shadow:0 16px 42px rgba(5,57,37,.12); }
       .cartao label { display:block; margin:16px 0 7px; font-size:13px; font-weight:700; }.cartao input{width:100%;padding:13px 14px;border:1px solid #bdd1c7;border-radius:9px;font-size:16px;}.cartao button{width:100%;border:0;border-radius:9px;padding:13px 16px;margin-top:22px;background:#075638;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
@@ -666,7 +685,8 @@ const APP_HTML = `<!doctype html>
       @media (max-width:700px) { .painel{display:block;}.menu{width:100%;min-height:auto;padding:16px;}.marca-portal{padding:4px 8px 12px;}.menu nav{display:flex;overflow:auto;gap:4px;}.nav-btn{width:auto;white-space:nowrap;margin:0;}.nav-btn--sair{margin-top:0;border-top:0;padding-top:13px;}.conteudo{padding:22px;}.topo{align-items:flex-start;flex-direction:column;}.linha-form{grid-template-columns:1fr;}.cartao { padding:26px; } }
     </style>
   </head>
-  <body>
+  <body class="inicializando">
+  <div id="inicializacao" role="status">Carregando portal...</div>
     <section id="login" class="tela-login">
       <form id="formLogin" class="cartao-login">
         <h1>Acesso Portal</h1>
@@ -738,7 +758,13 @@ const APP_HTML = `<!doctype html>
       const login = $('login'), setup = $('setup'), dashboard = $('dashboard');
       let sessionData = null, cachedUsers = [], permissionModules = [];
       const moduleTitles = { investimentos:'Investimentos', pendentes:'Investimentos pendentes', devolucoes:'Painel de devoluções', historico:'Histórico de ações' };
-      function show(view) { login.classList.toggle('oculto', view !== 'login'); setup.classList.toggle('oculto', view !== 'setup'); dashboard.classList.toggle('oculto', view !== 'dashboard'); }
+      function show(view) {
+  document.body.classList.remove('inicializando');
+  $('inicializacao').classList.add('oculto');
+  login.classList.toggle('oculto', view !== 'login');
+  setup.classList.toggle('oculto', view !== 'setup');
+  dashboard.classList.toggle('oculto', view !== 'dashboard');
+}
       function error(id, message) { $(id).textContent = message || ''; }
       async function request(path, options = {}) { const response = await fetch(path, { headers: {'content-type':'application/json', ...(options.headers || {})}, ...options }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Não foi possível concluir esta ação.'); return data; }
       function html(value) { const node = document.createElement('span'); node.textContent = value || ''; return node.innerHTML; }
