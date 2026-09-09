@@ -924,7 +924,7 @@ async function listarDevolucoesDoSankhya(request, env) {
       "  AND CAB.TIPMOV = 'V'",
       "  AND CAB.STATUSNOTA = 'L'",
       "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'"
-    ].join('\\n');
+    ].join('\n');
 
     const resultados = await Promise.all([
       executarConsultaSankhya(accessToken, sqlDevolucoes),
