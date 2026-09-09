@@ -144,6 +144,10 @@ if (url.pathname === '/api/accesses' && request.method === 'PUT') {
   return salvarAcessos(request, env);
 }
 
+if (url.pathname === '/api/accesses' && request.method === 'DELETE') {
+  return removerAcessosDosUsuarios(request, env);
+}
+
 const acessoUsuarioMatch = url.pathname.match(/^\/api\/accesses\/([^/]+)$/);
 
 if (acessoUsuarioMatch && request.method === 'DELETE') {
@@ -516,7 +520,7 @@ async function carregarAcessos(request, env) {
 
   const resultados = await Promise.all([
     env.DB.prepare(
-      'SELECT id, name, sort_order FROM modules ORDER BY sort_order'
+      "SELECT id, name, sort_order FROM modules WHERE id <> 'INICIO' ORDER BY sort_order"
     ).all(),
 
     env.DB.prepare(
@@ -544,83 +548,99 @@ async function salvarAcessos(request, env) {
   const administrator = await requireAdministrator(request, env);
   const data = await bodyAsJson(request);
 
-  const userId = String(data.userId || '');
+  const userIds = Array.isArray(data.userIds)
+    ? [...new Set(data.userIds.map(String))]
+    : [];
+
   const moduleIds = Array.isArray(data.moduleIds)
     ? [...new Set(data.moduleIds.map(String))]
     : [];
 
-  if (!userId) {
-    return json({ error: 'Selecione um usuário.' }, 400);
+  if (!userIds.length) {
+    return json({ error: 'Selecione ao menos um usuário.' }, 400);
   }
 
   if (!moduleIds.length) {
     return json({ error: 'Selecione ao menos um módulo.' }, 400);
   }
 
-  const usuario = await env.DB.prepare(
-    'SELECT id, username, role FROM users WHERE id = ?'
-  ).bind(userId).first();
+  const usuarios = await env.DB.prepare(
+    `SELECT id, username, role
+     FROM users
+     WHERE id IN (${userIds.map(() => '?').join(', ')})`
+  ).bind(...userIds).all();
 
-  if (!usuario) {
-    return json({ error: 'Usuário não encontrado.' }, 404);
+  if ((usuarios.results || []).length !== userIds.length) {
+    return json({ error: 'Um ou mais usuários não foram encontrados.' }, 404);
   }
 
-  if (usuario.role === 'Administrador') {
+  if (usuarios.results.some((usuario) => usuario.role === 'Administrador')) {
     return json({
       error: 'Administradores já possuem todos os acessos.'
     }, 400);
   }
 
   const modulosDisponiveis = await env.DB.prepare(
-    'SELECT id FROM modules'
+    "SELECT id FROM modules WHERE id <> 'INICIO'"
   ).all();
 
   const idsValidos = new Set(
-    (modulosDisponiveis.results || []).map(function(modulo) {
-      return modulo.id;
-    })
+    (modulosDisponiveis.results || []).map((modulo) => modulo.id)
   );
 
-  const selecionados = moduleIds.filter(function(id) {
-    return idsValidos.has(id);
-  });
+  const selecionados = moduleIds.filter((id) => idsValidos.has(id));
 
   if (!selecionados.length) {
     return json({ error: 'Nenhum módulo válido foi selecionado.' }, 400);
   }
 
   const permissoes = data.permissions || {};
-  const permitido = function(valor) {
-    return valor ? 1 : 0;
-  };
 
+  if (![
+    permissoes.view,
+    permissoes.create,
+    permissoes.update,
+    permissoes.delete,
+    permissoes.configure
+  ].some(Boolean)) {
+    return json({
+      error: 'Selecione ao menos um tipo de acesso.'
+    }, 400);
+  }
+
+  const permitido = (valor) => valor ? 1 : 0;
   const atualizadoEm = new Date().toISOString();
+  const comandos = [];
 
-  const comandos = selecionados.map(function(moduleId) {
-    return env.DB.prepare(
-      `INSERT INTO user_module_permissions
-       (user_id, module_id, can_view, can_create, can_update,
-        can_delete, can_configure, updated_at, updated_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(user_id, module_id) DO UPDATE SET
-         can_view = excluded.can_view,
-         can_create = excluded.can_create,
-         can_update = excluded.can_update,
-         can_delete = excluded.can_delete,
-         can_configure = excluded.can_configure,
-         updated_at = excluded.updated_at,
-         updated_by = excluded.updated_by`
-    ).bind(
-      userId,
-      moduleId,
-      permitido(permissoes.view),
-      permitido(permissoes.create),
-      permitido(permissoes.update),
-      permitido(permissoes.delete),
-      permitido(permissoes.configure),
-      atualizadoEm,
-      administrator.username
-    );
+  usuarios.results.forEach((usuario) => {
+    selecionados.forEach((moduleId) => {
+      comandos.push(
+        env.DB.prepare(
+          `INSERT INTO user_module_permissions
+           (user_id, module_id, can_view, can_create, can_update,
+            can_delete, can_configure, updated_at, updated_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(user_id, module_id) DO UPDATE SET
+             can_view = excluded.can_view,
+             can_create = excluded.can_create,
+             can_update = excluded.can_update,
+             can_delete = excluded.can_delete,
+             can_configure = excluded.can_configure,
+             updated_at = excluded.updated_at,
+             updated_by = excluded.updated_by`
+        ).bind(
+          usuario.id,
+          moduleId,
+          permitido(permissoes.view),
+          permitido(permissoes.create),
+          permitido(permissoes.update),
+          permitido(permissoes.delete),
+          permitido(permissoes.configure),
+          atualizadoEm,
+          administrator.username
+        )
+      );
+    });
   });
 
   comandos.push(
@@ -631,7 +651,58 @@ async function salvarAcessos(request, env) {
       atualizadoEm,
       administrator.username,
       'ACESSOS_ATUALIZADOS',
-      'Acessos atualizados para ' + usuario.username + '.'
+      'Acessos atualizados para ' + usuarios.results.length + ' usuário(s).'
+    )
+  );
+
+  await env.DB.batch(comandos);
+
+  return json({ ok: true });
+}
+
+async function removerAcessosDosUsuarios(request, env) {
+  const administrator = await requireAdministrator(request, env);
+  const data = await bodyAsJson(request);
+
+  const userIds = Array.isArray(data.userIds)
+    ? [...new Set(data.userIds.map(String))]
+    : [];
+
+  if (!userIds.length) {
+    return json({ error: 'Selecione ao menos um usuário.' }, 400);
+  }
+
+  const usuarios = await env.DB.prepare(
+    `SELECT id, username, role
+     FROM users
+     WHERE id IN (${userIds.map(() => '?').join(', ')})`
+  ).bind(...userIds).all();
+
+  if ((usuarios.results || []).length !== userIds.length) {
+    return json({ error: 'Um ou mais usuários não foram encontrados.' }, 404);
+  }
+
+  if (usuarios.results.some((usuario) => usuario.role === 'Administrador')) {
+    return json({
+      error: 'Administradores já possuem todos os acessos.'
+    }, 400);
+  }
+
+  const comandos = usuarios.results.map((usuario) =>
+    env.DB.prepare(
+      'DELETE FROM user_module_permissions WHERE user_id = ?'
+    ).bind(usuario.id)
+  );
+
+  comandos.push(
+    env.DB.prepare(
+      'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+      administrator.username,
+      'ACESSOS_REMOVIDOS',
+      'Acessos removidos de ' + usuarios.results.length + ' usuário(s).'
     )
   );
 
