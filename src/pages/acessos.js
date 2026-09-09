@@ -3,55 +3,49 @@ export function acessosPage() {
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Acessos | Casa do Croissant</title>
   <style>
-    :root{--verde:#168447;--escuro:#0d4b2b;--fundo:#f6f8f7;--texto:#183128;--borda:#d6e4dd;--erro:#b8322a}
+    :root{--v:#168447;--e:#0d4b2b;--f:#f6f8f7;--t:#183128;--b:#d6e4dd;--r:#b8322a}
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;font-family:Arial,sans-serif;color:var(--texto);background:var(--fundo)}
-    main{max-width:1300px;margin:0 auto;padding:34px 36px 48px}
+    body{margin:0;min-height:100vh;font-family:Arial,sans-serif;color:var(--t);background:var(--f)}
+    main{max-width:1300px;margin:auto;padding:34px 36px 48px}
     .topo{display:flex;align-items:center;gap:16px;margin-bottom:26px}
-    .voltar{display:grid;width:48px;height:48px;place-items:center;flex:0 0 48px;border-radius:50%;background:var(--escuro);color:#fff;text-decoration:none;font-size:26px;font-weight:700}
+    .voltar{display:grid;width:48px;height:48px;place-items:center;border-radius:50%;background:var(--e);color:#fff;text-decoration:none;font-size:26px;font-weight:700}
     h1{margin:0;font-size:27px}
-    .subtitulo{margin:5px 0 0;color:#66746d}
+    .sub{margin:5px 0 0;color:#66746d}
     .grade{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .painel{padding:20px;border:1px solid var(--borda);border-radius:12px;background:#fff}
-    .painel h2{margin:0 0 16px;font-size:18px}
-    .cabecalho-painel{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-    .campo{width:100%;height:42px;padding:0 12px;border:1px solid #b9cfc3;border-radius:7px;background:#fff;font:inherit}
-    .selecionar-todos{display:flex;align-items:center;gap:7px;margin:12px 0;font-size:13px;font-weight:700}
+    .painel{padding:20px;border:1px solid var(--b);border-radius:12px;background:#fff}
+    .cab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .painel h2{margin:0;font-size:18px}
+    .campo{width:100%;height:42px;padding:0 12px;border:1px solid #b9cfc3;border-radius:7px;font:inherit}
+    .todos{display:flex;gap:7px;align-items:center;margin:12px 0;font-size:13px;font-weight:700}
     .lista{max-height:390px;overflow:auto;border:1px solid #dce8e1;border-radius:8px}
-    .modulo{display:flex;align-items:center;gap:10px;padding:13px;border-bottom:1px solid #e3ece7;cursor:pointer}
-    .modulo:last-child{border-bottom:0}
-    .modulo:hover{background:#f3faf6}
-    .modulo input{width:17px;height:17px}
+    .modulo,.usuario,.opcao{display:flex;gap:10px;align-items:center;padding:13px;border-bottom:1px solid #e3ece7;cursor:pointer}
+    .modulo:last-child,.opcao:last-child{border-bottom:0}
+    .modulo:hover,.usuario:hover{background:#f3faf6}
+    .usuario{border:1px solid #dce8e1;border-radius:8px;background:#fff}
+    .usuario.selecionado{border-color:var(--v);box-shadow:0 0 0 2px rgba(22,132,71,.15)}
+    small{display:block;margin-top:4px;color:#66746d}
     .usuarios{display:grid;gap:9px;min-height:130px}
-    .usuario{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px;border:1px solid #dce8e1;border-radius:8px;background:#fff;cursor:pointer}
-    .usuario:hover{background:#f3faf6}
-    .usuario.selecionado{border-color:var(--verde);box-shadow:0 0 0 2px rgba(22,132,71,.15)}
-    .usuario small{display:block;margin-top:4px;color:#66746d}
-    .acoes{display:flex;gap:9px;flex-wrap:wrap}
-    .botao{padding:10px 14px;border:0;border-radius:7px;background:var(--verde);color:#fff;font-weight:700;cursor:pointer}
-    .botao.secundario{border:1px solid #b9cfc3;background:#fff;color:#405149}
-    .botao.perigo{background:#c1362d}
-    .botao:disabled{cursor:not-allowed;opacity:.55}
+    .acoes,.rodape{display:flex;gap:9px;flex-wrap:wrap}
+    .rodape{justify-content:flex-end;margin-top:20px}
+    .botao{padding:10px 14px;border:0;border-radius:7px;background:var(--v);color:#fff;font-weight:700;cursor:pointer}
+    .sec{border:1px solid #b9cfc3;background:#fff;color:#405149}
+    .perigo{background:#c1362d}
+    .botao:disabled{opacity:.55;cursor:not-allowed}
     .tipos{display:flex;flex-wrap:wrap;gap:14px}
-    .tipos label{display:flex;align-items:center;gap:7px;font-size:14px}
-    .rodape{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
-    .mensagem{display:none;margin:16px 0;padding:12px 14px;border-radius:7px;background:#e2f3e8;color:#12623e}
-    .mensagem.erro{background:#fde5e2;color:var(--erro)}
-    .mensagem.visivel{display:block}
-    .vazio{padding:28px;color:#66746d;text-align:center}
-    .modal-fundo{position:fixed;inset:0;z-index:10;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(15,35,26,.55)}
-    .modal-fundo.visivel{display:flex}
-    .modal{width:min(100%,520px);padding:24px;border-radius:12px;background:#fff}
-    .modal-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
-    .modal h2{margin:0;font-size:20px}
+    .tipos label{display:flex;gap:7px;align-items:center}
+    .msg{display:none;margin:16px 0;padding:12px 14px;border-radius:7px;background:#e2f3e8;color:#12623e}
+    .msg.erro{background:#fde5e2;color:var(--r)}
+    .msg.visivel{display:block}
+    .vazio{padding:28px;text-align:center;color:#66746d}
+    .fundo{position:fixed;inset:0;display:none;place-items:center;padding:20px;background:rgba(15,35,26,.55)}
+    .fundo.visivel{display:grid}
+    .modal{width:min(100%,540px);padding:24px;border-radius:12px;background:#fff}
+    .modal .cab{margin-bottom:16px}
     .fechar{border:0;background:transparent;color:#66746d;font-size:27px;cursor:pointer}
-    .lista-modal{max-height:300px;margin-top:12px;overflow:auto;border:1px solid var(--borda);border-radius:8px}
-    .opcao-usuario{display:flex;gap:10px;align-items:center;padding:12px;border-bottom:1px solid #e3ece7;cursor:pointer}
-    .opcao-usuario:last-child{border-bottom:0}
-    .opcao-usuario small{display:block;color:#66746d;margin-top:3px}
+    .lista-modal{max-height:300px;overflow:auto;margin-top:12px;border:1px solid var(--b);border-radius:8px}
     @media(max-width:800px){main{padding:24px 16px}.grade{grid-template-columns:1fr}.rodape{flex-direction:column-reverse}.rodape button{width:100%}}
   </style>
 </head>
@@ -61,114 +55,87 @@ export function acessosPage() {
       <a class="voltar" href="/" aria-label="Voltar à Página inicial">↩</a>
       <div>
         <h1>Acessos</h1>
-        <p class="subtitulo">Selecione módulos, um usuário e os tipos de acesso que serão aplicados.</p>
+        <p class="sub">Selecione módulos, usuários e os tipos de acesso que serão aplicados.</p>
       </div>
     </header>
 
-    <div id="mensagem" class="mensagem" role="status"></div>
+    <div id="msg" class="msg" role="status"></div>
 
     <section class="grade">
       <article class="painel">
         <h2>Módulos</h2>
         <input id="buscaModulo" class="campo" type="search" placeholder="Pesquisar módulo">
-        <label class="selecionar-todos">
+        <label class="todos">
           <input id="todosModulos" type="checkbox">
           Selecionar módulos exibidos
         </label>
-        <div id="listaModulos" class="lista"></div>
+        <div id="modulos" class="lista"></div>
       </article>
 
       <article class="painel">
-        <div class="cabecalho-painel">
+        <div class="cab">
           <h2>Usuários</h2>
           <div class="acoes">
-            <button id="adicionarUsuario" class="botao secundario" type="button">Adicionar usuário</button>
-            <button id="removerUsuario" class="botao perigo" type="button" disabled>Remover acessos</button>
+            <button id="adicionar" class="botao sec" type="button">Adicionar usuários</button>
+            <button id="remover" class="botao perigo" type="button">Remover acessos</button>
           </div>
         </div>
-        <div id="listaUsuarios" class="usuarios">
-          <div class="vazio">Selecione um ou mais módulos.</div>
-        </div>
+        <div id="usuarios" class="usuarios"></div>
       </article>
     </section>
 
     <section class="painel" style="margin-top:16px">
       <h2>Tipos de acesso</h2>
-
       <div class="tipos">
-        <label><input id="view" type="checkbox"> Consultar</label>
-        <label><input id="create" type="checkbox"> Incluir</label>
-        <label><input id="update" type="checkbox"> Alterar</label>
-        <label><input id="delete" type="checkbox"> Excluir</label>
-        <label><input id="configure" type="checkbox"> Configurar</label>
+        <label><input id="view" type="checkbox">Consultar</label>
+        <label><input id="create" type="checkbox">Incluir</label>
+        <label><input id="update" type="checkbox">Alterar</label>
+        <label><input id="delete" type="checkbox">Excluir</label>
+        <label><input id="configure" type="checkbox">Configurar</label>
       </div>
-
       <div class="rodape">
         <button id="salvar" class="botao" type="button">Confirmar acessos</button>
       </div>
     </section>
   </main>
 
-  <div id="modal" class="modal-fundo">
+  <div id="modal" class="fundo">
     <div class="modal" role="dialog" aria-modal="true">
-      <div class="modal-cabecalho">
-        <h2>Selecionar usuário</h2>
-        <button id="fecharModal" class="fechar" type="button" aria-label="Fechar">×</button>
+      <div class="cab">
+        <h2>Selecionar usuários</h2>
+        <button id="fechar" class="fechar" type="button">×</button>
       </div>
 
       <input id="buscaUsuario" class="campo" type="search" placeholder="Pesquisar usuário, e-mail ou perfil">
 
-      <div id="usuariosModal" class="lista-modal"></div>
+      <div id="opcoes" class="lista-modal"></div>
 
       <div class="rodape">
-        <button id="cancelarModal" class="botao secundario" type="button">Cancelar</button>
-        <button id="confirmarUsuario" class="botao" type="button">Selecionar usuário</button>
+        <button id="cancelar" class="botao sec" type="button">Cancelar</button>
+        <button id="confirmar" class="botao" type="button">Selecionar usuários</button>
       </div>
     </div>
   </div>
 
   <script>
-    const listaModulos = document.getElementById('listaModulos');
-    const listaUsuarios = document.getElementById('listaUsuarios');
-    const mensagem = document.getElementById('mensagem');
-    const modal = document.getElementById('modal');
+    const $ = (id) => document.getElementById(id);
 
     let dados = { modules: [], users: [], grants: [] };
-    let modulosSelecionados = [];
-    let usuarioSelecionado = null;
-    let usuarioDoModal = null;
+    let modulos = [];
+    let usuarios = [];
+    let usuariosModal = [];
 
-    function seguro(valor) {
-      const elemento = document.createElement('span');
-      elemento.textContent = valor || '';
-      return elemento.innerHTML;
+    function esc(valor) {
+      const no = document.createElement('span');
+      no.textContent = valor || '';
+      return no.innerHTML;
     }
 
-    function avisar(texto, erro) {
-      mensagem.textContent = texto;
-      mensagem.className = erro
-        ? 'mensagem erro visivel'
-        : 'mensagem visivel';
-    }
-
-    function temPermissao(usuarioId, moduloId) {
-      return dados.grants.find(function(item) {
-        return item.user_id === usuarioId && item.module_id === moduloId;
-      });
-    }
-
-    function temAlgumaPermissao(usuarioId) {
-      return modulosSelecionados.some(function(moduloId) {
-        const acesso = temPermissao(usuarioId, moduloId);
-
-        return acesso && (
-          acesso.can_view ||
-          acesso.can_create ||
-          acesso.can_update ||
-          acesso.can_delete ||
-          acesso.can_configure
-        );
-      });
+    function aviso(texto, erro) {
+      $('msg').textContent = texto;
+      $('msg').className = erro
+        ? 'msg erro visivel'
+        : 'msg visivel';
     }
 
     async function api(url, opcoes) {
@@ -181,9 +148,7 @@ export function acessosPage() {
         ...(opcoes || {})
       });
 
-      const corpo = await resposta.json().catch(function() {
-        return {};
-      });
+      const corpo = await resposta.json().catch(() => ({}));
 
       if (!resposta.ok) {
         throw new Error(corpo.error || 'Não foi possível concluir esta ação.');
@@ -192,303 +157,311 @@ export function acessosPage() {
       return corpo;
     }
 
-    function renderizarModulos() {
-      const termo = document.getElementById('buscaModulo').value
-        .toLocaleLowerCase('pt-BR');
+    function grant(usuarioId, moduloId) {
+      return dados.grants.find((item) =>
+        item.user_id === usuarioId &&
+        item.module_id === moduloId
+      );
+    }
 
-      const exibidos = dados.modules.filter(function(modulo) {
-        return String(modulo.name || '')
-          .toLocaleLowerCase('pt-BR')
-          .includes(termo);
+    function temAcesso(usuarioId) {
+      return modulos.some((moduloId) => {
+        const item = grant(usuarioId, moduloId);
+
+        return item && (
+          item.can_view ||
+          item.can_create ||
+          item.can_update ||
+          item.can_delete ||
+          item.can_configure
+        );
       });
+    }
 
-      listaModulos.innerHTML = exibidos.length
-        ? exibidos.map(function(modulo) {
-          return '<label class="modulo">' +
-            '<input type="checkbox" data-modulo="' + seguro(modulo.id) + '" ' +
-            (modulosSelecionados.includes(modulo.id) ? 'checked' : '') + '>' +
-            '<span>' + seguro(modulo.name) + '</span>' +
-          '</label>';
-        }).join('')
+    function renderModulos() {
+      const termo = $('buscaModulo').value.toLocaleLowerCase('pt-BR');
+
+      const lista = dados.modules.filter((modulo) =>
+        String(modulo.name || '')
+          .toLocaleLowerCase('pt-BR')
+          .includes(termo)
+      );
+
+      $('modulos').innerHTML = lista.length
+        ? lista.map((modulo) =>
+          '<label class="modulo">' +
+            '<input type="checkbox" data-modulo="' + esc(modulo.id) + '" ' +
+            (modulos.includes(modulo.id) ? 'checked' : '') + '>' +
+            '<span>' + esc(modulo.name) + '</span>' +
+          '</label>'
+        ).join('')
         : '<div class="vazio">Nenhum módulo encontrado.</div>';
 
-      document.getElementById('todosModulos').checked =
-        exibidos.length > 0 &&
-        exibidos.every(function(modulo) {
-          return modulosSelecionados.includes(modulo.id);
-        });
+      $('todosModulos').checked =
+        lista.length > 0 &&
+        lista.every((modulo) => modulos.includes(modulo.id));
     }
 
-    function carregarPermissoesMarcadas() {
-      const ids = ['view', 'create', 'update', 'delete', 'configure'];
-
-      ids.forEach(function(id) {
-        const campo = document.getElementById(id);
-
-        if (!usuarioSelecionado || !modulosSelecionados.length) {
-          campo.checked = false;
-          return;
-        }
-
-        campo.checked = modulosSelecionados.every(function(moduloId) {
-          const acesso = temPermissao(usuarioSelecionado, moduloId);
-          return acesso && Boolean(acesso['can_' + id]);
-        });
+    function renderPermissoes() {
+      ['view', 'create', 'update', 'delete', 'configure'].forEach((tipo) => {
+        $(tipo).checked =
+          Boolean(usuarios.length && modulos.length) &&
+          usuarios.every((usuarioId) =>
+            modulos.every((moduloId) => {
+              const item = grant(usuarioId, moduloId);
+              return item && Boolean(item['can_' + tipo]);
+            })
+          );
       });
     }
 
-    function renderizarUsuarios() {
-      const botao = document.getElementById('removerUsuario');
-      botao.disabled = true;
-
-      if (!modulosSelecionados.length) {
-        listaUsuarios.innerHTML =
+    function renderUsuarios() {
+      if (!modulos.length) {
+        $('usuarios').innerHTML =
           '<div class="vazio">Selecione um ou mais módulos.</div>';
+
+        $('remover').disabled = true;
         return;
       }
 
-      const visiveis = dados.users.filter(function(usuario) {
-        return usuario.role === 'Administrador' ||
-          usuario.id === usuarioSelecionado ||
-          temAlgumaPermissao(usuario.id);
-      });
+      const lista = dados.users.filter((usuario) =>
+        usuario.role === 'Administrador' ||
+        usuarios.includes(usuario.id) ||
+        temAcesso(usuario.id)
+      );
 
-      if (!visiveis.length) {
-        listaUsuarios.innerHTML =
-          '<div class="vazio">Nenhum usuário possui acesso aos módulos selecionados.</div>';
-        return;
-      }
+      $('usuarios').innerHTML = lista.length
+        ? lista.map((usuario) =>
+          '<div class="usuario ' +
+            (usuarios.includes(usuario.id) ? 'selecionado' : '') +
+            '" data-usuario="' + esc(usuario.id) + '">' +
+            '<div><strong>' + esc(usuario.username) + '</strong>' +
+            '<small>' + esc(usuario.role) + ' — ' +
+            esc(usuario.email) + '</small></div></div>'
+        ).join('')
+        : '<div class="vazio">Nenhum usuário possui acesso aos módulos selecionados.</div>';
 
-      listaUsuarios.innerHTML = visiveis.map(function(usuario) {
-        return '<div class="usuario ' +
-          (usuario.id === usuarioSelecionado ? 'selecionado' : '') +
-          '" data-usuario="' + seguro(usuario.id) + '">' +
-          '<div><strong>' + seguro(usuario.username) + '</strong>' +
-          '<small>' + seguro(usuario.role) + ' — ' +
-          seguro(usuario.email) + '</small></div></div>';
-      }).join('');
-
-      const escolhido = dados.users.find(function(usuario) {
-        return usuario.id === usuarioSelecionado;
-      });
-
-      botao.disabled = !escolhido || escolhido.role === 'Administrador';
-      carregarPermissoesMarcadas();
+      $('remover').disabled = !usuarios.length;
+      renderPermissoes();
     }
 
-    function renderizarModal() {
-      const termo = document.getElementById('buscaUsuario').value
-        .toLocaleLowerCase('pt-BR');
+    function renderModal() {
+      const termo = $('buscaUsuario').value.toLocaleLowerCase('pt-BR');
 
-      const usuarios = dados.users
-        .filter(function(usuario) {
-          return usuario.role !== 'Administrador';
-        })
-        .filter(function(usuario) {
-          return [usuario.username, usuario.email, usuario.role].some(function(valor) {
-            return String(valor || '')
+      const lista = dados.users
+        .filter((usuario) => usuario.role !== 'Administrador')
+        .filter((usuario) =>
+          [usuario.username, usuario.email, usuario.role].some((valor) =>
+            String(valor || '')
               .toLocaleLowerCase('pt-BR')
-              .includes(termo);
-          });
-        });
+              .includes(termo)
+          )
+        );
 
-      document.getElementById('usuariosModal').innerHTML = usuarios.length
-        ? usuarios.map(function(usuario) {
-          return '<label class="opcao-usuario">' +
-            '<input type="radio" name="usuarioModal" value="' +
-            seguro(usuario.id) + '" ' +
-            (usuario.id === usuarioDoModal ? 'checked' : '') + '>' +
-            '<span><strong>' + seguro(usuario.username) + '</strong>' +
-            '<small>' + seguro(usuario.role) + ' — ' +
-            seguro(usuario.email) + '</small></span></label>';
-        }).join('')
+      $('opcoes').innerHTML = lista.length
+        ? lista.map((usuario) =>
+          '<label class="opcao">' +
+            '<input type="checkbox" data-modal="' + esc(usuario.id) + '" ' +
+            (usuariosModal.includes(usuario.id) ? 'checked' : '') + '>' +
+            '<span><strong>' + esc(usuario.username) + '</strong>' +
+            '<small>' + esc(usuario.role) + ' — ' +
+            esc(usuario.email) + '</small></span></label>'
+        ).join('')
         : '<div class="vazio">Nenhum usuário encontrado.</div>';
     }
 
     async function carregar() {
       try {
         dados = await api('/api/accesses');
-        dados.modules = dados.modules || [];
+
+        dados.modules = (dados.modules || []).filter((modulo) =>
+          modulo.id !== 'INICIO'
+        );
+
         dados.users = dados.users || [];
         dados.grants = dados.grants || [];
 
-        renderizarModulos();
-        renderizarUsuarios();
+        usuarios = usuarios.filter((id) =>
+          dados.users.some((usuario) =>
+            usuario.id === id &&
+            usuario.role !== 'Administrador'
+          )
+        );
+
+        renderModulos();
+        renderUsuarios();
       } catch (erro) {
-        avisar(erro.message, true);
+        aviso(erro.message, true);
       }
     }
 
-    document.getElementById('buscaModulo')
-      .addEventListener('input', renderizarModulos);
+    $('buscaModulo').addEventListener('input', renderModulos);
 
-    listaModulos.addEventListener('change', function(evento) {
+    $('modulos').addEventListener('change', (evento) => {
       const campo = evento.target.closest('[data-modulo]');
       if (!campo) return;
 
       const id = campo.dataset.modulo;
 
-      modulosSelecionados = campo.checked
-        ? [...new Set([...modulosSelecionados, id])]
-        : modulosSelecionados.filter(function(item) {
-          return item !== id;
-        });
+      modulos = campo.checked
+        ? [...new Set([...modulos, id])]
+        : modulos.filter((valor) => valor !== id);
 
-      renderizarModulos();
-      renderizarUsuarios();
+      renderModulos();
+      renderUsuarios();
     });
 
-    document.getElementById('todosModulos')
-      .addEventListener('change', function(evento) {
-        const termo = document.getElementById('buscaModulo').value
-          .toLocaleLowerCase('pt-BR');
+    $('todosModulos').addEventListener('change', (evento) => {
+      const termo = $('buscaModulo').value.toLocaleLowerCase('pt-BR');
 
-        dados.modules
-          .filter(function(modulo) {
-            return String(modulo.name || '')
-              .toLocaleLowerCase('pt-BR')
-              .includes(termo);
-          })
-          .forEach(function(modulo) {
-            if (evento.target.checked &&
-                !modulosSelecionados.includes(modulo.id)) {
-              modulosSelecionados.push(modulo.id);
-            }
+      dados.modules
+        .filter((modulo) =>
+          String(modulo.name || '')
+            .toLocaleLowerCase('pt-BR')
+            .includes(termo)
+        )
+        .forEach((modulo) => {
+          if (evento.target.checked && !modulos.includes(modulo.id)) {
+            modulos.push(modulo.id);
+          }
 
-            if (!evento.target.checked) {
-              modulosSelecionados = modulosSelecionados.filter(function(id) {
-                return id !== modulo.id;
-              });
-            }
-          });
+          if (!evento.target.checked) {
+            modulos = modulos.filter((id) => id !== modulo.id);
+          }
+        });
 
-        renderizarModulos();
-        renderizarUsuarios();
-      });
+      renderModulos();
+      renderUsuarios();
+    });
 
-    listaUsuarios.addEventListener('click', function(evento) {
+    $('usuarios').addEventListener('click', (evento) => {
       const item = evento.target.closest('[data-usuario]');
       if (!item) return;
 
-      usuarioSelecionado = item.dataset.usuario;
-      renderizarUsuarios();
+      const usuario = dados.users.find((registro) =>
+        registro.id === item.dataset.usuario
+      );
+
+      if (!usuario || usuario.role === 'Administrador') return;
+
+      usuarios = usuarios.includes(usuario.id)
+        ? usuarios.filter((id) => id !== usuario.id)
+        : [...usuarios, usuario.id];
+
+      renderUsuarios();
     });
 
-    document.getElementById('adicionarUsuario')
-      .addEventListener('click', function() {
-        usuarioDoModal = usuarioSelecionado;
-        document.getElementById('buscaUsuario').value = '';
-        renderizarModal();
-        modal.classList.add('visivel');
-      });
+    $('adicionar').addEventListener('click', () => {
+      usuariosModal = [...usuarios];
+      $('buscaUsuario').value = '';
+      renderModal();
+      $('modal').classList.add('visivel');
+    });
 
-    document.getElementById('fecharModal')
-      .addEventListener('click', function() {
-        modal.classList.remove('visivel');
-      });
+    $('fechar').addEventListener('click', () =>
+      $('modal').classList.remove('visivel')
+    );
 
-    document.getElementById('cancelarModal')
-      .addEventListener('click', function() {
-        modal.classList.remove('visivel');
-      });
+    $('cancelar').addEventListener('click', () =>
+      $('modal').classList.remove('visivel')
+    );
 
-    modal.addEventListener('click', function(evento) {
-      if (evento.target === modal) {
-        modal.classList.remove('visivel');
+    $('modal').addEventListener('click', (evento) => {
+      if (evento.target === $('modal')) {
+        $('modal').classList.remove('visivel');
       }
     });
 
-    document.getElementById('buscaUsuario')
-      .addEventListener('input', renderizarModal);
+    $('buscaUsuario').addEventListener('input', renderModal);
 
-    document.getElementById('usuariosModal')
-      .addEventListener('change', function(evento) {
-        if (evento.target.name === 'usuarioModal') {
-          usuarioDoModal = evento.target.value;
-        }
-      });
+    $('opcoes').addEventListener('change', (evento) => {
+      const campo = evento.target.closest('[data-modal]');
+      if (!campo) return;
 
-    document.getElementById('confirmarUsuario')
-      .addEventListener('click', function() {
-        if (!usuarioDoModal) {
-          avisar('Selecione um usuário.', true);
-          return;
-        }
+      const id = campo.dataset.modal;
 
-        usuarioSelecionado = usuarioDoModal;
-        modal.classList.remove('visivel');
-        renderizarUsuarios();
-      });
+      usuariosModal = campo.checked
+        ? [...new Set([...usuariosModal, id])]
+        : usuariosModal.filter((valor) => valor !== id);
+    });
 
-    document.getElementById('salvar')
-      .addEventListener('click', async function() {
-        if (!modulosSelecionados.length) {
-          avisar('Selecione ao menos um módulo.', true);
-          return;
-        }
+    $('confirmar').addEventListener('click', () => {
+      if (!usuariosModal.length) {
+        aviso('Selecione ao menos um usuário.', true);
+        return;
+      }
 
-        if (!usuarioSelecionado) {
-          avisar('Selecione um usuário.', true);
-          return;
-        }
+      usuarios = [...usuariosModal];
+      $('modal').classList.remove('visivel');
+      renderUsuarios();
+    });
 
-        const usuario = dados.users.find(function(item) {
-          return item.id === usuarioSelecionado;
+    $('salvar').addEventListener('click', async () => {
+      if (!modulos.length) {
+        aviso('Selecione ao menos um módulo.', true);
+        return;
+      }
+
+      if (!usuarios.length) {
+        aviso('Selecione ao menos um usuário.', true);
+        return;
+      }
+
+      const permissions = {
+        view: $('view').checked,
+        create: $('create').checked,
+        update: $('update').checked,
+        delete: $('delete').checked,
+        configure: $('configure').checked
+      };
+
+      if (!Object.values(permissions).some(Boolean)) {
+        aviso('Selecione ao menos um tipo de acesso.', true);
+        return;
+      }
+
+      try {
+        await api('/api/accesses', {
+          method: 'PUT',
+          body: JSON.stringify({
+            userIds: usuarios,
+            moduleIds: modulos,
+            permissions
+          })
         });
 
-        if (!usuario || usuario.role === 'Administrador') {
-          avisar('Administradores já possuem todos os acessos.', true);
-          return;
-        }
+        aviso('Acessos salvos para todos os usuários selecionados.', false);
+        await carregar();
+      } catch (erro) {
+        aviso(erro.message, true);
+      }
+    });
 
-        const permissions = {
-          view: document.getElementById('view').checked,
-          create: document.getElementById('create').checked,
-          update: document.getElementById('update').checked,
-          delete: document.getElementById('delete').checked,
-          configure: document.getElementById('configure').checked
-        };
+    $('remover').addEventListener('click', async () => {
+      if (!usuarios.length) return;
 
-        try {
-          await api('/api/accesses', {
-            method: 'PUT',
-            body: JSON.stringify({
-              userId: usuarioSelecionado,
-              moduleIds: modulosSelecionados,
-              permissions: permissions
-            })
-          });
+      const nomes = dados.users
+        .filter((usuario) => usuarios.includes(usuario.id))
+        .map((usuario) => usuario.username)
+        .join(', ');
 
-          avisar('Acessos salvos com sucesso.', false);
-          await carregar();
-        } catch (erro) {
-          avisar(erro.message, true);
-        }
-      });
+      if (!confirm('Remover todos os acessos de: ' + nomes + '?')) {
+        return;
+      }
 
-    document.getElementById('removerUsuario')
-      .addEventListener('click', async function() {
-        const usuario = dados.users.find(function(item) {
-          return item.id === usuarioSelecionado;
+      try {
+        await api('/api/accesses', {
+          method: 'DELETE',
+          body: JSON.stringify({ userIds: usuarios })
         });
 
-        if (!usuario ||
-            !confirm('Remover todos os acessos de "' + usuario.username + '"?')) {
-          return;
-        }
-
-        try {
-          await api('/api/accesses/' + encodeURIComponent(usuario.id), {
-            method: 'DELETE'
-          });
-
-          usuarioSelecionado = null;
-          avisar('Acessos removidos com sucesso.', false);
-          await carregar();
-        } catch (erro) {
-          avisar(erro.message, true);
-        }
-      });
+        usuarios = [];
+        aviso('Acessos removidos com sucesso.', false);
+        await carregar();
+      } catch (erro) {
+        aviso(erro.message, true);
+      }
+    });
 
     carregar();
   </script>
