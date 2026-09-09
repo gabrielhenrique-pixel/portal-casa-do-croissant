@@ -924,7 +924,7 @@ async function listarDevolucoesDoSankhya(request, env) {
       "  AND CAB.TIPMOV = 'V'",
       "  AND CAB.STATUSNOTA = 'L'",
       "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'"
-    ].join('\n');
+    ].join(String.fromCharCode(10));
 
     const resultados = await Promise.all([
       executarConsultaSankhya(accessToken, sqlDevolucoes),
@@ -1041,13 +1041,17 @@ if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
 }
 
 function converterDataSankhya(valor) {
-  const formatoIso = texto.match(/(\\d{4})-(\\d{2})-(\\d{2})/);
+  const texto = String(valor || '');
+
+  const formatoIso = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
 
   if (formatoIso) {
-    return formatoIso[1] + '-' + formatoIso[2] + '-' + formatoIso[3];
+    return formatoIso[1] + '-' +
+      formatoIso[2] + '-' +
+      formatoIso[3];
   }
 
- const numeros = texto.replace(/\D/g, '');
+  const numeros = texto.replace(/\D/g, '');
 
   if (numeros.length >= 8) {
     return numeros.slice(4, 8) + '-' +
