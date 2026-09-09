@@ -910,7 +910,7 @@ async function listarDevolucoesDoSankhya(request, env) {
       "  AND CAB.TIPMOV = 'D'",
       "  AND CAB.STATUSNOTA = 'L'",
       'ORDER BY CAB.DTNEG DESC'
-    ].join('\n');
+    ].join('\n'); 
 
     const sqlFaturamento = [
       'SELECT',
