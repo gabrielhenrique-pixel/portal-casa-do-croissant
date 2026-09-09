@@ -4,6 +4,7 @@ import { usuariosPage } from './pages/usuarios.js';
 import { registroUsuarioPage } from './pages/registro-usuario.js';
 import { historicoAcoesPage } from './pages/historico-acoes.js';
 import { devolucoesPage } from './pages/devolucoes.js';
+import { acessosPage } from './pages/acessos.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -124,6 +125,30 @@ export default {
       if (permissionMatch && request.method === 'PUT') {
         return saveUserPermissions(request, env, permissionMatch[1]);
       }
+
+      if (url.pathname === '/acessos' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return acessosPage();
+}
+
+if (url.pathname === '/api/accesses' && request.method === 'GET') {
+  return carregarAcessos(request, env);
+}
+
+if (url.pathname === '/api/accesses' && request.method === 'PUT') {
+  return salvarAcessos(request, env);
+}
+
+const acessoUsuarioMatch = url.pathname.match(/^\/api\/accesses\/([^/]+)$/);
+
+if (acessoUsuarioMatch && request.method === 'DELETE') {
+  return removerAcessosDoUsuario(request, env, acessoUsuarioMatch[1]);
+}
 
       if (url.pathname === '/historico-acoes' && request.method === 'GET') {
   const session = await getSession(request, env);
@@ -483,6 +508,171 @@ async function saveUserPermissions(request, env, userId) {
   }
   if (commands.length) await env.DB.batch(commands);
   await writeAudit(env, administrator.username, 'PERMISSOES_ATUALIZADAS', `Permissões atualizadas para ${targetUser.username}.`);
+  return json({ ok: true });
+}
+
+async function carregarAcessos(request, env) {
+  await requireAdministrator(request, env);
+
+  const resultados = await Promise.all([
+    env.DB.prepare(
+      'SELECT id, name, sort_order FROM modules ORDER BY sort_order'
+    ).all(),
+
+    env.DB.prepare(
+      `SELECT id, username, email, role
+       FROM users
+       ORDER BY LOWER(username)`
+    ).all(),
+
+    env.DB.prepare(
+      `SELECT user_id, module_id,
+              can_view, can_create, can_update,
+              can_delete, can_configure
+       FROM user_module_permissions`
+    ).all()
+  ]);
+
+  return json({
+    modules: resultados[0].results || [],
+    users: resultados[1].results || [],
+    grants: resultados[2].results || []
+  });
+}
+
+async function salvarAcessos(request, env) {
+  const administrator = await requireAdministrator(request, env);
+  const data = await bodyAsJson(request);
+
+  const userId = String(data.userId || '');
+  const moduleIds = Array.isArray(data.moduleIds)
+    ? [...new Set(data.moduleIds.map(String))]
+    : [];
+
+  if (!userId) {
+    return json({ error: 'Selecione um usuário.' }, 400);
+  }
+
+  if (!moduleIds.length) {
+    return json({ error: 'Selecione ao menos um módulo.' }, 400);
+  }
+
+  const usuario = await env.DB.prepare(
+    'SELECT id, username, role FROM users WHERE id = ?'
+  ).bind(userId).first();
+
+  if (!usuario) {
+    return json({ error: 'Usuário não encontrado.' }, 404);
+  }
+
+  if (usuario.role === 'Administrador') {
+    return json({
+      error: 'Administradores já possuem todos os acessos.'
+    }, 400);
+  }
+
+  const modulosDisponiveis = await env.DB.prepare(
+    'SELECT id FROM modules'
+  ).all();
+
+  const idsValidos = new Set(
+    (modulosDisponiveis.results || []).map(function(modulo) {
+      return modulo.id;
+    })
+  );
+
+  const selecionados = moduleIds.filter(function(id) {
+    return idsValidos.has(id);
+  });
+
+  if (!selecionados.length) {
+    return json({ error: 'Nenhum módulo válido foi selecionado.' }, 400);
+  }
+
+  const permissoes = data.permissions || {};
+  const permitido = function(valor) {
+    return valor ? 1 : 0;
+  };
+
+  const atualizadoEm = new Date().toISOString();
+
+  const comandos = selecionados.map(function(moduleId) {
+    return env.DB.prepare(
+      `INSERT INTO user_module_permissions
+       (user_id, module_id, can_view, can_create, can_update,
+        can_delete, can_configure, updated_at, updated_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, module_id) DO UPDATE SET
+         can_view = excluded.can_view,
+         can_create = excluded.can_create,
+         can_update = excluded.can_update,
+         can_delete = excluded.can_delete,
+         can_configure = excluded.can_configure,
+         updated_at = excluded.updated_at,
+         updated_by = excluded.updated_by`
+    ).bind(
+      userId,
+      moduleId,
+      permitido(permissoes.view),
+      permitido(permissoes.create),
+      permitido(permissoes.update),
+      permitido(permissoes.delete),
+      permitido(permissoes.configure),
+      atualizadoEm,
+      administrator.username
+    );
+  });
+
+  comandos.push(
+    env.DB.prepare(
+      'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(),
+      atualizadoEm,
+      administrator.username,
+      'ACESSOS_ATUALIZADOS',
+      'Acessos atualizados para ' + usuario.username + '.'
+    )
+  );
+
+  await env.DB.batch(comandos);
+
+  return json({ ok: true });
+}
+
+async function removerAcessosDoUsuario(request, env, userId) {
+  const administrator = await requireAdministrator(request, env);
+
+  const usuario = await env.DB.prepare(
+    'SELECT id, username, role FROM users WHERE id = ?'
+  ).bind(userId).first();
+
+  if (!usuario) {
+    return json({ error: 'Usuário não encontrado.' }, 404);
+  }
+
+  if (usuario.role === 'Administrador') {
+    return json({
+      error: 'Administradores já possuem todos os acessos.'
+    }, 400);
+  }
+
+  await env.DB.batch([
+    env.DB.prepare(
+      'DELETE FROM user_module_permissions WHERE user_id = ?'
+    ).bind(userId),
+
+    env.DB.prepare(
+      'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
+    ).bind(
+      crypto.randomUUID(),
+      new Date().toISOString(),
+      administrator.username,
+      'ACESSOS_REMOVIDOS',
+      'Todos os acessos de ' + usuario.username + ' foram removidos.'
+    )
+  ]);
+
   return json({ ok: true });
 }
 
@@ -1081,6 +1271,11 @@ if (view === 'historico') {
 
 if (view === 'devolucoes') {
   window.location.href = '/devolucoes';
+  return;
+}
+
+if (view === 'acessos') {
+  window.location.href = '/acessos';
   return;
 }
          
