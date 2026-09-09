@@ -781,7 +781,6 @@ if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
 
 function converterDataSankhya(valor) {
   const formatoIso = texto.match(/(\\d{4})-(\\d{2})-(\\d{2})/);
-  const formatoIso = texto.match(/(\\d{4})-(\\d{2})-(\\d{2})/);
 
   if (formatoIso) {
     return formatoIso[1] + '-' + formatoIso[2] + '-' + formatoIso[3];
