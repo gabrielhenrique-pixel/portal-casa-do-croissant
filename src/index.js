@@ -1285,8 +1285,8 @@ body.inicializando #inicializacao {
       <section class="conteudo">
         <header class="topo"><div><h1 id="tituloPagina">Página inicial</h1><p id="greeting"></p></div><span id="role" class="tag"></span></header>
         <section id="viewInicio" class="visao">
-          <div class="boas-vindas"><h2>Portal em migração</h2><p>A autenticação e as permissões já estão protegidas no novo portal. Agora você pode cadastrar usuários e controlar o acesso de cada pessoa.</p></div>
-          <div class="grade"><div class="cartao-modulo"><strong>Usuários</strong><span>Cadastre a equipe no novo portal.</span></div><div class="cartao-modulo"><strong>Acessos</strong><span>Defina quais módulos cada pessoa pode utilizar.</span></div><div class="cartao-modulo"><strong>Próximas etapas</strong><span>Investimentos, devoluções e histórico serão migrados a seguir.</span></div></div>
+          <div class="boas-vindas"><h2>Portal em migração</h2><p></p></div>
+          <div class="grade"><div class="cartao-modulo"><strong>Usuários</strong><span></span></div><div class="cartao-modulo"><strong>Acessos</strong><span></span></div><div class="cartao-modulo"><strong>Próximas etapas</strong><span></span></div></div>
         </section>
         <section id="viewUsuarios" class="visao oculto">
           <div class="painel-cabecalho"><div><h2>Usuários cadastrados</h2><p>Cadastre os acessos da equipe ao novo portal.</p></div><button id="novoUsuario" class="acao" type="button">Novo usuário</button></div>
