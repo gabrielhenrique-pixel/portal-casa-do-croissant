@@ -1005,8 +1005,8 @@ async function listarVendasRentabilidadeSankhya(request, env) {
       '  PRO.CODPROD AS COD_PRODUTO,',
       '  PRO.DESCRPROD AS PRODUTO,',
       '  ITE.QTDNEG AS QTD_NEG,',
-      '  NVL(ITE.VLRTOT, 0) AS VLR_LIQUIDO,',
-      '  NVL(ITE.VLRST, 0) AS VLR_ST',
+      '  (NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) AS VLR_LIQUIDO,',
+      '  NVL(ITE.VLRSUBST, 0) AS VLR_ST',
       'FROM TGFITE ITE',
       'INNER JOIN TGFCAB CAB ON CAB.NUNOTA = ITE.NUNOTA',
       'INNER JOIN TGFTOP TOP',
@@ -1018,15 +1018,15 @@ async function listarVendasRentabilidadeSankhya(request, env) {
       "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
       "  AND CAB.TIPMOV = 'V'",
       "  AND CAB.STATUSNOTA = 'L'",
-      "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'",
+      '  AND CAB.CODTIPOPER = 1101',
       'ORDER BY CAB.DTNEG DESC, CAB.NUNOTA DESC, ITE.SEQUENCIA ASC'
     ].join(String.fromCharCode(10));
 
     const linhas = await executarConsultaSankhya(accessToken, sqlVendas);
 
     const items = linhas.map(function(linha) {
-      const valorLiquido = numeroSankhya(linha[8]);
-      const valorSt = numeroSankhya(linha[9]);
+      const valorLiquido = numeroSankhya(linha[7]);
+      const valorSt = numeroSankhya(linha[8]);
 
       return {
         data: converterDataVendasRentabilidade(linha[0]),
