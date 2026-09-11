@@ -187,6 +187,9 @@ if (url.pathname === '/api/audit-log' && request.method === 'GET') {
 if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   return listarDevolucoesDoSankhya(request, env);
 }
+      if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
+  return listarVendasRentabilidadeSankhya(request, env);
+}
 
       return new Response(APP_HTML, {
         headers: {
@@ -960,6 +963,131 @@ async function listarDevolucoesDoSankhya(request, env) {
   }, 502);
 }
 }
+
+async function listarVendasRentabilidadeSankhya(request, env) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  if (!env.SANKHYA_CLIENT_ID ||
+      !env.SANKHYA_CLIENT_SECRET ||
+      !env.SANKHYA_X_TOKEN) {
+    return json({
+      error: 'A integração com o Sankhya ainda não foi configurada.'
+    }, 503);
+  }
+
+  const url = new URL(request.url);
+  const hoje = new Date();
+  const mesAnterior = new Date(hoje);
+  mesAnterior.setMonth(mesAnterior.getMonth() - 1);
+
+  const inicio = dataSankhyaValida(
+    url.searchParams.get('inicio'),
+    mesAnterior
+  );
+  const fim = dataSankhyaValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  try {
+    const accessToken = await obterTokenSankhya(env);
+
+    const sqlVendas = [
+      'SELECT',
+      '  TRUNC(CAB.DTNEG) AS DATA,',
+      '  CAB.NUNOTA AS NUMERO_NOTA,',
+      '  PAR.CODPARC AS COD_PARCEIRO,',
+      '  PAR.NOMEPARC AS PARCEIRO,',
+      '  PRO.CODPROD AS COD_PRODUTO,',
+      '  PRO.DESCRPROD AS PRODUTO,',
+      '  ITE.QTDNEG AS QTD_NEG,',
+      '  NVL(ITE.VLRTOT, 0) AS VLR_LIQUIDO,',
+      '  NVL(ITE.VLRST, 0) AS VLR_ST',
+      'FROM TGFITE ITE',
+      'INNER JOIN TGFCAB CAB ON CAB.NUNOTA = ITE.NUNOTA',
+      'INNER JOIN TGFTOP TOP',
+      '  ON TOP.CODTIPOPER = CAB.CODTIPOPER',
+      ' AND TOP.DHALTER = CAB.DHTIPOPER',
+      'LEFT JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC',
+      'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+      "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+      "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+      "  AND CAB.TIPMOV = 'V'",
+      "  AND CAB.STATUSNOTA = 'L'",
+      "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'",
+      'ORDER BY CAB.DTNEG DESC, CAB.NUNOTA DESC, ITE.SEQUENCIA ASC'
+    ].join(String.fromCharCode(10));
+
+    const linhas = await executarConsultaSankhya(accessToken, sqlVendas);
+
+    const items = linhas.map(function(linha) {
+      const valorLiquido = numeroSankhya(linha[8]);
+      const valorSt = numeroSankhya(linha[9]);
+
+      return {
+        data: converterDataVendasRentabilidade(linha[0]),
+        numeroNota: String(linha[1] || ''),
+        codigoParceiro: String(linha[2] || ''),
+        parceiro: String(linha[3] || ''),
+        codigoProduto: String(linha[4] || ''),
+        produto: String(linha[5] || ''),
+        quantidade: numeroSankhya(linha[6]),
+        valorLiquido: valorLiquido,
+        valorSt: valorSt,
+        faturamentoBruto: valorLiquido + valorSt
+      };
+    });
+
+    const resumo = items.reduce(function(total, item) {
+      total.valorLiquido += item.valorLiquido;
+      total.valorSt += item.valorSt;
+      total.faturamentoBruto += item.faturamentoBruto;
+      return total;
+    }, {
+      valorLiquido: 0,
+      valorSt: 0,
+      faturamentoBruto: 0
+    });
+
+    return json({
+      inicio: inicio,
+      fim: fim,
+      totalItens: items.length,
+      valorLiquido: resumo.valorLiquido,
+      valorSt: resumo.valorSt,
+      faturamentoBruto: resumo.faturamentoBruto,
+      items: items
+    });
+  } catch (error) {
+    console.error('Falha na consulta de vendas para rentabilidade:', error);
+
+    return json({
+      error: error.message || 'Não foi possível consultar as vendas no Sankhya.'
+    }, 502);
+  }
+}
+
+function converterDataVendasRentabilidade(valor) {
+  const texto = String(valor || '').trim();
+  const iso = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
+
+  if (iso) {
+    return iso[1] + '-' + iso[2] + '-' + iso[3];
+  }
+
+  const brasileiro = texto.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+
+  if (brasileiro) {
+    return brasileiro[3] + '-' + brasileiro[2] + '-' + brasileiro[1];
+  }
+
+  return '';
+}
+
 
 async function obterTokenSankhya(env) {
   const resposta = await fetch('https://api.sankhya.com.br/authenticate', {
