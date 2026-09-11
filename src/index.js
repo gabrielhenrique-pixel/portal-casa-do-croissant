@@ -1073,16 +1073,29 @@ async function listarVendasRentabilidadeSankhya(request, env) {
 
 function converterDataVendasRentabilidade(valor) {
   const texto = String(valor || '').trim();
-  const iso = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
 
+  const iso = texto.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (iso) {
     return iso[1] + '-' + iso[2] + '-' + iso[3];
   }
 
   const brasileiro = texto.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-
   if (brasileiro) {
     return brasileiro[3] + '-' + brasileiro[2] + '-' + brasileiro[1];
+  }
+
+  const numeros = texto.replace(/\D/g, '').slice(0, 8);
+
+  if (/^(19|20)\d{6}$/.test(numeros)) {
+    return numeros.slice(0, 4) + '-' +
+      numeros.slice(4, 6) + '-' +
+      numeros.slice(6, 8);
+  }
+
+  if (/^\d{8}$/.test(numeros)) {
+    return numeros.slice(4, 8) + '-' +
+      numeros.slice(2, 4) + '-' +
+      numeros.slice(0, 2);
   }
 
   return '';
