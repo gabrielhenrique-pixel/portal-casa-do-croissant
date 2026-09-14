@@ -11,6 +11,12 @@ import {
   carregarClientesRentabilidade,
   atualizarPercentuaisClienteRentabilidade
 } from './clientes-rentabilidade.js';
+import { margemRedePage } from './pages/margem-rede.js';
+import { listarMargemRedeSankhya } from './margem-rede-service.js';
+import {
+  redesRentabilidade,
+  salvarInvestimentoRentabilidade
+} from './investimentos-rentabilidade.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -62,7 +68,8 @@ export default {
           return redirectToPortal();
         }
 
-        return investimentosPage(session.username);
+        const redes = await redesRentabilidade(env);
+        return investimentosPage(session.username, redes);
       }
 
       if (url.pathname === '/investimentos-pendentes' && request.method === 'GET') {
@@ -210,6 +217,72 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
   const session = await getSession(request, env);
   return listarRentabilidadeSkuSankhya(request, env, session);
+}
+
+      if (url.pathname === '/margem-rede' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return margemRedePage();
+}
+
+if (
+  url.pathname === '/api/rentabilidade/margem-rede' &&
+  request.method === 'GET'
+) {
+  const session = await getSession(request, env);
+  return listarMargemRedeSankhya(request, env, session);
+}
+
+if (url.pathname === '/api/investimentos' && request.method === 'POST') {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const modules = await getModulesForUser(env, session);
+  const investimentos = modules.find(
+    (module) => module.id === 'INVESTIMENTOS'
+  );
+
+  if (!investimentos?.permissions.create) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const dados = await bodyAsJson(request);
+    const resultado = await salvarInvestimentoRentabilidade(
+      env,
+      dados,
+      session.username
+    );
+
+    if (resultado.error) {
+      return json({ error: resultado.error }, resultado.status || 400);
+    }
+
+    await writeAudit(
+      env,
+      session.username,
+      'INVESTIMENTO_CRIADO',
+      'Rede: ' + resultado.rede +
+        ' | Período: ' + resultado.inicio + ' até ' + resultado.fim +
+        ' | Tipo do valor: ' + resultado.tipoValor
+    );
+
+    return json({
+      ok: true,
+      mensagem: 'Investimento registrado com sucesso.'
+    }, 201);
+  } catch (error) {
+    return json({
+      error: error.message || 'Não foi possível salvar o investimento.'
+    }, 400);
+  }
 }
 
 if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
