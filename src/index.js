@@ -5,12 +5,15 @@ import { registroUsuarioPage } from './pages/registro-usuario.js';
 import { historicoAcoesPage } from './pages/historico-acoes.js';
 import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
+import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
+import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
 import {
   carregarClientesRentabilidade,
   atualizarPercentuaisClienteRentabilidade
 } from './clientes-rentabilidade.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
+
 
 
 export default {
@@ -193,6 +196,20 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
+}
+      if (url.pathname === '/rentabilidade-sku' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return rentabilidadeSkuPage();
+}
+
+if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
+  const session = await getSession(request, env);
+  return listarRentabilidadeSkuSankhya(request, env, session);
 }
 
 if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
