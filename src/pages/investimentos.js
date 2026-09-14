@@ -12,8 +12,8 @@ function escapeHtml(value) {
   })[character]);
 }
 
-export function investimentosPage(username) {
-  const redes = REDES.map((rede) => `<option value="${rede}"></option>`).join('');
+export function investimentosPage(username, redesPermitidas = REDES) {
+  const redes = redesPermitidas.map((rede) => `<option value="${escapeHtml(rede)}"></option>`).join('');
   return new Response(`<!doctype html>
 <html lang="pt-BR">
   <head>
@@ -56,7 +56,57 @@ export function investimentosPage(username) {
       const form = document.getElementById('formulario'); const mensagem = document.getElementById('mensagem'); const valor = document.getElementById('valor');
       function numero(texto) { const valorLimpo = String(texto || '').replace('R$', '').trim(); return valorLimpo.includes(',') ? Number(valorLimpo.replace(/\\./g, '').replace(',', '.')) : Number(valorLimpo); }
       valor.addEventListener('blur', () => { const atual = numero(valor.value); if (Number.isFinite(atual) && atual > 0) valor.value = atual.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); });
-      form.addEventListener('submit', (event) => { event.preventDefault(); const inicio = document.getElementById('inicio').value; const fim = document.getElementById('fim').value; if (fim < inicio) { mensagem.textContent = 'A data final não pode ser anterior à data inicial.'; mensagem.classList.add('visivel'); return; } mensagem.textContent = 'Página de investimentos criada. A ligação segura com a planilha será adicionada antes de liberar o salvamento.'; mensagem.classList.add('visivel'); });
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const inicio = document.getElementById('inicio').value;
+        const fim = document.getElementById('fim').value;
+        const valorNumerico = numero(valor.value);
+        if (fim < inicio) {
+          mensagem.textContent = 'A data final não pode ser anterior à data inicial.';
+          mensagem.classList.add('visivel');
+          return;
+        }
+        if (!Number.isFinite(valorNumerico) || valorNumerico <= 0) {
+          mensagem.textContent = 'Informe um valor válido.';
+          mensagem.classList.add('visivel');
+          return;
+        }
+        const botao = form.querySelector('button[type="submit"]');
+        if (botao.disabled) return;
+        botao.disabled = true;
+        botao.textContent = 'Salvando...';
+        mensagem.textContent = '';
+        mensagem.classList.remove('visivel');
+        try {
+          const resposta = await fetch('/api/investimentos', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              inicio,
+              fim,
+              rede: document.getElementById('rede').value,
+              tipo: document.getElementById('tipo').value,
+              tipoValor: document.getElementById('tipoValor').value,
+              valor: valorNumerico,
+              responsavel: document.getElementById('responsavel').value,
+              status: document.getElementById('status').value
+            })
+          });
+          const dados = await resposta.json();
+          if (!resposta.ok) {
+            throw new Error(dados.error || 'Não foi possível salvar o investimento.');
+          }
+          form.reset();
+          mensagem.textContent = dados.mensagem || 'Investimento registrado com sucesso.';
+        } catch (erro) {
+          mensagem.textContent = erro.message || 'Não foi possível salvar o investimento.';
+        } finally {
+          mensagem.classList.add('visivel');
+          botao.disabled = false;
+          botao.textContent = 'Salvar registro';
+        }
+      });
     </script>
   </body>
 </html>`, { headers: { 'content-type': 'text/html; charset=UTF-8', 'x-content-type-options': 'nosniff', 'referrer-policy': 'same-origin' } });
