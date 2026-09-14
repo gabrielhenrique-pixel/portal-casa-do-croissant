@@ -5,6 +5,10 @@ import { registroUsuarioPage } from './pages/registro-usuario.js';
 import { historicoAcoesPage } from './pages/historico-acoes.js';
 import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
+import {
+  carregarClientesRentabilidade,
+  atualizarPercentuaisClienteRentabilidade
+} from './clientes-rentabilidade.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -189,6 +193,48 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
+}
+
+if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
+  await requireAdministrator(request, env);
+
+  const clientes = await carregarClientesRentabilidade(env);
+
+  return json({
+    total: clientes.length,
+    clientes
+  });
+}
+
+const clienteRentabilidadeMatch =
+  url.pathname.match(/^\/api\/rentabilidade\/clientes\/([^/]+)\/percentuais$/);
+
+if (clienteRentabilidadeMatch && request.method === 'PUT') {
+  const administrador = await requireAdministrator(request, env);
+  const dados = await bodyAsJson(request);
+  const resultado = await atualizarPercentuaisClienteRentabilidade(
+    env,
+    clienteRentabilidadeMatch[1],
+    dados,
+    administrador.username
+  );
+
+  if (resultado.error) {
+    return json({ error: resultado.error }, resultado.status);
+  }
+
+  await writeAudit(
+    env,
+    administrador.username,
+    'RENTABILIDADE_CLIENTE_PERCENTUAIS_ATUALIZADOS',
+    'Percentuais atualizados para ' +
+      resultado.cliente.cliente +
+      ' (parceiro ' +
+      resultado.cliente.codigoParceiro +
+      ').'
+  );
+
+  return json({ cliente: resultado.cliente });
 }
 
       return new Response(APP_HTML, {
@@ -994,7 +1040,12 @@ async function listarVendasRentabilidadeSankhya(request, env) {
   );
 
   try {
-    const accessToken = await obterTokenSankhya(env);
+  const clientes = await carregarClientesRentabilidade(env);
+  const clientesPorCodigo = new Map(
+    clientes.map((cliente) => [cliente.codigoParceiro, cliente])
+  );
+
+  const accessToken = await obterTokenSankhya(env);
 
     const sqlVendas = [
       'SELECT',
@@ -1025,14 +1076,30 @@ async function listarVendasRentabilidadeSankhya(request, env) {
     const linhas = await executarConsultaSankhya(accessToken, sqlVendas);
 
     const items = linhas.map(function(linha) {
-      const valorLiquido = numeroSankhya(linha[7]);
-      const valorSt = numeroSankhya(linha[8]);
+    const valorLiquido = numeroSankhya(linha[7]);
+    const valorSt = numeroSankhya(linha[8]);
+    const clienteCadastrado = clientesPorCodigo.get(
+  String(linha[2] || '')
+);
 
       return {
         data: converterDataVendasRentabilidade(linha[0]),
         numeroNota: String(linha[1] || ''),
         codigoParceiro: String(linha[2] || ''),
         parceiro: String(linha[3] || ''),
+        cliente: clienteCadastrado
+        ? clienteCadastrado.cliente
+        : String(linha[3] || ''),
+        rede: clienteCadastrado ? clienteCadastrado.rede : null,
+        percentualContrato: clienteCadastrado
+        ? clienteCadastrado.percentualContrato
+        : null,
+        percentualPromotoria: clienteCadastrado
+        ? clienteCadastrado.percentualPromotoria
+        : null,
+        percentualComissao: clienteCadastrado
+        ? clienteCadastrado.percentualComissao
+        : null,
         codigoProduto: String(linha[4] || ''),
         produto: String(linha[5] || ''),
         quantidade: numeroSankhya(linha[6]),
