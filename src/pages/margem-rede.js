@@ -212,7 +212,6 @@ export function margemRedePage() {
     <header class="faixa-titulo">
       <h1>RESUMO DE RENTABILIDADE | REDE</h1>
     </header>
-    <p class="nota">A coluna Rede é mantida no Cadastro_Clientes. Esta aba alimenta o Dashboard.</p>
 
     <form class="controles" id="formFiltros">
       <label class="campo" for="inicio">
