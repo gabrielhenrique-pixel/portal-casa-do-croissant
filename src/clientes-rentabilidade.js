@@ -1074,3 +1074,4 @@ export async function atualizarPercentuaisClienteRentabilidade(
 
   return { status: 200, cliente };
 }
+
