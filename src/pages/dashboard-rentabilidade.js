@@ -506,6 +506,61 @@ export function dashboardRentabilidadePage() {
 .impacto:nth-child(3) strong::before {
   background:#087ac1;
 }
+.painel-impacto {
+  width:400px;
+  max-width:100%;
+  min-height:225px;
+  justify-self:center;
+  padding:10px 5px 15px;
+  border-radius:32px;
+}
+
+.painel-impacto h2 {
+  font-size:10px;
+}
+
+.painel-impacto .impactos {
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:0;
+  margin-top:18px;
+}
+
+.painel-impacto .impacto {
+  text-align:center;
+}
+
+.painel-impacto .impacto h3 {
+  margin:0 0 14px;
+  color:#5e6164;
+  font-size:7px;
+  text-transform:uppercase;
+}
+
+.painel-impacto .rosca {
+  width:100px;
+  height:100px;
+}
+
+.painel-impacto .rosca:after {
+  width:50px;
+  height:50px;
+}
+
+.painel-impacto .rosca span {
+  font-size:13px;
+}
+
+.painel-impacto .impacto strong {
+  margin-top:10px;
+  font-size:11px;
+}
+
+.painel-impacto .impacto strong::before {
+  width:11px;
+  height:11px;
+  margin-right:8px;
+}
 
     .acoes {
       display:flex;
@@ -700,8 +755,8 @@ export function dashboardRentabilidadePage() {
           </div>
         </article>
 
-        <article class="painel">
-          <h2>IMPACTO NO FATURAMENTO</h2>
+        <article class="painel painel-impacto">
+  <h2>IMPACTO NO FATURAMENTO</h2>
 
           <div class="impactos">
             <div class="impacto">
