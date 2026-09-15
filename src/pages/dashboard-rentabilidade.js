@@ -477,6 +477,19 @@ export function dashboardRentabilidadePage() {
   font-weight:700;
 }
 
+.rosca svg {
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+.rosca svg circle,
+.rosca svg path {
+  fill:none;
+}
+
 .impacto strong {
   display:block;
   margin-top:8px;
@@ -848,32 +861,46 @@ export function dashboardRentabilidadePage() {
       function rosca(id, pid, v) {
   v = Math.max(0, Math.min(n(v), 1));
 
-  var graus = v * 360;
   var grafico = $(id);
+  var cor = getComputedStyle(grafico)
+    .getPropertyValue('--cor')
+    .trim() || '#087ac1';
 
-  if (graus === 0) {
-    grafico.style.background = '#858585';
-  } else if (graus < 6) {
-    grafico.style.background =
-      'conic-gradient(' +
-        '#858585 0deg ' + (360 - graus) + 'deg, ' +
-        'var(--cor) ' + (360 - graus) + 'deg 360deg' +
-      ')';
-  } else {
-    var inicioCor = 360 - graus + 3;
-    var inicioSeparacao = inicioCor - 3;
+  var graus = v * 360;
+  var raio = 39;
+  var inicio = -90 - graus;
+  var fim = -90;
+  var radiano = Math.PI / 180;
 
-    grafico.style.background =
-      'conic-gradient(' +
-        '#fff 0deg 3deg, ' +
-        '#858585 3deg ' + inicioSeparacao + 'deg, ' +
-        '#fff ' + inicioSeparacao + 'deg ' + inicioCor + 'deg, ' +
-        'var(--cor) ' + inicioCor + 'deg 357deg, ' +
-        '#fff 357deg 360deg' +
-      ')';
+  var inicioX = 50 + raio * Math.cos(inicio * radiano);
+  var inicioY = 50 + raio * Math.sin(inicio * radiano);
+  var fimX = 50 + raio * Math.cos(fim * radiano);
+  var fimY = 50 + raio * Math.sin(fim * radiano);
+
+  var arcoColorido = '';
+
+  if (graus > 0.01) {
+    arcoColorido =
+      '<path d="M ' +
+      inicioX.toFixed(3) + ' ' +
+      inicioY.toFixed(3) +
+      ' A ' + raio + ' ' + raio +
+      ' 0 ' + (graus > 180 ? 1 : 0) +
+      ' 1 ' +
+      fimX.toFixed(3) + ' ' +
+      fimY.toFixed(3) +
+      '" stroke="' + cor +
+      '" stroke-width="22"/>';
   }
 
-  $(pid).textContent = pf.format(v);
+  grafico.style.background = 'none';
+
+  grafico.innerHTML =
+    '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+      '<circle cx="50" cy="50" r="39" stroke="#858585" stroke-width="22"/>' +
+      arcoColorido +
+    '</svg>' +
+    '<span id="' + pid + '">' + pf.format(v) + '</span>';
 }
 
       function tabela(redes) {
