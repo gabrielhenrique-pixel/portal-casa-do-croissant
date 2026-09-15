@@ -83,9 +83,19 @@ export async function listarInvestimentosDaMargemRede(env, inicio, fim) {
   await garantirTabelaInvestimentosRentabilidade(env);
 
   const resultado = await env.DB.prepare(
-    'SELECT rede, data_inicio, data_fim, valor_real ' +
-    'FROM rentabilidade_investimentos ' +
-    'WHERE data_fim >= ? AND data_inicio <= ? AND valor_real IS NOT NULL'
+    `SELECT
+      rede,
+      data_inicio,
+      data_fim,
+      valor_previsto,
+      valor_real
+    FROM rentabilidade_investimentos
+    WHERE data_fim >= ?
+      AND data_inicio <= ?
+      AND (
+        valor_real IS NOT NULL
+        OR valor_previsto > 0
+      )`
   ).bind(inicio, fim).all();
 
   if (!Array.isArray(resultado.results)) {
@@ -93,28 +103,76 @@ export async function listarInvestimentosDaMargemRede(env, inicio, fim) {
   }
 
   const porRede = new Map();
+
   for (const registro of resultado.results) {
-    const valor = calcularRateioInvestimento(registro, inicio, fim);
-    porRede.set(registro.rede, (porRede.get(registro.rede) || 0) + valor);
+    const valor = calcularRateioInvestimento(
+      registro,
+      inicio,
+      fim
+    );
+
+    porRede.set(
+      registro.rede,
+      (porRede.get(registro.rede) || 0) + valor
+    );
   }
-  return Array.from(porRede, ([rede, valor_real]) => ({ rede, valor_real }));
+
+  return Array.from(
+    porRede,
+    function(item) {
+      return {
+        rede:item[0],
+        valor_real:item[1]
+      };
+    }
+  );
 }
 
 export function calcularRateioInvestimento(registro, inicio, fim) {
   validarPeriodo(inicio, fim);
   validarPeriodo(registro.data_inicio, registro.data_fim);
-  if (registro.valor_real === null || registro.valor_real === undefined) return 0;
-  if (registro.valor_real === '' || !Number.isFinite(Number(registro.valor_real))) {
-    throw new Error('Investimento com valor real inválido.');
+
+  var valorBase = registro.valor_real;
+
+  if (
+    valorBase === null ||
+    valorBase === undefined ||
+    valorBase === ''
+  ) {
+    valorBase = registro.valor_previsto;
   }
-  const primeiroDia = registro.data_inicio > inicio ? registro.data_inicio : inicio;
-  const ultimoDia = registro.data_fim < fim ? registro.data_fim : fim;
-  if (primeiroDia > ultimoDia) return 0;
-  const diaUtc = (data) => Date.parse(data + 'T00:00:00Z') / 86400000;
-  const diasTotais = diaUtc(registro.data_fim) - diaUtc(registro.data_inicio) + 1;
-  const diasConsultados = diaUtc(ultimoDia) - diaUtc(primeiroDia) + 1;
-  // Preservar precisão até a apresentação. Arredondar a diária perderia centavos.
-  return Number(registro.valor_real) * diasConsultados / diasTotais;
+
+  if (!Number.isFinite(Number(valorBase))) {
+    throw new Error('Investimento com valor inválido.');
+  }
+
+  const primeiroDia = registro.data_inicio > inicio
+    ? registro.data_inicio
+    : inicio;
+
+  const ultimoDia = registro.data_fim < fim
+    ? registro.data_fim
+    : fim;
+
+  if (primeiroDia > ultimoDia) {
+    return 0;
+  }
+
+  const diaUtc = function(data) {
+    return Date.parse(data + 'T00:00:00Z') / 86400000;
+  };
+
+  const diasTotais =
+    diaUtc(registro.data_fim) -
+    diaUtc(registro.data_inicio) +
+    1;
+
+  const diasConsultados =
+    diaUtc(ultimoDia) -
+    diaUtc(primeiroDia) +
+    1;
+
+  return Number(valorBase) * diasConsultados / diasTotais;
 }
 
 function validarPeriodo(inicio, fim) {
