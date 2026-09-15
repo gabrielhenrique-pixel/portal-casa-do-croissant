@@ -17,6 +17,7 @@ import { listarMargemRedeSankhya } from './margem-rede-service.js';
 import {
   redesRentabilidade,
   salvarInvestimentoRentabilidade,
+  excluirInvestimento,
   listarTodosInvestimentos,
   listarInvestimentosPendentes,
   informarValorRealInvestimento
@@ -338,6 +339,42 @@ if (
       500
     );
   }
+}
+
+      const investimentoMatch = url.pathname.match(
+  /^\/api\/investimentos\/([^/]+)$/
+);
+
+if (investimentoMatch && request.method === 'DELETE') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const resultado = await excluirInvestimento(
+    env,
+    investimentoMatch[1]
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'INVESTIMENTO_EXCLUIDO',
+    'Rede: ' + resultado.rede +
+      ' | Tipo: ' + resultado.tipo +
+      ' | Previsto: R$ ' + resultado.valorPrevisto +
+      ' | Real: R$ ' + (resultado.valorReal || 0)
+  );
+
+  return json({ ok: true });
 }
 
 if (url.pathname === '/api/investimentos' && request.method === 'POST') {
