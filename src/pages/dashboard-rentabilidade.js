@@ -924,7 +924,7 @@ export function dashboardRentabilidadePage() {
           '<tr><td colspan="9">Nenhum dado encontrado.</td></tr>';
       }
 
-      function render(d) {
+      function render(d, faturamentoMesAtual) {
         var redes = Array.isArray(d.redes) ? d.redes : [];
 
         var soma = function(campo) {
@@ -941,10 +941,10 @@ export function dashboardRentabilidadePage() {
         var frete = soma('frete');
         var clientes = soma('clientesPositivados');
         var margem = receita ? resultado / Math.abs(receita) : 0;
-        var atingido = faturamento / meta;
-        var faltam = Math.max(meta - faturamento, 0);
+        var faturamentoVelocimetro = n(faturamentoMesAtual);
+        var atingido = faturamentoVelocimetro / meta;
+        var faltam = Math.max(meta - faturamentoVelocimetro, 0);
         var angulo = Math.max(-90, Math.min(90, -90 + atingido * 180));
-
         $('faturamento').textContent = nf.format(faturamento);
         $('receita').textContent = nf.format(receita);
         $('resultado').textContent = nf.format(resultado);
@@ -965,7 +965,7 @@ export function dashboardRentabilidadePage() {
         $('percentualMeta').textContent = pf.format(atingido);
         $('percentualMeta').style.color = corMeta;
         $('ponteiro').style.transform = 'rotate(' + angulo + 'deg)';
-        $('faturamentoMeta').textContent = nf.format(faturamento);
+        $('faturamentoMeta').textContent = nf.format(faturamentoVelocimetro);
         $('metaExibida').textContent = nf.format(meta);
         $('faltamMeta').textContent = nf.format(faltam);
 
@@ -1010,41 +1010,88 @@ export function dashboardRentabilidadePage() {
       }
 
       async function carregar() {
-        var inicio = $('inicio').value;
-        var fim = $('fim').value;
-        var botao = $('atualizar');
+  var inicio = $('inicio').value;
+  var fim = $('fim').value;
+  var botao = $('atualizar');
 
-        if (!inicio || !fim) return;
+  if (!inicio || !fim) {
+    return;
+  }
 
-        botao.disabled = true;
-        $('estado').textContent = 'Calculando rentabilidade...';
+  function dataIso(data) {
+    var ano = data.getFullYear();
+    var mes = String(data.getMonth() + 1).padStart(2, '0');
+    var dia = String(data.getDate()).padStart(2, '0');
 
-        try {
-          await carregarMeta();
+    return ano + '-' + mes + '-' + dia;
+  }
 
-          var resposta = await fetch(
-            '/api/rentabilidade/margem-rede?inicio=' +
-            encodeURIComponent(inicio) +
-            '&fim=' +
-            encodeURIComponent(fim)
-          );
+  var hoje = new Date();
+  var primeiroDiaMes = new Date(
+    hoje.getFullYear(),
+    hoje.getMonth(),
+    1
+  );
 
-          var dados = await resposta.json();
+  var inicioMesAtual = dataIso(primeiroDiaMes);
+  var fimMesAtual = dataIso(hoje);
 
-          if (!resposta.ok) {
-            throw Error(
-              dados.error || 'Não foi possível carregar o dashboard.'
-            );
-          }
+  botao.disabled = true;
+  $('estado').textContent = 'Calculando rentabilidade...';
 
-          render(dados);
-        } catch (erro) {
-          $('estado').textContent = erro.message;
-          $('estado').className = 'estado erro';
-        } finally {
-          botao.disabled = false;
-        }
-      }
+  try {
+    await carregarMeta();
+
+    var resposta = await fetch(
+      '/api/rentabilidade/margem-rede?inicio=' +
+        encodeURIComponent(inicio) +
+        '&fim=' +
+        encodeURIComponent(fim)
+    );
+
+    var dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw Error(
+        dados.error || 'Não foi possível carregar o dashboard.'
+      );
+    }
+
+    var respostaMesAtual = await fetch(
+      '/api/rentabilidade/margem-rede?inicio=' +
+        encodeURIComponent(inicioMesAtual) +
+        '&fim=' +
+        encodeURIComponent(fimMesAtual)
+    );
+
+    var dadosMesAtual = await respostaMesAtual.json();
+
+    if (!respostaMesAtual.ok) {
+      throw Error(
+        dadosMesAtual.error ||
+          'Não foi possível carregar o faturamento do mês atual.'
+      );
+    }
+
+    var redesMesAtual = Array.isArray(dadosMesAtual.redes)
+      ? dadosMesAtual.redes
+      : [];
+
+    var faturamentoMesAtual = redesMesAtual.reduce(
+      function(total, rede) {
+        return total + n(rede.faturamentoBruto);
+      },
+      0
+    );
+
+    render(dados, faturamentoMesAtual);
+  } catch (erro) {
+    $('estado').textContent = erro.message;
+    $('estado').className = 'estado erro';
+  } finally {
+    botao.disabled = false;
+  }
+}
 
       function editar() {
         $('campoMeta').value = meta;
