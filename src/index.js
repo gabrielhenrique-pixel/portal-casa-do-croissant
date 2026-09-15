@@ -15,7 +15,9 @@ import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
 import {
   redesRentabilidade,
-  salvarInvestimentoRentabilidade
+  salvarInvestimentoRentabilidade,
+  listarInvestimentosPendentes,
+  informarValorRealInvestimento
 } from './investimentos-rentabilidade.js';
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 
@@ -350,6 +352,71 @@ if (url.pathname === '/api/investimentos' && request.method === 'POST') {
       error: error.message || 'Não foi possível salvar o investimento.'
     }, 400);
   }
+}
+
+      if (
+  url.pathname === '/api/investimentos/pendentes' &&
+  request.method === 'GET'
+) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const investimentos = await listarInvestimentosPendentes(env);
+
+    return json({ investimentos });
+  } catch (error) {
+    return json(
+      {
+        error: error.message ||
+          'Não foi possível consultar os investimentos pendentes.'
+      },
+      500
+    );
+  }
+}
+
+const investimentoPendenteMatch = url.pathname.match(
+  /^\/api\/investimentos\/([^/]+)\/valor-real$/
+);
+
+if (investimentoPendenteMatch && request.method === 'PUT') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const dados = await bodyAsJson(request);
+
+  const resultado = await informarValorRealInvestimento(
+    env,
+    investimentoPendenteMatch[1],
+    dados.valorReal
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'VALOR_REAL_INVESTIMENTO_INFORMADO',
+    'Rede: ' + resultado.rede +
+      ' | Previsto: R$ ' + resultado.valorPrevisto +
+      ' | Real: R$ ' + resultado.valorReal
+  );
+
+  return json({
+    investimento: resultado
+  });
 }
 
 if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
