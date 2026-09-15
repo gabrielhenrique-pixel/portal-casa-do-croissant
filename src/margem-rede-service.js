@@ -63,6 +63,20 @@ export async function listarMargemRedeSankhya(request, env, session) {
     const resumoPorRede = new Map(
       REDES_MODELO.map((rede) => [rede, novoResumo(rede)])
     );
+    const totalClientesPorRede = new Map(
+  REDES_MODELO.map((rede) => [rede, 0])
+);
+
+clientes.forEach((cliente) => {
+  const rede = String(cliente.rede || '').trim();
+
+  if (totalClientesPorRede.has(rede)) {
+    totalClientesPorRede.set(
+      rede,
+      totalClientesPorRede.get(rede) + 1
+    );
+  }
+});
     const alertas = {
       vendasSemCadastro: new Map(),
       devolucoesSemCadastro: new Map(),
@@ -158,8 +172,9 @@ export async function listarMargemRedeSankhya(request, env, session) {
     });
 
     const redes = REDES_MODELO.map((rede) => finalizarResumo(
-      resumoPorRede.get(rede)
-    ));
+  resumoPorRede.get(rede),
+  totalClientesPorRede.get(rede) || 0
+));
     const totalReceitaLiquida = redes.reduce(
       (total, rede) => total + rede.receitaLiquida,
       0
@@ -210,7 +225,7 @@ function resumoDaRede(resumoPorRede, rede) {
   return resumoPorRede.get(String(rede || '').trim()) || null;
 }
 
-function finalizarResumo(resumo) {
+function finalizarResumo(resumo, totalClientes) {
   const receitaLiquida = limparMenosZero(
     resumo.receitaLiquida - resumo.devolucoes
   );
@@ -236,6 +251,7 @@ function finalizarResumo(resumo) {
       ? null
       : resultadoFinal / Math.abs(receitaLiquida),
     participacao: null,
+    totalClientes,
     clientesPositivados: Array.from(
       resumo.faturamentoPorParceiro.values()
     ).filter((valor) => valor > 0).length
