@@ -924,79 +924,85 @@ export function dashboardRentabilidadePage() {
           '<tr><td colspan="9">Nenhum dado encontrado.</td></tr>';
       }
 
-      function render(d, faturamentoMesAtual) {
-        var redes = Array.isArray(d.redes) ? d.redes : [];
+      function atualizarVelocimetro(faturamentoMesAtual) {
+  var faturamentoVelocimetro = n(faturamentoMesAtual);
+  var atingido = faturamentoVelocimetro / meta;
+  var faltam = Math.max(meta - faturamentoVelocimetro, 0);
+  var angulo = Math.max(
+    -90,
+    Math.min(90, -90 + atingido * 180)
+  );
 
-        var soma = function(campo) {
-          return redes.reduce(function(total, rede) {
-            return total + n(rede[campo]);
-          }, 0);
-        };
+  var corMeta;
 
-        var faturamento = soma('faturamentoBruto');
-        var receita = soma('receitaLiquida');
-        var resultado = soma('resultadoFinal');
-        var investimentos = soma('investimentos');
-        var devolucoes = soma('devolucoes');
-        var frete = soma('frete');
-        var clientes = soma('clientesPositivados');
-        var margem = receita ? resultado / Math.abs(receita) : 0;
-        var faturamentoVelocimetro = n(faturamentoMesAtual);
-        var atingido = faturamentoVelocimetro / meta;
-        var faltam = Math.max(meta - faturamentoVelocimetro, 0);
-        var angulo = Math.max(-90, Math.min(90, -90 + atingido * 180));
-        $('faturamento').textContent = nf.format(faturamento);
-        $('receita').textContent = nf.format(receita);
-        $('resultado').textContent = nf.format(resultado);
-        $('resultado').className = 'valor ' + cn(resultado);
-        $('margem').textContent = pf.format(margem);
-        $('clientes').textContent = ni.format(clientes);
+  if (atingido < 0.38) {
+    corMeta = '#f11';
+  } else if (atingido < 0.62) {
+    corMeta = '#b78b00';
+  } else {
+    corMeta = '#00a84f';
+  }
 
-        var corMeta;
+  $('percentualMeta').textContent = pf.format(atingido);
+  $('percentualMeta').style.color = corMeta;
+  $('ponteiro').style.transform = 'rotate(' + angulo + 'deg)';
+  $('faturamentoMeta').textContent = nf.format(faturamentoVelocimetro);
+  $('metaExibida').textContent = nf.format(meta);
+  $('faltamMeta').textContent = nf.format(faltam);
+}
 
-        if (atingido < 0.38) {
-        corMeta = '#f11';
-        } else if (atingido < 0.62) {
-        corMeta = '#b78b00';
-        } else {
-        corMeta = '#00a84f';
-        }
+function render(d) {
+  var redes = Array.isArray(d.redes) ? d.redes : [];
 
-        $('percentualMeta').textContent = pf.format(atingido);
-        $('percentualMeta').style.color = corMeta;
-        $('ponteiro').style.transform = 'rotate(' + angulo + 'deg)';
-        $('faturamentoMeta').textContent = nf.format(faturamentoVelocimetro);
-        $('metaExibida').textContent = nf.format(meta);
-        $('faltamMeta').textContent = nf.format(faltam);
+  var soma = function(campo) {
+    return redes.reduce(function(total, rede) {
+      return total + n(rede[campo]);
+    }, 0);
+  };
 
-        rosca(
-          'roscaInvestimentos',
-          'pctInvestimentos',
-          faturamento ? investimentos / faturamento : 0
-        );
+  var faturamento = soma('faturamentoBruto');
+  var receita = soma('receitaLiquida');
+  var resultado = soma('resultadoFinal');
+  var investimentos = soma('investimentos');
+  var devolucoes = soma('devolucoes');
+  var frete = soma('frete');
+  var clientes = soma('clientesPositivados');
+  var margem = receita ? resultado / Math.abs(receita) : 0;
 
-        rosca(
-          'roscaDevolucoes',
-          'pctDevolucoes',
-          faturamento ? devolucoes / faturamento : 0
-        );
+  $('faturamento').textContent = nf.format(faturamento);
+  $('receita').textContent = nf.format(receita);
+  $('resultado').textContent = nf.format(resultado);
+  $('resultado').className = 'valor ' + cn(resultado);
+  $('margem').textContent = pf.format(margem);
+  $('clientes').textContent = ni.format(clientes);
 
-        rosca(
-          'roscaFrete',
-          'pctFrete',
-          faturamento ? frete / faturamento : 0
-        );
+  rosca(
+    'roscaInvestimentos',
+    'pctInvestimentos',
+    faturamento ? investimentos / faturamento : 0
+  );
 
-        $('investimentos').textContent = nf.format(investimentos);
-        $('devolucoes').textContent = nf.format(devolucoes);
-        $('frete').textContent = nf.format(frete);
+  rosca(
+    'roscaDevolucoes',
+    'pctDevolucoes',
+    faturamento ? devolucoes / faturamento : 0
+  );
 
-        tabela(redes);
+  rosca(
+    'roscaFrete',
+    'pctFrete',
+    faturamento ? frete / faturamento : 0
+  );
 
-        $('estado').textContent = '';
+  $('investimentos').textContent = nf.format(investimentos);
+  $('devolucoes').textContent = nf.format(devolucoes);
+  $('frete').textContent = nf.format(frete);
 
-        $('estado').className = 'estado';
-      }
+  tabela(redes);
+
+  $('estado').textContent = '';
+  $('estado').className = 'estado';
+}
 
       async function carregarMeta() {
         var resposta = await fetch('/api/rentabilidade/meta-faturamento');
@@ -1084,7 +1090,8 @@ export function dashboardRentabilidadePage() {
       0
     );
 
-    render(dados, faturamentoMesAtual);
+    render(dados);
+    atualizarVelocimetro(faturamentoMesAtual);
   } catch (erro) {
     $('estado').textContent = erro.message;
     $('estado').className = 'estado erro';
