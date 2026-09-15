@@ -431,11 +431,11 @@ export function dashboardRentabilidadePage() {
       display:inline-block;
     }
 
-    .impactos {
+   .impactos {
   display:grid;
   grid-template-columns:repeat(3, 1fr);
-  gap:14px;
-  margin-top:17px;
+  gap:8px;
+  margin-top:15px;
 }
 
 .impacto {
@@ -443,7 +443,7 @@ export function dashboardRentabilidadePage() {
 }
 
 .impacto h3 {
-  margin:0 0 8px;
+  margin:0 0 7px;
   color:#5e6164;
   font-size:7px;
   text-transform:uppercase;
@@ -455,19 +455,15 @@ export function dashboardRentabilidadePage() {
   display:grid;
   place-items:center;
   position:relative;
-  width:100px;
-  height:100px;
+  width:80px;
+  height:80px;
   margin:auto;
   border-radius:50%;
-  background:conic-gradient(
-    var(--cor) 0deg var(--progresso),
-    #858585 var(--progresso) 360deg
-  );
 }
 
 .rosca:after {
-  width:60px;
-  height:60px;
+  width:50px;
+  height:50px;
   border-radius:50%;
   background:#fff;
   content:"";
@@ -477,13 +473,13 @@ export function dashboardRentabilidadePage() {
   position:absolute;
   z-index:1;
   color:var(--cor);
-  font-size:15px;
+  font-size:13px;
   font-weight:700;
 }
 
 .impacto strong {
   display:block;
-  margin-top:10px;
+  margin-top:8px;
   color:#17476d;
   font-size:11px;
   white-space:nowrap;
@@ -491,9 +487,9 @@ export function dashboardRentabilidadePage() {
 
 .impacto strong::before {
   display:inline-block;
-  width:12px;
-  height:12px;
-  margin-right:9px;
+  width:11px;
+  height:11px;
+  margin-right:8px;
   border-radius:50%;
   content:"";
   vertical-align:-2px;
