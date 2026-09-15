@@ -225,8 +225,14 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   if (!session || session.role !== 'Administrador') {
     return redirectToPortal();
   }
-        if (url.pathname === '/api/rentabilidade/meta-faturamento' &&
-    request.method === 'GET') {
+
+  return rentabilidadeSkuPage();
+}
+
+if (
+  url.pathname === '/api/rentabilidade/meta-faturamento' &&
+  request.method === 'GET'
+) {
   const session = await getSession(request, env);
 
   if (!session || session.role !== 'Administrador') {
@@ -236,9 +242,6 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   return json({
     metaFaturamento: await carregarMetaFaturamento(env)
   });
-}
-
-  return rentabilidadeSkuPage();
 }
 
 if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
