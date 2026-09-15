@@ -1,4 +1,5 @@
 import { investimentosPage } from './pages/investimentos.js';
+import { investimentosListaPage } from './pages/investimentos-lista.js';
 import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
 import { usuariosPage } from './pages/usuarios.js';
 import { registroUsuarioPage } from './pages/registro-usuario.js';
@@ -61,7 +62,17 @@ export default {
         return currentUser(request, env);
       }
 
-                  if (url.pathname === '/investimentos' && request.method === 'GET') {
+      if (url.pathname === '/investimentos' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return investimentosListaPage();
+}
+
+                  if (url.pathname === '/investimentos/novo' && request.method === 'GET') {
         const session = await getSession(request, env);
 
         if (!session) {
