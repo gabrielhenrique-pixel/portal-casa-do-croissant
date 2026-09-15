@@ -142,6 +142,44 @@ async function encontrarRedeCadastrada(env, valor) {
   return redes.find((rede) => normalizarRede(rede) === chave) || '';
 }
 
+export async function excluirInvestimento(env, id) {
+  await garantirTabelaInvestimentosRentabilidade(env);
+
+  const investimentoId = String(id || '').trim();
+
+  if (!investimentoId) {
+    return { error: 'Investimento não informado.', status: 400 };
+  }
+
+  const investimento = await env.DB.prepare(
+    `SELECT id, rede, tipo, tipo_valor, valor_previsto, valor_real
+     FROM rentabilidade_investimentos
+     WHERE id = ?`
+  ).bind(investimentoId).first();
+
+  if (!investimento) {
+    return {
+      error: 'Investimento não encontrado.',
+      status: 404
+    };
+  }
+
+  await env.DB.prepare(
+    'DELETE FROM rentabilidade_investimentos WHERE id = ?'
+  ).bind(investimentoId).run();
+
+  return {
+    id: investimento.id,
+    rede: investimento.rede,
+    tipo: investimento.tipo,
+    tipoValor: investimento.tipo_valor,
+    valorPrevisto: Number(investimento.valor_previsto || 0),
+    valorReal: investimento.valor_real === null
+      ? null
+      : Number(investimento.valor_real)
+  };
+}
+
 export async function listarTodosInvestimentos(env) {
   await garantirTabelaInvestimentosRentabilidade(env);
 
