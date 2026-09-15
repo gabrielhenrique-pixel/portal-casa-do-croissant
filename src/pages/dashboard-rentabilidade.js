@@ -827,7 +827,18 @@ export function dashboardRentabilidadePage() {
         $('margem').textContent = pf.format(margem);
         $('clientes').textContent = ni.format(clientes);
 
+        var corMeta;
+
+        if (atingido < 0.38) {
+        corMeta = '#f11';
+        } else if (atingido < 0.62) {
+        corMeta = '#b78b00';
+        } else {
+        corMeta = '#00a84f';
+        }
+
         $('percentualMeta').textContent = pf.format(atingido);
+        $('percentualMeta').style.color = corMeta;
         $('ponteiro').style.transform = 'rotate(' + angulo + 'deg)';
         $('faturamentoMeta').textContent = nf.format(faturamento);
         $('metaExibida').textContent = nf.format(meta);
