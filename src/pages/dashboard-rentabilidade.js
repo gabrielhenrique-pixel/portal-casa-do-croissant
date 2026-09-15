@@ -126,8 +126,8 @@ export function dashboardRentabilidadePage() {
     }
 
     .estado {
-      min-height:18px;
-      margin:7px 2px;
+      min-height:0px;
+      margin:0px;
       color:#63716e;
       font-size:11px;
     }
@@ -340,7 +340,7 @@ export function dashboardRentabilidadePage() {
     .percentual-meta {
       position:absolute;
       right:0;
-      bottom:3px;
+      bottom:-3px;
       left:0;
       color:#f11;
       font-size:18px;
@@ -647,8 +647,8 @@ export function dashboardRentabilidadePage() {
             <div class="gauge">
               <svg viewBox="0 0 300 155" aria-hidden="true">
                 <path d="M 40 126 A 110 110 0 0 1 260 126" fill="none" stroke="#f11" stroke-width="27" stroke-dasharray="130 215"/>
-                <path d="M 109 27 A 110 110 0 0 1 191 27" fill="none" stroke="#ffef00" stroke-width="27"/>
-                <path d="M 191 27 A 110 110 0 0 1 260 126" fill="none" stroke="#00b84a" stroke-width="27"/>
+                <path d="M 108.4 24.1 A 110 110 0 0 1 191.6 24.1" fill="none" stroke="#ffef00" stroke-width="27"/>
+                <path d="M 191.6 24.1 A 110 110 0 0 1 260 126" fill="none" stroke="#00b84a" stroke-width="27"/>
               </svg>
 
               <i id="ponteiro" class="ponteiro"></i>
@@ -857,11 +857,7 @@ export function dashboardRentabilidadePage() {
 
         tabela(redes);
 
-        $('estado').textContent =
-          'Período consultado: ' +
-          d.inicio.split('-').reverse().join('/') +
-          ' a ' +
-          d.fim.split('-').reverse().join('/');
+        $('estado').textContent = '';
 
         $('estado').className = 'estado';
       }
