@@ -17,6 +17,12 @@ import {
   redesRentabilidade,
   salvarInvestimentoRentabilidade
 } from './investimentos-rentabilidade.js';
+import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
+
+import {
+  carregarMetaFaturamento,
+  salvarMetaFaturamento
+} from './dashboard-rentabilidade-service.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
@@ -204,12 +210,33 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
 }
+      if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return dashboardRentabilidadePage();
+}
       if (url.pathname === '/rentabilidade-sku' && request.method === 'GET') {
   const session = await getSession(request, env);
 
   if (!session || session.role !== 'Administrador') {
     return redirectToPortal();
   }
+        if (url.pathname === '/api/rentabilidade/meta-faturamento' &&
+    request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  return json({
+    metaFaturamento: await carregarMetaFaturamento(env)
+  });
+}
 
   return rentabilidadeSkuPage();
 }
