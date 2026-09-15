@@ -520,7 +520,7 @@ export function dashboardRentabilidadePage() {
   background:#087ac1;
 }
 .painel-impacto {
-  width:400px;
+  width:100%;
   max-width:100%;
   min-height:225px;
   justify-self:center;
