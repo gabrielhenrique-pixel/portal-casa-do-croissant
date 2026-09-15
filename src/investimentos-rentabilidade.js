@@ -78,8 +78,6 @@ export async function salvarInvestimentoRentabilidade(env, dados, username) {
   };
 }
 
-// Regra confirmada: valor real proporcional aos dias corridos de interseção
-// entre o período do lançamento e o período da consulta, incluindo os extremos.
 export async function listarInvestimentosDaMargemRede(env, inicio, fim) {
   validarPeriodo(inicio, fim);
   await garantirTabelaInvestimentosRentabilidade(env);
@@ -142,6 +140,31 @@ async function encontrarRedeCadastrada(env, valor) {
 
   const redes = await redesRentabilidade(env);
   return redes.find((rede) => normalizarRede(rede) === chave) || '';
+}
+
+export async function listarTodosInvestimentos(env) {
+  await garantirTabelaInvestimentosRentabilidade(env);
+
+  const resultado = await env.DB.prepare(
+    `SELECT
+      id,
+      data_inicio,
+      data_fim,
+      rede,
+      tipo,
+      tipo_valor,
+      valor_previsto,
+      valor_real,
+      responsavel,
+      status,
+      created_at
+    FROM rentabilidade_investimentos
+    ORDER BY data_inicio DESC, created_at DESC`
+  ).all();
+
+  return Array.isArray(resultado.results)
+    ? resultado.results
+    : [];
 }
 
 export async function listarInvestimentosPendentes(env) {
