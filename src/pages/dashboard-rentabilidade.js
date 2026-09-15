@@ -432,62 +432,84 @@ export function dashboardRentabilidadePage() {
     }
 
     .impactos {
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:8px;
-      margin-top:15px;
-    }
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:14px;
+  margin-top:17px;
+}
 
-    .impacto {
-      text-align:center;
-    }
+.impacto {
+  text-align:center;
+}
 
-    .impacto h3 {
-      margin:0 0 7px;
-      color:#5e6164;
-      font-size:7px;
-      text-transform:uppercase;
-    }
+.impacto h3 {
+  margin:0 0 8px;
+  color:#5e6164;
+  font-size:7px;
+  text-transform:uppercase;
+}
 
-    .rosca {
-      --cor:#087ac1;
-      --progresso:0deg;
-      display:grid;
-      place-items:center;
-      position:relative;
-      width:80px;
-      height:80px;
-      margin:auto;
-      border-radius:50%;
-      background:conic-gradient(
-        var(--cor) 0deg var(--progresso),
-        #858585 var(--progresso) 360deg
-      );
-    }
+.rosca {
+  --cor:#087ac1;
+  --progresso:0deg;
+  display:grid;
+  place-items:center;
+  position:relative;
+  width:100px;
+  height:100px;
+  margin:auto;
+  border-radius:50%;
+  background:conic-gradient(
+    var(--cor) 0deg var(--progresso),
+    #858585 var(--progresso) 360deg
+  );
+}
 
-    .rosca:after {
-      width:50px;
-      height:50px;
-      border-radius:50%;
-      background:#fff;
-      content:"";
-    }
+.rosca:after {
+  width:60px;
+  height:60px;
+  border-radius:50%;
+  background:#fff;
+  content:"";
+}
 
-    .rosca span {
-      position:absolute;
-      z-index:1;
-      color:var(--cor);
-      font-size:13px;
-      font-weight:700;
-    }
+.rosca span {
+  position:absolute;
+  z-index:1;
+  color:var(--cor);
+  font-size:15px;
+  font-weight:700;
+}
 
-    .impacto strong {
-      display:block;
-      margin-top:8px;
-      color:#17476d;
-      font-size:11px;
-      white-space:nowrap;
-    }
+.impacto strong {
+  display:block;
+  margin-top:10px;
+  color:#17476d;
+  font-size:11px;
+  white-space:nowrap;
+}
+
+.impacto strong::before {
+  display:inline-block;
+  width:12px;
+  height:12px;
+  margin-right:9px;
+  border-radius:50%;
+  content:"";
+  vertical-align:-2px;
+}
+
+.impacto:nth-child(1) strong::before {
+  background:#ffb900;
+}
+
+.impacto:nth-child(2) strong::before {
+  background:#f10c0c;
+}
+
+.impacto:nth-child(3) strong::before {
+  background:#087ac1;
+}
 
     .acoes {
       display:flex;
@@ -773,10 +795,35 @@ export function dashboardRentabilidadePage() {
       }
 
       function rosca(id, pid, v) {
-        v = Math.max(0, Math.min(n(v), 1));
-        $(id).style.setProperty('--progresso', (v * 360) + 'deg');
-        $(pid).textContent = pf.format(v);
-      }
+  v = Math.max(0, Math.min(n(v), 1));
+
+  var graus = v * 360;
+  var grafico = $(id);
+
+  if (graus === 0) {
+    grafico.style.background = '#858585';
+  } else if (graus < 6) {
+    grafico.style.background =
+      'conic-gradient(' +
+        '#858585 0deg ' + (360 - graus) + 'deg, ' +
+        'var(--cor) ' + (360 - graus) + 'deg 360deg' +
+      ')';
+  } else {
+    var inicioCor = 360 - graus + 3;
+    var inicioSeparacao = inicioCor - 3;
+
+    grafico.style.background =
+      'conic-gradient(' +
+        '#fff 0deg 3deg, ' +
+        '#858585 3deg ' + inicioSeparacao + 'deg, ' +
+        '#fff ' + inicioSeparacao + 'deg ' + inicioCor + 'deg, ' +
+        'var(--cor) ' + inicioCor + 'deg 357deg, ' +
+        '#fff 357deg 360deg' +
+      ')';
+  }
+
+  $(pid).textContent = pf.format(v);
+}
 
       function tabela(redes) {
         var h = '';
