@@ -227,12 +227,12 @@ export function dashboardRentabilidadePage() {
     }
 
     th {
-      padding:4px 3px;
+      padding:5px 3px;
       border:1px solid #dae0dc;
       background:#fff;
       color:#182b39;
-      font-size:6px;
-      line-height:1.05;
+      font-size:8px;
+      line-height:1.1;
       text-align:center;
       text-transform:uppercase;
     }
@@ -305,7 +305,7 @@ export function dashboardRentabilidadePage() {
       width:300px;
       max-width:100%;
       height:145px;
-      overflow:hidden;
+      ooverflow:visible;
     }
 
     .gauge svg {
@@ -340,7 +340,7 @@ export function dashboardRentabilidadePage() {
     .percentual-meta {
       position:absolute;
       right:0;
-      bottom:27px;
+      bottom:3px;
       left:0;
       color:#f11;
       font-size:18px;
@@ -351,7 +351,7 @@ export function dashboardRentabilidadePage() {
     .atingido {
       position:absolute;
       right:0;
-      bottom:9px;
+      bottom:-14px;
       left:0;
       color:#25516a;
       font-size:10px;
@@ -362,7 +362,7 @@ export function dashboardRentabilidadePage() {
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:9px;
-      margin:0 auto 7px;
+      margin:15px auto 7px;
     }
 
     .meta-valor {
@@ -546,11 +546,8 @@ export function dashboardRentabilidadePage() {
   <main>
     <header class="topo">
       <div class="marca">
-        <strong>A CASA DO CROISSANT</strong>
-        <i></i>
-        <span>RENTABILIDADE COMERCIAL</span>
-      </div>
-
+  <span>RENTABILIDADE COMERCIAL</span>
+</div>
       <form id="filtros" class="controles">
         <label class="campo">
           Data inicial
@@ -649,7 +646,7 @@ export function dashboardRentabilidadePage() {
           <div class="gauge-wrap">
             <div class="gauge">
               <svg viewBox="0 0 300 155" aria-hidden="true">
-                <path d="M 40 126 A 110 110 0 0 1 260 126" fill="none" stroke="#f11" stroke-width="27" stroke-dasharray="69 276"/>
+                <path d="M 40 126 A 110 110 0 0 1 260 126" fill="none" stroke="#f11" stroke-width="27" stroke-dasharray="130 215"/>
                 <path d="M 109 27 A 110 110 0 0 1 191 27" fill="none" stroke="#ffef00" stroke-width="27"/>
                 <path d="M 191 27 A 110 110 0 0 1 260 126" fill="none" stroke="#00b84a" stroke-width="27"/>
               </svg>
