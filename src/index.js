@@ -231,8 +231,39 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 
 if (
   url.pathname === '/api/rentabilidade/meta-faturamento' &&
-  request.method === 'GET'
+  request.method === 'PUT'
 ) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const dados = await bodyAsJson(request);
+
+  const resultado = await salvarMetaFaturamento(
+    env,
+    dados.metaFaturamento
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'META_FATURAMENTO_ATUALIZADA',
+    'Nova meta: R$ ' + resultado.metaFaturamento
+  );
+
+  return json({
+    metaFaturamento: resultado.metaFaturamento
+  });
+}
   const session = await getSession(request, env);
 
   if (!session || session.role !== 'Administrador') {
