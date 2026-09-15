@@ -92,6 +92,27 @@ export function investimentosListaPage() {
       background:#125d3b;
     }
 
+    .excluir {
+  padding:8px 11px;
+  border:0;
+  border-radius:6px;
+  background:#b42318;
+  color:#fff;
+  cursor:pointer;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+}
+
+.excluir:hover {
+  background:#8f1c13;
+}
+
+.excluir:disabled {
+  opacity:.65;
+  cursor:wait;
+}
+
     .mensagem {
       display:none;
       margin:0 0 16px;
@@ -220,6 +241,7 @@ export function investimentosListaPage() {
             <th>Valor real</th>
             <th>Responsável</th>
             <th>Status</th>
+            <th>Ações</th>
           </tr>
         </thead>
 
@@ -309,7 +331,15 @@ export function investimentosListaPage() {
               valorOuTraco(item.valor_real) +
             '</td>' +
             '<td>' + esc(item.responsavel) + '</td>' +
-            '<td>' + esc(item.status) + '</td>';
+            '<td>' + esc(item.status) + '</td>' +
+            '<td>' +
+            '<button ' +
+            'class="excluir" ' +
+            'type="button" ' +
+            'data-id="' + esc(item.id) + '">' +
+            'Excluir' +
+         '</button>' +
+       '</td>';
 
           corpo.appendChild(linha);
         });
@@ -335,6 +365,49 @@ export function investimentosListaPage() {
           mostrarErro(erro.message);
         }
       }
+
+      document.getElementById('linhas').addEventListener(
+  'click',
+  async function(evento) {
+    var botao = evento.target.closest('.excluir');
+
+    if (!botao) {
+      return;
+    }
+
+    var id = botao.getAttribute('data-id');
+
+    if (!window.confirm(
+      'Excluir este investimento? Esta ação não pode ser desfeita.'
+    )) {
+      return;
+    }
+
+    botao.disabled = true;
+    botao.textContent = 'Excluindo...';
+
+    try {
+      var resposta = await fetch(
+        '/api/investimentos/' + encodeURIComponent(id),
+        { method:'DELETE' }
+      );
+
+      var dados = await resposta.json();
+
+      if (!resposta.ok) {
+        throw new Error(
+          dados.error || 'Não foi possível excluir o investimento.'
+        );
+      }
+
+      await carregar();
+    } catch (erro) {
+      mostrarErro(erro.message);
+      botao.disabled = false;
+      botao.textContent = 'Excluir';
+    }
+  }
+);
 
       carregar();
     })();
