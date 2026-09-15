@@ -144,6 +144,73 @@ async function encontrarRedeCadastrada(env, valor) {
   return redes.find((rede) => normalizarRede(rede) === chave) || '';
 }
 
+export async function listarInvestimentosPendentes(env) {
+  await garantirTabelaInvestimentosRentabilidade(env);
+
+  const resultado = await env.DB.prepare(
+    `SELECT
+      id,
+      data_inicio,
+      data_fim,
+      rede,
+      tipo,
+      valor_previsto,
+      responsavel,
+      status
+    FROM rentabilidade_investimentos
+    WHERE tipo_valor = 'PREVISAO'
+      AND valor_real IS NULL
+    ORDER BY data_inicio ASC, created_at DESC`
+  ).all();
+
+  return Array.isArray(resultado.results)
+    ? resultado.results
+    : [];
+}
+
+export async function informarValorRealInvestimento(env, id, valorInformado) {
+  await garantirTabelaInvestimentosRentabilidade(env);
+
+  const investimentoId = String(id || '').trim();
+  const valorReal = numeroPositivo(valorInformado);
+
+  if (!investimentoId) {
+    return { error: 'Investimento não informado.', status: 400 };
+  }
+
+  if (!Number.isFinite(valorReal) || valorReal <= 0) {
+    return { error: 'Informe um valor real válido.', status: 400 };
+  }
+
+  const pendente = await env.DB.prepare(
+    `SELECT id, rede, valor_previsto
+     FROM rentabilidade_investimentos
+     WHERE id = ?
+       AND tipo_valor = 'PREVISAO'
+       AND valor_real IS NULL`
+  ).bind(investimentoId).first();
+
+  if (!pendente) {
+    return {
+      error: 'Investimento pendente não encontrado.',
+      status: 404
+    };
+  }
+
+  await env.DB.prepare(
+    `UPDATE rentabilidade_investimentos
+     SET valor_real = ?
+     WHERE id = ?`
+  ).bind(valorReal, investimentoId).run();
+
+  return {
+    id: investimentoId,
+    rede: pendente.rede,
+    valorPrevisto: Number(pendente.valor_previsto || 0),
+    valorReal
+  };
+}
+
 async function garantirTabelaInvestimentosRentabilidade(env) {
   await env.DB.batch([
     env.DB.prepare(
