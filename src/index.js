@@ -1598,6 +1598,7 @@ body.inicializando #inicializacao {
         <div class="marca-portal">Casa do Croissant<small>Portal interno</small></div>
         <nav id="menuPortal">
           <button class="nav-btn ativo" type="button" data-view="inicio">Página inicial</button>
+          <button id="navDashboardRentabilidade"class="nav-btn"type="button"data-view="dashboard-rentabilidade">Dashboard de rentabilidade</button>
           <button class="nav-btn" type="button" data-view="investimentos" data-module="INVESTIMENTOS">Investimentos</button>
           <button class="nav-btn" type="button" data-view="pendentes" data-module="INVESTIMENTOS_PENDENTES">Investimentos pendentes</button>
           <button class="nav-btn" type="button" data-view="devolucoes" data-module="DEVOLUCOES">Painel de devoluções</button>
@@ -1649,20 +1650,24 @@ body.inicializando #inicializacao {
       function html(value) { const node = document.createElement('span'); node.textContent = value || ''; return node.innerHTML; }
       function hasModule(id) { return sessionData && sessionData.modules.some((module) => module.id === id); }
       function openView(view) {
-                if (view === 'investimentos') {
-          window.location.href = '/investimentos';
+          if (view === 'dashboard-rentabilidade') {
+          window.location.href = '/dashboard-rentabilidade';
           return;
+         }
+         if (view === 'investimentos') {
+         window.location.href = '/investimentos';
+         return;
         }
 
         if (view === 'pendentes') {
         window.location.href = '/investimentos-pendentes';
         return;
-       }
+        }
 
        if (view === 'usuarios') {
-  window.location.href = '/usuarios';
-  return;
-}
+       window.location.href = '/usuarios';
+       return;
+       }
 
 if (view === 'historico') {
   window.location.href = '/historico-acoes';
@@ -1686,7 +1691,8 @@ if (view === 'acessos') {
         if (view === 'acessos') { $('tituloPagina').textContent = 'Acessos'; $('viewAcessos').classList.remove('oculto'); loadUsers(); return; }
         $('tituloPagina').textContent = moduleTitles[view] || 'Módulo em migração'; $('tituloMigracao').textContent = $('tituloPagina').textContent; $('viewEmMigracao').classList.remove('oculto');
       }
-      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') { $('navUsuarios').classList.add('oculto'); $('navAcessos').classList.add('oculto'); } show('dashboard'); openView('inicio'); }
+      
+      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') { $('navUsuarios').classList.add('oculto'); $('navAcessos').classList.add('oculto'); $('navDashboardRentabilidade').classList.add('oculto'); } show('dashboard'); openView('inicio'); }
       async function loadSession() { try { startDashboard(await request('/api/me')); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
       async function loadUsers() { if (!sessionData || sessionData.user.role !== 'Administrador') return; try { const data = await request('/api/users'); cachedUsers = data.users; renderUsers(); renderUserSelector(); } catch (err) { error('erroUsuario', err.message); } }
       function renderUsers() { const target = $('listaUsuarios'); if (!cachedUsers.length) { target.innerHTML = '<div class="vazio">Nenhum usuário cadastrado.</div>'; return; } target.innerHTML = '<table class="tabela"><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Acessos configurados</th></tr></thead><tbody>' + cachedUsers.map((user) => '<tr><td><strong>' + html(user.username) + '</strong></td><td>' + html(user.email) + '</td><td>' + html(user.role) + '</td><td>' + Number(user.permission_count || 0) + '</td></tr>').join('') + '</tbody></table>'; }
