@@ -16,6 +16,7 @@ import { listarMargemRedeSankhya } from './margem-rede-service.js';
 import {
   redesRentabilidade,
   salvarInvestimentoRentabilidade,
+  listarTodosInvestimentos,
   listarInvestimentosPendentes,
   informarValorRealInvestimento
 } from './investimentos-rentabilidade.js';
@@ -304,6 +305,28 @@ if (
 ) {
   const session = await getSession(request, env);
   return listarMargemRedeSankhya(request, env, session);
+}
+
+      if (url.pathname === '/api/investimentos' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const investimentos = await listarTodosInvestimentos(env);
+
+    return json({ investimentos });
+  } catch (error) {
+    return json(
+      {
+        error: error.message ||
+          'Não foi possível carregar os investimentos.'
+      },
+      500
+    );
+  }
 }
 
 if (url.pathname === '/api/investimentos' && request.method === 'POST') {
