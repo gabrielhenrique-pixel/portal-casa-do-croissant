@@ -210,7 +210,7 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
 }
-      if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
+ if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
   const session = await getSession(request, env);
 
   if (!session || session.role !== 'Administrador') {
@@ -219,7 +219,8 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 
   return dashboardRentabilidadePage();
 }
-      if (url.pathname === '/rentabilidade-sku' && request.method === 'GET') {
+
+if (url.pathname === '/rentabilidade-sku' && request.method === 'GET') {
   const session = await getSession(request, env);
 
   if (!session || session.role !== 'Administrador') {
@@ -227,6 +228,21 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   }
 
   return rentabilidadeSkuPage();
+}
+
+if (
+  url.pathname === '/api/rentabilidade/meta-faturamento' &&
+  request.method === 'GET'
+) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  return json({
+    metaFaturamento: await carregarMetaFaturamento(env)
+  });
 }
 
 if (
@@ -263,17 +279,7 @@ if (
   return json({
     metaFaturamento: resultado.metaFaturamento
   });
-}
-  const session = await getSession(request, env);
-
-  if (!session || session.role !== 'Administrador') {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
-
-  return json({
-    metaFaturamento: await carregarMetaFaturamento(env)
-  });
-}
+}     
 
 if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
   const session = await getSession(request, env);
