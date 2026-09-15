@@ -531,7 +531,7 @@ export function dashboardRentabilidadePage() {
       background:#0a6237;
     }
 
-    @media(max-width:1000px) {
+    @media(max-width:700px) {
       .cards { grid-template-columns:repeat(3,1fr); }
       .grade { grid-template-columns:1fr; }
       .tabela-area { min-height:0; }
