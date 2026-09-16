@@ -1,15 +1,9 @@
 import { carregarClientesRentabilidade } from './clientes-rentabilidade.js';
 import { buscarCmvUnitario } from './produtos-cmv-rentabilidade.js';
 
-// Valores atuais da aba Parametros da planilha. Nesta fase a tela apenas
-// reproduz o cálculo; a edição de parâmetros ficará para a etapa própria.
 const IMPOSTOS_PADRAO = 0.12;
 const META_MARGEM = 0.20;
 
-/**
- * Consulta as vendas NF-e no Sankhya e reproduz a aba Rentabilidade_SKU.
- * `session` é recebido do index para manter a autenticação centralizada.
- */
 export async function listarRentabilidadeSkuSankhya(request, env, session) {
   if (!session || session.role !== 'Administrador') {
     return responderJson({ error: 'Acesso não autorizado.' }, 403);
@@ -115,7 +109,6 @@ export function calcularLinhaRentabilidadeSku(linha, clientesPorCodigo) {
   const investimentos = 0;
   const custoComissao = faturamento * percentualComissao;
 
-  // S e T (frete) foram removidas por decisão desta etapa.
   const resultado = receitaLiquida - cmvTotal - custoPromotoria -
     custoContrato - investimentos - custoComissao;
   const margem = receitaLiquida > 0 ? resultado / receitaLiquida : null;
