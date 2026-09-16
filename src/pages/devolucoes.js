@@ -32,67 +32,56 @@ export function devolucoesPage() {
     }
 
     .cabecalho {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 18px;
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:15px;
+      padding:18px 34px;
+      border-radius:18px;
+      background:rgba(255,255,255,.92);
+      box-shadow:0 8px 22px rgba(23,48,82,.11);
+    }
+
+    .navegacao-topo {
+      display:flex;
+      gap:8px;
+      flex-shrink:0;
+    }
+
+    .nav-icone {
+      display:grid;
+      width:48px;
+      height:48px;
+      place-items:center;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 5px 15px rgba(23,48,82,.11);
+      color:#102e49;
+      font-size:25px;
+      font-weight:700;
+      text-decoration:none;
+      transition:transform .15s,background .15s;
+    }
+
+    .nav-icone:hover {
+      background:#edf3f9;
+      transform:translateY(-2px);
     }
 
     .titulo-area {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .botao-voltar {
-      width: 58px;
-      height: 58px;
-      border: 0;
-      border-radius: 50%;
-      background: var(--verde);
-      color: white;
-      font-size: 34px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .botao-voltar:hover {
-      background: var(--verde-claro);
-    }
-
-    h1 {
-      margin: 0;
-      color: var(--verde);
-      font-size: 39px;
-      letter-spacing: 1px;
-    }
-
-    .subtitulo {
-      margin: 4px 0 0;
-      color: #67736d;
-      font-size: 17px;
-    }
-
-    .atualizado {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #34443b;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .atualizado-icone {
-      color: var(--verde);
-      font-size: 30px;
+      flex:1;
     }
 
     .filtros {
-      display: grid;
-      grid-template-columns: 1.3fr 1.3fr 1.1fr 1.3fr 1fr;
-      gap: 14px;
-      margin-bottom: 20px;
+      display:flex;
+      align-items:end;
+      flex-wrap:wrap;
+      gap:18px;
+      margin-bottom:20px;
+      padding:14px 34px;
+      border-radius:15px;
+      background:rgba(255,255,255,.84);
+      box-shadow:0 6px 18px rgba(23,48,82,.08);
     }
 
     .filtro,
@@ -105,36 +94,54 @@ export function devolucoesPage() {
     }
 
     .filtro {
-      position: relative;
-      padding: 13px 18px;
+      position:relative;
+      flex:1 1 175px;
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
     }
 
     .filtro label {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--verde);
-      font-size: 12px;
-      font-weight: bold;
+      display:block;
+      margin-bottom:5px;
+      color:#17375f;
+      font-size:11px;
+      font-weight:700;
+      text-transform:uppercase;
     }
 
     .filtro input,
     .filtro select {
-      width: 100%;
-      border: 0;
-      outline: 0;
-      color: #273c31;
-      background: transparent;
-      font-size: 14px;
+      width:100%;
+      height:39px;
+      border:1px solid #c6d4e4;
+      border-radius:7px;
+      outline:0;
+      padding:0 10px;
+      color:#142f57;
+      background:#fff;
+      font-size:14px;
     }
 
     .periodo-inputs {
-      display: flex;
-      align-items: center;
-      gap: 7px;
+      display:flex;
+      align-items:center;
+      gap:7px;
+      height:39px;
+      padding:0 10px;
+      border:1px solid #c6d4e4;
+      border-radius:7px;
+      background:#fff;
     }
 
     .periodo-inputs input {
-      min-width: 0;
+      min-width:0;
+      height:auto;
+      padding:0;
+      border:0;
+      border-radius:0;
     }
 
     .indicadores {
@@ -492,8 +499,18 @@ export function devolucoesPage() {
 
     @media (max-width: 760px) {
       main { padding: 18px 12px; }
-      .cabecalho { align-items: flex-start; }
-      h1 { font-size: 26px; }
+      .cabecalho {
+        gap:12px;
+        padding:16px;
+      }
+      .nav-icone {
+        width:42px;
+        height:42px;
+        font-size:22px;
+      }
+      h1 { font-size:23px; }
+      .filtros { padding:14px; }
+      .filtro { flex-basis:100%; }
       .atualizado { display: none; }
       .filtros,
       .indicadores,
@@ -1013,24 +1030,11 @@ export function devolucoesPage() {
 
   <main>
     <header class="cabecalho">
-      <div class="titulo-area">
-        <button class="botao-voltar" onclick="voltarInicio()" title="Voltar ao portal">↩</button>
-
-        <div>
-          <h1>PAINEL DE DEVOLUÇÕES</h1>
-          <p class="subtitulo">
-            Consulta gerencial de devoluções e análise por parceiro e produto.
-          </p>
-        </div>
-      </div>
-
-      <div class="atualizado">
-        <span class="atualizado-icone">▣</span>
-        <span>
-          <strong>Atualizado em:</strong><br>
-          <span id="dataAtualizacao">—</span>
-        </span>
-      </div>
+      <nav class="navegacao-topo" aria-label="Navegação">
+        <a class="nav-icone" href="/dashboards" aria-label="Voltar aos dashboards">←</a>
+        <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
+      </nav>
+      <div class="titulo-area"><h1>PAINEL DE DEVOLUÇÕES</h1></div>
     </header>
 
     <section class="filtros">
