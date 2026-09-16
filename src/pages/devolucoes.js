@@ -1370,7 +1370,6 @@ function aplicarIconesVetoriais() {
           faturamentoPeriodo = Number(dados.faturamento || 0);
           preencherFiltros();
           aplicarFiltros();
-          atualizarData();
         })
         .catch(function(erro) {
           mostrarErro(erro.message || 'Não foi possível carregar as devoluções do Sankhya.');
