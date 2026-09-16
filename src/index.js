@@ -1933,7 +1933,7 @@ body.inicializando #inicializacao {
           <div class="grade"><div class="cartao-modulo"><strong>Usuários</strong><span></span></div><div class="cartao-modulo"><strong>Acessos</strong><span></span></div><div class="cartao-modulo"><strong>Próximas etapas</strong><span></span></div></div>
         </section>
         <section id="viewDashboards" class="visao oculto">
-          <div class="dashboards-intro"><h2>Dashboards</h2><p>Escolha o painel que deseja acompanhar.</p></div>
+          <div class="dashboards-intro"><h2>Dashboards</h2><p></p></div>
           <div class="grade-dashboards">
             <a class="cartao-dashboard cartao-dashboard--rentabilidade" href="/dashboard-rentabilidade"><span class="cartao-dashboard__icone">R$</span><strong>Rentabilidade</strong><small>Acompanhe faturamento, margem, investimentos e frete.</small><span class="cartao-dashboard__abrir">Abrir painel →</span></a>
             <a class="cartao-dashboard cartao-dashboard--vendas" href="/dashboard-vendas"><span class="cartao-dashboard__icone">↗</span><strong>Monitoramento de vendas</strong><small>Consulte metas, vendedores e grupos de produtos.</small><span class="cartao-dashboard__abrir">Abrir painel →</span></a>
