@@ -420,7 +420,6 @@ export function dashboardVendasPage() {
   <main>
     <header class="cabecalho">
       <h1>PAINEL MONITORAMENTO DE VENDAS</h1>
-      <small>DESEMPENHO · FOCO · RESULTADOS</small>
     </header>
 
     <form id="filtros" class="filtros">
