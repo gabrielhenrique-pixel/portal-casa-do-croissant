@@ -15,7 +15,7 @@ import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,l
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
-import {listarMonitoramentoVendasSankhya,salvarMetaVendedor} from './vendas-monitoramento-service.js';
+import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto} from './vendas-monitoramento-service.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
@@ -295,6 +295,43 @@ if (
     'META_VENDEDOR_ATUALIZADA',
     'Vendedor: ' +
       resultado.vendedor +
+      ' | Meta: R$ ' +
+      resultado.meta
+  );
+
+  return json({
+    meta: resultado
+  });
+}
+
+      if (
+  url.pathname === '/api/vendas/metas-produtos' &&
+  request.method === 'PUT'
+) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const resultado = await salvarMetaProduto(
+    env,
+    await bodyAsJson(request)
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'META_PRODUTO_ATUALIZADA',
+    'Produto: ' +
+      resultado.produto +
       ' | Meta: R$ ' +
       resultado.meta
   );
