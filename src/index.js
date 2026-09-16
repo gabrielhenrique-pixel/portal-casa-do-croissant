@@ -273,7 +273,38 @@ if (
 ) {
   const session = await getSession(request, env);
 
-  if (
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const resultado = await salvarMetaVendedor(
+    env,
+    await bodyAsJson(request)
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'META_VENDEDOR_ATUALIZADA',
+    'Vendedor: ' +
+      resultado.vendedor +
+      ' | Meta: R$ ' +
+      resultado.meta
+  );
+
+  return json({
+    meta: resultado
+  });
+}
+
+if (
   url.pathname === '/api/vendas/meta-empresa' &&
   request.method === 'PUT'
 ) {
@@ -307,38 +338,7 @@ if (
   return json(resultado);
 }
 
-  if (!session || session.role !== 'Administrador') {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
-
-  const resultado = await salvarMetaVendedor(
-    env,
-    await bodyAsJson(request)
-  );
-
-  if (resultado.error) {
-    return json(
-      { error: resultado.error },
-      resultado.status || 400
-    );
-  }
-
-  await writeAudit(
-    env,
-    session.username,
-    'META_VENDEDOR_ATUALIZADA',
-    'Vendedor: ' +
-      resultado.vendedor +
-      ' | Meta: R$ ' +
-      resultado.meta
-  );
-
-  return json({
-    meta: resultado
-  });
-}
-
-      if (
+if (
   url.pathname === '/api/vendas/metas-produtos' &&
   request.method === 'PUT'
 ) {
