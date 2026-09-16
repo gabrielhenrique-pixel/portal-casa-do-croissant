@@ -184,12 +184,14 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
 });
 
   const opcoesVendedores = linhasOpcoesVendedores.map((linha) => {
-    return {
-      codigoVendedor: String(linha[0] || ''),
-      vendedor: String(linha[1] || 'Sem vendedor').trim()
-    };
-  });
+  const codigoVendedor = String(linha[0] || '');
 
+  return {
+    codigoVendedor,
+    vendedor: String(linha[1] || 'Sem vendedor').trim(),
+    meta: metasPorVendedor.get(codigoVendedor) || 0
+  };
+});
   const totalFaturamento = vendedores.reduce(
     (total, vendedor) => total + vendedor.faturamento,
     0
