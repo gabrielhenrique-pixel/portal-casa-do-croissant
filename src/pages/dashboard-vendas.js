@@ -657,6 +657,8 @@ export function dashboardVendasPage() {
         'Pão Croissant 250g'
       ];
 
+      var META_POR_GRUPO = 200000;
+
       var moeda = new Intl.NumberFormat('pt-BR', {
         style:'currency',
         currency:'BRL'
@@ -773,7 +775,7 @@ export function dashboardVendasPage() {
         );
       }
 
-      function montarGrupos(produtos, totalFaturamento) {
+      function montarGrupos(produtos) {
         var porNome = new Map();
 
         produtos.forEach(function (produto) {
@@ -789,8 +791,8 @@ export function dashboardVendasPage() {
           return {
             nome:nome,
             faturamento:faturamento,
-            participacao:totalFaturamento > 0
-              ? faturamento / totalFaturamento
+            participacao:META_POR_GRUPO > 0
+              ? faturamento / META_POR_GRUPO
               : 0
           };
         });
@@ -802,10 +804,7 @@ export function dashboardVendasPage() {
         var vendedores = dados.vendedores || [];
         var opcoesVendedores = dados.opcoesVendedores || vendedores;
         var produtos = dados.produtos || [];
-        var grupos = montarGrupos(
-          produtos,
-          numero(dados.totalFaturamento)
-        );
+        var grupos = montarGrupos(produtos);
 
         preencherFiltro(opcoesVendedores);
 
