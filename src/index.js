@@ -1846,7 +1846,13 @@ body.inicializando #inicializacao {
         <nav id="menuPortal">
           <button class="nav-btn ativo" type="button" data-view="inicio">Página inicial</button>
           <button id="navDashboardRentabilidade"class="nav-btn"type="button"data-view="dashboard-rentabilidade">Dashboard de rentabilidade</button>
-          <buttonid="navDashboardVendas"class="nav-btn"type="button"data-view="dashboard-vendas">Monitoramento de vendas</button>
+          <button
+  id="navDashboardVendas"
+  class="nav-btn"
+  type="button"
+  data-view="dashboard-vendas">
+  Monitoramento de vendas
+</button>
           <button class="nav-btn" type="button" data-view="investimentos" data-module="INVESTIMENTOS">Investimentos</button>
           <button class="nav-btn" type="button" data-view="pendentes" data-module="INVESTIMENTOS_PENDENTES">Investimentos pendentes</button>
           <button class="nav-btn" type="button" data-view="devolucoes" data-module="DEVOLUCOES">Painel de devoluções</button>
