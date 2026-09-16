@@ -3,6 +3,7 @@ const META_MAXIMA = 999999999.99;
 export async function listarMonitoramentoVendasSankhya(request, env) {
   const url = new URL(request.url);
   const hoje = new Date();
+
   const primeiroDiaDoMes = new Date(
     hoje.getFullYear(),
     hoje.getMonth(),
@@ -48,7 +49,10 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     };
   }
 
-  await garantirTabelaMetasVendedores(env);
+  await Promise.all([
+    garantirTabelaMetasVendedores(env),
+    garantirTabelaMetasProdutos(env)
+  ]);
 
   const token = await obterTokenSankhya(env);
 
@@ -56,7 +60,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     ? '  AND CAB.CODVEND = ' + Number(vendedorSelecionado)
     : '';
 
-  const sql = [
+  const sqlVendedores = [
     'SELECT',
     '  CAB.CODVEND AS CODIGO_VENDEDOR,',
     "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR,",
@@ -74,22 +78,68 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
 
+  const sqlProdutos = [
+    'SELECT',
+    '  ITE.CODPROD AS CODIGO_PRODUTO,',
+    "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
+    '  SUM(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) AS FATURAMENTO',
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.TIPMOV = 'V'",
+    "  AND CAB.STATUSNOTA = 'L'",
+    '  AND CAB.CODTIPOPER = 1101',
+    filtroVendedor,
+    'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
+    'ORDER BY FATURAMENTO DESC'
+  ].filter(Boolean).join('\n');
+
+  const sqlOpcoesVendedores = [
+    'SELECT',
+    '  CAB.CODVEND AS CODIGO_VENDEDOR,',
+    "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR",
+    'FROM TGFCAB CAB',
+    'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND',
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.TIPMOV = 'V'",
+    "  AND CAB.STATUSNOTA = 'L'",
+    '  AND CAB.CODTIPOPER = 1101',
+    'GROUP BY CAB.CODVEND, VEN.APELIDO',
+    'ORDER BY VENDEDOR'
+  ].join('\n');
+
   const resultados = await Promise.all([
-    executarConsultaSankhya(token, sql),
-    listarMetasVendedores(env)
+    executarConsultaSankhya(token, sqlVendedores),
+    executarConsultaSankhya(token, sqlProdutos),
+    executarConsultaSankhya(token, sqlOpcoesVendedores),
+    listarMetasVendedores(env),
+    listarMetasProdutos(env)
   ]);
 
-  const linhas = resultados[0];
-  const metas = resultados[1];
+  const linhasVendedores = resultados[0];
+  const linhasProdutos = resultados[1];
+  const linhasOpcoesVendedores = resultados[2];
+  const metasVendedores = resultados[3];
+  const metasProdutos = resultados[4];
 
   const metasPorVendedor = new Map(
-    metas.map((meta) => [
+    metasVendedores.map((meta) => [
       String(meta.codigoVendedor),
       numero(meta.meta)
     ])
   );
 
-  const vendedores = linhas.map((linha) => {
+  const metasPorProduto = new Map(
+    metasProdutos.map((meta) => [
+      String(meta.codigoProduto),
+      numero(meta.meta)
+    ])
+  );
+
+  const vendedores = linhasVendedores.map((linha) => {
     const codigoVendedor = String(linha[0] || '');
     const meta = metasPorVendedor.get(codigoVendedor) || 0;
     const faturamento = numero(linha[2]);
@@ -102,6 +152,29 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
       percentualMeta: meta > 0
         ? faturamento / meta
         : null
+    };
+  });
+
+  const produtos = linhasProdutos.map((linha) => {
+    const codigoProduto = String(linha[0] || '');
+    const meta = metasPorProduto.get(codigoProduto) || 0;
+    const faturamento = numero(linha[2]);
+
+    return {
+      codigoProduto,
+      produto: String(linha[1] || 'Sem produto').trim(),
+      faturamento,
+      meta,
+      percentualMeta: meta > 0
+        ? faturamento / meta
+        : null
+    };
+  });
+
+  const opcoesVendedores = linhasOpcoesVendedores.map((linha) => {
+    return {
+      codigoVendedor: String(linha[0] || ''),
+      vendedor: String(linha[1] || 'Sem vendedor').trim()
     };
   });
 
@@ -119,6 +192,8 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     inicio,
     fim,
     vendedores,
+    opcoesVendedores,
+    produtos,
     totalFaturamento,
     totalMeta,
     percentualMeta: totalMeta > 0
@@ -187,6 +262,66 @@ export async function salvarMetaVendedor(env, dados) {
   };
 }
 
+export async function salvarMetaProduto(env, dados) {
+  const codigoProduto = String(
+    dados.codigoProduto || ''
+  ).trim();
+
+  const produto = String(
+    dados.produto || ''
+  ).trim().toUpperCase();
+
+  const meta = Number(dados.meta);
+
+  if (!/^\d+$/.test(codigoProduto)) {
+    return {
+      error: 'Código do produto inválido.',
+      status: 400
+    };
+  }
+
+  if (!produto) {
+    return {
+      error: 'Informe o nome do produto.',
+      status: 400
+    };
+  }
+
+  if (
+    !Number.isFinite(meta) ||
+    meta < 0 ||
+    meta > META_MAXIMA
+  ) {
+    return {
+      error: 'Informe uma meta válida.',
+      status: 400
+    };
+  }
+
+  await garantirTabelaMetasProdutos(env);
+
+  await env.DB.prepare(
+    `INSERT INTO vendas_metas_produtos
+      (codigo_produto, produto, meta, atualizado_em)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(codigo_produto) DO UPDATE SET
+       produto = excluded.produto,
+       meta = excluded.meta,
+       atualizado_em = excluded.atualizado_em`
+  ).bind(
+    codigoProduto,
+    produto,
+    meta,
+    new Date().toISOString()
+  ).run();
+
+  return {
+    codigoProduto,
+    produto,
+    meta
+  };
+}
+
 async function listarMetasVendedores(env) {
   const resultado = await env.DB.prepare(
     `SELECT
@@ -200,11 +335,35 @@ async function listarMetasVendedores(env) {
   return resultado.results || [];
 }
 
+async function listarMetasProdutos(env) {
+  const resultado = await env.DB.prepare(
+    `SELECT
+       codigo_produto AS codigoProduto,
+       produto,
+       meta
+     FROM vendas_metas_produtos
+     ORDER BY produto`
+  ).all();
+
+  return resultado.results || [];
+}
+
 async function garantirTabelaMetasVendedores(env) {
   await env.DB.prepare(
     `CREATE TABLE IF NOT EXISTS vendas_metas_vendedores (
       codigo_vendedor TEXT PRIMARY KEY,
       vendedor TEXT NOT NULL,
+      meta REAL NOT NULL DEFAULT 0,
+      atualizado_em TEXT NOT NULL
+    )`
+  ).run();
+}
+
+async function garantirTabelaMetasProdutos(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS vendas_metas_produtos (
+      codigo_produto TEXT PRIMARY KEY,
+      produto TEXT NOT NULL,
       meta REAL NOT NULL DEFAULT 0,
       atualizado_em TEXT NOT NULL
     )`
