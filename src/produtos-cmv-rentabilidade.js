@@ -1,5 +1,3 @@
-// Base fixa extraída da aba Produtos_CMV da planilha de rentabilidade.
-// As descrições são mantidas exatamente como estão no cadastro de CMV.
 export const produtosCmvRentabilidade = Object.freeze([
   Object.freeze({
     descricao: 'PÃO CROISSANT A CASA DO CROISSANT (CAIXA C/ 10 UNIDADES)',
@@ -62,8 +60,6 @@ const cmvPorDescricao = new Map(
   ])
 );
 
-// Equivale à procura exata da planilha, sem diferenciar maiúsculas/minúsculas.
-// Espaços no início e no fim são desconsiderados; produto não cadastrado vale zero.
 export function buscarCmvUnitario(descricao) {
   return cmvPorDescricao.get(chaveDaDescricao(descricao)) || 0;
 }
