@@ -79,22 +79,39 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   ].filter(Boolean).join('\n');
 
   const sqlProdutos = [
-    'SELECT',
-    '  ITE.CODPROD AS CODIGO_PRODUTO,',
-    "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
-    '  SUM(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) AS FATURAMENTO',
-    'FROM TGFCAB CAB',
-    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
-    'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
-    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
-    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
-    "  AND CAB.TIPMOV = 'V'",
-    "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER = 1101',
-    filtroVendedor,
-    'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
-    'ORDER BY FATURAMENTO DESC'
-  ].filter(Boolean).join('\n');
+  'SELECT',
+  '  GRUPO,',
+  '  SUM(FATURAMENTO) AS FATURAMENTO',
+  'FROM (',
+  '  SELECT',
+  '    CASE',
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%TO GO%' THEN 'Croissant TO GO'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%TOGO%' THEN 'Croissant TO GO'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%BISCOITO%' THEN 'Biscoitos'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%AMÊNDOA%' THEN 'Amêndoas'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%AMENDOAS%' THEN 'Amêndoas'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%125G%' THEN 'Pão Croissant 125g'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%250G%' THEN 'Pão Croissant 250g'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%10UN%' THEN 'Pão croissant 10un'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%10 UN%' THEN 'Pão croissant 10un'",
+  "      WHEN UPPER(PRO.DESCRPROD) LIKE '%CROISSANT%' THEN 'Pão croissant 10un'",
+  "      ELSE 'OUTROS'",
+  '    END AS GRUPO,',
+  '    (NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) AS FATURAMENTO',
+  '  FROM TGFCAB CAB',
+  '  INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+  '  LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+  "  WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+  "    AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+  "    AND CAB.TIPMOV = 'V'",
+  "    AND CAB.STATUSNOTA = 'L'",
+  '    AND CAB.CODTIPOPER = 1101',
+  filtroVendedor,
+  ')',
+  "WHERE GRUPO <> 'OUTROS'",
+  'GROUP BY GRUPO',
+  'ORDER BY GRUPO'
+].filter(Boolean).join('\n');
 
   const sqlOpcoesVendedores = [
     'SELECT',
@@ -156,20 +173,15 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   });
 
   const produtos = linhasProdutos.map((linha) => {
-    const codigoProduto = String(linha[0] || '');
-    const meta = metasPorProduto.get(codigoProduto) || 0;
-    const faturamento = numero(linha[2]);
+  const grupo = String(linha[0] || '').trim();
+  const faturamento = numero(linha[1]);
 
-    return {
-      codigoProduto,
-      produto: String(linha[1] || 'Sem produto').trim(),
-      faturamento,
-      meta,
-      percentualMeta: meta > 0
-        ? faturamento / meta
-        : null
-    };
-  });
+  return {
+    codigoProduto: grupo,
+    produto: grupo,
+    faturamento
+  };
+});
 
   const opcoesVendedores = linhasOpcoesVendedores.map((linha) => {
     return {
