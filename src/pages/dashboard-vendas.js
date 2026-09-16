@@ -297,6 +297,7 @@ export function dashboardVendasPage() {
       background:rgba(255,255,255,.94);
       box-shadow:0 8px 22px #1730521c;
       text-align:center;
+      position:relative;
     }
 
     .produto-card h3 {
@@ -352,6 +353,25 @@ export function dashboardVendasPage() {
       color:var(--texto);
       font-size:21px;
     }
+
+    .editar-meta-produto {
+  position:absolute;
+  top:12px;
+  right:12px;
+  display:grid;
+  width:28px;
+  min-height:28px;
+  place-items:center;
+  padding:0;
+  border-radius:50%;
+  background:#edf3fa;
+  color:#112b55;
+  font-size:16px;
+}
+
+.editar-meta-produto:hover {
+  background:#d9e7f6;
+}
 
     .vazio {
       grid-column:1/-1;
@@ -695,29 +715,118 @@ export function dashboardVendasPage() {
           'rotate(' + angulo(dados.percentualMeta) + 'deg)';
 
         $('cardsProdutos').innerHTML =
-          produtos.map(function (produto) {
-            return (
-              '<article class="produto-card">' +
-                '<h3>' +
-                  escapar(produto.produto) +
-                '</h3>' +
-                velocimetroProduto(produto) +
-                '<span class="produto-faturamento">' +
-                  'Faturamento' +
-                  '<strong>' +
-                    moeda.format(numero(produto.faturamento)) +
-                  '</strong>' +
-                '</span>' +
-              '</article>'
-            );
-          }).join('') ||
-          '<div class="vazio">' +
-            'Nenhum produto foi encontrado no período selecionado.' +
-          '</div>';
+  produtos.map(function (produto) {
+    return (
+      '<article class="produto-card" ' +
+        'data-codigo="' +
+          escapar(produto.codigoProduto) +
+        '" ' +
+        'data-produto="' +
+          escapar(produto.produto) +
+        '" ' +
+        'data-meta="' +
+          numero(produto.meta) +
+        '">' +
+        '<button class="editar-meta-produto" ' +
+          'type="button" ' +
+          'title="Editar meta do produto" ' +
+          'aria-label="Editar meta do produto">' +
+          '✎' +
+        '</button>' +
+        '<h3>' +
+          escapar(produto.produto) +
+        '</h3>' +
+        velocimetroProduto(produto) +
+        '<span class="produto-faturamento">' +
+          'Faturamento' +
+          '<strong>' +
+            moeda.format(numero(produto.faturamento)) +
+          '</strong>' +
+        '</span>' +
+      '</article>'
+    );
+  }).join('') ||
+  '<div class="vazio">' +
+    'Nenhum produto foi encontrado no período selecionado.' +
+  '</div>';
 
         $('estado').textContent = '';
         $('estado').className = 'estado';
       }
+
+      function numeroMeta(valor) {
+  var texto = String(valor || '')
+    .trim()
+    .replace(/\s/g, '');
+
+  if (texto.includes(',')) {
+    texto = texto.replace(/\./g, '').replace(',', '.');
+  }
+
+  return Number(texto);
+}
+
+async function editarMetaProduto(botao) {
+  var card = botao.closest('.produto-card');
+
+  if (!card) {
+    return;
+  }
+
+  var metaAtual = numero(card.dataset.meta);
+
+  var valorInformado = window.prompt(
+    'Informe a meta de faturamento deste produto:',
+    String(metaAtual).replace('.', ',')
+  );
+
+  if (valorInformado === null) {
+    return;
+  }
+
+  var meta = numeroMeta(valorInformado);
+
+  if (!Number.isFinite(meta) || meta < 0) {
+    $('estado').textContent = 'Informe uma meta válida.';
+    $('estado').className = 'estado erro';
+    return;
+  }
+
+  botao.disabled = true;
+
+  try {
+    var resposta = await fetch(
+      '/api/vendas/metas-produtos',
+      {
+        method:'PUT',
+        headers:{
+          'content-type':'application/json'
+        },
+        body:JSON.stringify({
+          codigoProduto:card.dataset.codigo,
+          produto:card.dataset.produto,
+          meta:meta
+        })
+      }
+    );
+
+    var dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw Error(
+        dados.error ||
+        'Não foi possível salvar a meta do produto.'
+      );
+    }
+
+    await carregar();
+  } catch (erro) {
+    $('estado').textContent = erro.message;
+    $('estado').className = 'estado erro';
+  } finally {
+    botao.disabled = false;
+  }
+}
 
       async function carregar() {
         var botao = $('atualizar');
@@ -763,6 +872,19 @@ export function dashboardVendasPage() {
           carregar();
         }
       );
+
+      $('cardsProdutos').addEventListener(
+  'click',
+  function (evento) {
+    var botao = evento.target.closest(
+      '.editar-meta-produto'
+    );
+
+    if (botao) {
+      editarMetaProduto(botao);
+    }
+  }
+);
 
       var hoje = new Date();
 
