@@ -15,7 +15,7 @@ import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,l
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
-import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto} from './vendas-monitoramento-service.js';
+import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
@@ -272,6 +272,40 @@ if (
   request.method === 'PUT'
 ) {
   const session = await getSession(request, env);
+
+  if (
+  url.pathname === '/api/vendas/meta-empresa' &&
+  request.method === 'PUT'
+) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const dados = await bodyAsJson(request);
+
+  const resultado = await salvarMetaEmpresaVendas(
+    env,
+    dados.meta
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'META_EMPRESA_VENDAS_ATUALIZADA',
+    'Meta total: R$ ' + resultado.meta
+  );
+
+  return json(resultado);
+}
 
   if (!session || session.role !== 'Administrador') {
     return json({ error: 'Acesso não autorizado.' }, 403);
