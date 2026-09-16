@@ -50,10 +50,11 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   }
 
   await Promise.all([
-    garantirTabelaMetasVendedores(env),
-    garantirTabelaMetasProdutos(env)
-  ]);
-
+  garantirTabelaMetasVendedores(env),
+  garantirTabelaMetasProdutos(env),
+  garantirTabelaMetaEmpresa(env)
+]);
+  
   const token = await obterTokenSankhya(env);
 
   const filtroVendedor = vendedorSelecionado
@@ -133,7 +134,8 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     executarConsultaSankhya(token, sqlProdutos),
     executarConsultaSankhya(token, sqlOpcoesVendedores),
     listarMetasVendedores(env),
-    listarMetasProdutos(env)
+    listarMetasProdutos(env),
+    carregarMetaEmpresa(env)
   ]);
 
   const linhasVendedores = resultados[0];
@@ -141,6 +143,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   const linhasOpcoesVendedores = resultados[2];
   const metasVendedores = resultados[3];
   const metasProdutos = resultados[4];
+  const metaEmpresa = numero(resultados[5]);
 
   const metasPorVendedor = new Map(
     metasVendedores.map((meta) => [
@@ -197,10 +200,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     0
   );
 
-  const totalMeta = vendedores.reduce(
-    (total, vendedor) => total + vendedor.meta,
-    0
-  );
+  const totalMeta = metaEmpresa;
 
   return {
     inicio,
@@ -276,6 +276,39 @@ export async function salvarMetaVendedor(env, dados) {
   };
 }
 
+export async function salvarMetaEmpresaVendas(env, meta) {
+  const valor = Number(meta);
+
+  if (
+    !Number.isFinite(valor) ||
+    valor < 0 ||
+    valor > META_MAXIMA
+  ) {
+    return {
+      error: 'Informe uma meta total válida.',
+      status: 400
+    };
+  }
+
+  await garantirTabelaMetaEmpresa(env);
+
+  await env.DB.prepare(
+    `INSERT INTO vendas_meta_empresa
+      (id, meta, atualizado_em)
+     VALUES (1, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       meta = excluded.meta,
+       atualizado_em = excluded.atualizado_em`
+  ).bind(
+    valor,
+    new Date().toISOString()
+  ).run();
+
+  return {
+    meta: valor
+  };
+}
+
 export async function salvarMetaProduto(env, dados) {
   const codigoProduto = String(
     dados.codigoProduto || ''
@@ -334,6 +367,28 @@ export async function salvarMetaProduto(env, dados) {
     produto,
     meta
   };
+}
+
+async function carregarMetaEmpresa(env) {
+  const resultado = await env.DB.prepare(
+    `SELECT meta
+     FROM vendas_meta_empresa
+     WHERE id = 1`
+  ).first();
+
+  return resultado
+    ? numero(resultado.meta)
+    : 0;
+}
+
+async function garantirTabelaMetaEmpresa(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS vendas_meta_empresa (
+      id INTEGER PRIMARY KEY,
+      meta REAL NOT NULL DEFAULT 0,
+      atualizado_em TEXT NOT NULL
+    )`
+  ).run();
 }
 
 async function listarMetasVendedores(env) {
