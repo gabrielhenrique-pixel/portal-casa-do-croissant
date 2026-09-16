@@ -9,13 +9,11 @@ export function dashboardVendasPage() {
   <style>
     :root {
       --azul:#102e49;
-      --azul-claro:#edf3f9;
-      --fundo:#dfe9f4;
-      --verde:#15954f;
-      --amarelo:#df9400;
-      --vermelho:#e93d49;
-      --texto:#112b55;
-      --cinza:#e3eaf2;
+      --fundo:#edf3f9;
+      --verde:#00ad4f;
+      --texto:#17355f;
+      --cinza:#a7a7a7;
+      --borda:#d3dce8;
     }
 
     * {
@@ -50,7 +48,6 @@ export function dashboardVendasPage() {
     h1 {
       margin:0;
       font-size:30px;
-      letter-spacing:.4px;
     }
 
     .cabecalho small {
@@ -58,7 +55,6 @@ export function dashboardVendasPage() {
       font-size:11px;
       font-weight:700;
       letter-spacing:4px;
-      white-space:nowrap;
     }
 
     .filtros {
@@ -215,9 +211,8 @@ export function dashboardVendasPage() {
       width:6px;
       height:108px;
       border-radius:6px;
-      background:var(--texto);
+      background:#112b55;
       transform-origin:50% 100%;
-      transition:transform .25s ease;
     }
 
     .pino {
@@ -227,7 +222,7 @@ export function dashboardVendasPage() {
       width:16px;
       height:16px;
       border-radius:50%;
-      background:var(--texto);
+      background:#112b55;
     }
 
     .gauge strong {
@@ -275,103 +270,172 @@ export function dashboardVendasPage() {
       font-size:21px;
     }
 
-    .secao-produtos {
+    .secao-grupos {
       margin-top:16px;
     }
 
-    .secao-produtos h2 {
-      margin:0 0 12px 4px;
-      font-size:21px;
-    }
-
-    .cards-produtos {
+    .cards-grupos {
       display:grid;
       grid-template-columns:repeat(3,minmax(250px,1fr));
       gap:14px;
     }
 
-    .produto-card {
-      min-height:248px;
-      padding:16px 14px;
-      border-radius:16px;
-      background:rgba(255,255,255,.94);
-      box-shadow:0 8px 22px #1730521c;
+    .grupo-card {
+      min-height:215px;
+      padding:14px;
+      border-radius:32px;
+      background:#fff;
+      box-shadow:0 2px 3px #0005;
       text-align:center;
-      position:relative;
     }
 
-    .produto-card h3 {
-      min-height:42px;
+    .grupo-card h3 {
       margin:0;
-      font-size:18px;
+      color:#42526c;
+      font-size:16px;
     }
 
-    .produto-gauge {
+    .grupo-gauge {
       position:relative;
-      width:210px;
-      max-width:100%;
-      height:122px;
-      margin:7px auto 0;
+      width:190px;
+      height:128px;
+      margin:10px auto 0;
     }
 
-    .produto-gauge svg {
+    .grupo-gauge svg {
       width:100%;
       height:100%;
       overflow:visible;
     }
 
-    .produto-ponteiro {
+    .grupo-ponteiro {
       position:absolute;
-      bottom:25px;
+      bottom:28px;
       left:calc(50% - 2px);
       width:4px;
-      height:67px;
+      height:64px;
       border-radius:4px;
-      background:var(--texto);
+      background:#111;
       transform-origin:50% 100%;
     }
 
-    .produto-gauge b {
+    .grupo-gauge b {
       position:absolute;
       right:0;
       bottom:0;
       left:0;
-      font-size:27px;
+      color:#23588d;
+      font-size:19px;
       text-align:center;
     }
 
-    .produto-faturamento {
-      display:block;
-      margin-top:4px;
+    .acoes-metas {
+      display:flex;
+      justify-content:center;
+      margin-top:20px;
+    }
+
+    .botao-metas {
+      min-width:190px;
+      background:#117445;
+    }
+
+    .botao-metas:hover {
+      background:#0d6039;
+    }
+
+    .modal {
+      position:fixed;
+      z-index:10;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:#102e4988;
+    }
+
+    .modal.aberto {
+      display:flex;
+    }
+
+    .janela-metas {
+      width:min(100%,680px);
+      max-height:90vh;
+      overflow:auto;
+      padding:24px;
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 18px 50px #0005;
+    }
+
+    .janela-metas h2 {
+      margin:0;
+      color:#102e49;
+    }
+
+    .janela-metas p {
+      margin:7px 0 18px;
       color:#617697;
-      font-size:13px;
+      font-size:14px;
     }
 
-    .produto-faturamento strong {
-      display:block;
-      margin-top:4px;
-      color:var(--texto);
-      font-size:21px;
+    .meta-total {
+      display:grid;
+      grid-template-columns:1fr 180px;
+      align-items:center;
+      gap:12px;
+      margin-bottom:14px;
+      padding:14px;
+      border-radius:10px;
+      background:#e9f2fb;
+      color:#102e49;
+      font-weight:700;
     }
 
-    .editar-meta-produto {
-  position:absolute;
-  top:12px;
-  right:12px;
-  display:grid;
-  width:28px;
-  min-height:28px;
-  place-items:center;
-  padding:0;
-  border-radius:50%;
-  background:#edf3fa;
-  color:#112b55;
-  font-size:16px;
-}
+    .meta-total input {
+      min-width:0;
+      border:0;
+      background:#fff;
+      text-align:right;
+      font-weight:700;
+    }
 
-.editar-meta-produto:hover {
-  background:#d9e7f6;
-}
+    .lista-metas {
+      display:grid;
+      gap:8px;
+    }
+
+    .linha-meta {
+      display:grid;
+      grid-template-columns:1fr 180px;
+      align-items:center;
+      gap:12px;
+      padding:10px 0;
+      border-bottom:1px solid #e2e9f1;
+    }
+
+    .linha-meta strong {
+      font-size:14px;
+    }
+
+    .linha-meta input {
+      min-width:0;
+      text-align:right;
+    }
+
+    .acoes-modal {
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:20px;
+    }
+
+    .cancelar {
+      border:1px solid #b8c8d8;
+      background:#fff;
+      color:#17355f;
+    }
 
     .vazio {
       grid-column:1/-1;
@@ -387,7 +451,7 @@ export function dashboardVendasPage() {
         grid-template-columns:1fr;
       }
 
-      .cards-produtos {
+      .cards-grupos {
         grid-template-columns:repeat(2,minmax(240px,1fr));
       }
     }
@@ -407,10 +471,6 @@ export function dashboardVendasPage() {
         font-size:23px;
       }
 
-      .cabecalho small {
-        white-space:normal;
-      }
-
       .filtros {
         padding:14px;
       }
@@ -425,12 +485,17 @@ export function dashboardVendasPage() {
         margin:2px 0 0;
       }
 
-      .cards-produtos {
+      .cards-grupos {
         grid-template-columns:1fr;
       }
 
       .totais {
         margin:5px 0;
+      }
+
+      .meta-total,
+      .linha-meta {
+        grid-template-columns:1fr;
       }
     }
   </style>
@@ -440,6 +505,7 @@ export function dashboardVendasPage() {
   <main>
     <header class="cabecalho">
       <h1>PAINEL MONITORAMENTO DE VENDAS</h1>
+      <small>DESEMPENHO · FOCO · RESULTADOS</small>
     </header>
 
     <form id="filtros" class="filtros">
@@ -498,21 +564,18 @@ export function dashboardVendasPage() {
                 stroke="#e5ebf2"
                 stroke-width="32"
               />
-
               <path
                 d="M 52 170 A 153 153 0 0 1 156 34"
                 fill="none"
                 stroke="#eb5560"
                 stroke-width="32"
               />
-
               <path
                 d="M 156 34 A 153 153 0 0 1 254 34"
                 fill="none"
                 stroke="#f4b22f"
                 stroke-width="32"
               />
-
               <path
                 d="M 254 34 A 153 153 0 0 1 358 170"
                 fill="none"
@@ -542,17 +605,57 @@ export function dashboardVendasPage() {
       </article>
     </section>
 
-    <section class="secao-produtos">
-      <h2>Produtos</h2>
-      <div id="cardsProdutos" class="cards-produtos"></div>
+    <section class="secao-grupos">
+      <div id="cardsGrupos" class="cards-grupos"></div>
+
+      <div class="acoes-metas">
+        <button id="abrirMetas" class="botao-metas" type="button">
+          ATUALIZAR METAS
+        </button>
+      </div>
     </section>
   </main>
+
+  <div id="modalMetas" class="modal">
+    <section class="janela-metas">
+      <h2>Atualizar metas de vendedores</h2>
+      <p>Altere os valores individuais. A meta total é recalculada automaticamente.</p>
+
+      <div class="meta-total">
+        <span>Meta total</span>
+        <input id="metaTotalEdicao" type="text" readonly>
+      </div>
+
+      <div id="listaMetas" class="lista-metas"></div>
+
+      <div class="acoes-modal">
+        <button id="cancelarMetas" class="cancelar" type="button">
+          Cancelar
+        </button>
+
+        <button id="salvarMetas" type="button">
+          Salvar metas
+        </button>
+      </div>
+    </section>
+  </div>
 
   <script>
     (function () {
       var $ = function (id) {
         return document.getElementById(id);
       };
+
+      var dadosAtuais = null;
+
+      var GRUPOS = [
+        'Croissant TO GO',
+        'Biscoitos',
+        'Amêndoas',
+        'Pão croissant 10un',
+        'Pão Croissant 125g',
+        'Pão Croissant 250g'
+      ];
 
       var moeda = new Intl.NumberFormat('pt-BR', {
         style:'currency',
@@ -568,6 +671,18 @@ export function dashboardVendasPage() {
       function numero(valor) {
         valor = Number(valor);
         return Number.isFinite(valor) ? valor : 0;
+      }
+
+      function numeroMeta(valor) {
+        var texto = String(valor || '')
+          .trim()
+          .replace(/\s/g, '');
+
+        if (texto.includes(',')) {
+          texto = texto.replace(/\./g, '').replace(',', '.');
+        }
+
+        return Number(texto);
       }
 
       function dataIso(data) {
@@ -630,44 +745,69 @@ export function dashboardVendasPage() {
         }
       }
 
-      function velocimetroProduto(produto) {
-        var metaAtingida = produto.percentualMeta;
-        var cor = corMeta(metaAtingida);
-
-        var texto = metaAtingida == null
-          ? '—'
-          : percentual.format(metaAtingida);
-
+      function velocimetroGrupo(grupo) {
+        var participacao = grupo.participacao;
         var progresso = Math.max(
           0,
-          Math.min(numero(metaAtingida), 1)
+          Math.min(numero(participacao), 1)
         ) * 245;
 
         return (
-          '<div class="produto-gauge">' +
-            '<svg viewBox="0 0 210 130" aria-hidden="true">' +
-              '<path d="M 25 105 A 80 80 0 0 1 185 105" ' +
-                'fill="none" stroke="#e2e9f1" stroke-width="24"/>' +
-              '<path d="M 25 105 A 80 80 0 0 1 185 105" ' +
-                'fill="none" stroke="' + cor + '" stroke-width="24" ' +
-                'stroke-dasharray="' + progresso.toFixed(1) + ' 245"/>' +
+          '<div class="grupo-gauge">' +
+            '<svg viewBox="0 0 190 130" aria-hidden="true">' +
+              '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
+                'fill="none" stroke="#a7a7a7" stroke-width="25"/>' +
+              '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
+                'fill="none" stroke="#00ad4f" stroke-width="25" ' +
+                'stroke-dasharray="' +
+                  progresso.toFixed(1) +
+                  ' 245"/>' +
             '</svg>' +
-            '<i class="produto-ponteiro" style="transform:rotate(' +
-              angulo(metaAtingida) +
+            '<i class="grupo-ponteiro" style="transform:rotate(' +
+              angulo(participacao) +
               'deg)"></i>' +
-            '<b style="color:' + cor + '">' +
-              texto +
+            '<b>' +
+              percentual.format(participacao) +
             '</b>' +
           '</div>'
         );
       }
 
+      function montarGrupos(produtos, totalFaturamento) {
+        var porNome = new Map();
+
+        produtos.forEach(function (produto) {
+          porNome.set(
+            String(produto.produto || ''),
+            numero(produto.faturamento)
+          );
+        });
+
+        return GRUPOS.map(function (nome) {
+          var faturamento = porNome.get(nome) || 0;
+
+          return {
+            nome:nome,
+            faturamento:faturamento,
+            participacao:totalFaturamento > 0
+              ? faturamento / totalFaturamento
+              : 0
+          };
+        });
+      }
+
       function render(dados) {
+        dadosAtuais = dados;
+
         var vendedores = dados.vendedores || [];
         var opcoesVendedores = dados.opcoesVendedores || vendedores;
         var produtos = dados.produtos || [];
+        var grupos = montarGrupos(
+          produtos,
+          numero(dados.totalFaturamento)
+        );
 
-      preencherFiltro(opcoesVendedores);
+        preencherFiltro(opcoesVendedores);
 
         $('linhas').innerHTML =
           vendedores.map(function (vendedor) {
@@ -714,119 +854,142 @@ export function dashboardVendasPage() {
         $('ponteiroTotal').style.transform =
           'rotate(' + angulo(dados.percentualMeta) + 'deg)';
 
-        $('cardsProdutos').innerHTML =
-  produtos.map(function (produto) {
-    return (
-      '<article class="produto-card" ' +
-        'data-codigo="' +
-          escapar(produto.codigoProduto) +
-        '" ' +
-        'data-produto="' +
-          escapar(produto.produto) +
-        '" ' +
-        'data-meta="' +
-          numero(produto.meta) +
-        '">' +
-        '<button class="editar-meta-produto" ' +
-          'type="button" ' +
-          'title="Editar meta do produto" ' +
-          'aria-label="Editar meta do produto">' +
-          '✎' +
-        '</button>' +
-        '<h3>' +
-          escapar(produto.produto) +
-        '</h3>' +
-        velocimetroProduto(produto) +
-        '<span class="produto-faturamento">' +
-          'Faturamento' +
-          '<strong>' +
-            moeda.format(numero(produto.faturamento)) +
-          '</strong>' +
-        '</span>' +
-      '</article>'
-    );
-  }).join('') ||
-  '<div class="vazio">' +
-    'Nenhum produto foi encontrado no período selecionado.' +
-  '</div>';
+        $('cardsGrupos').innerHTML =
+          grupos.map(function (grupo) {
+            return (
+              '<article class="grupo-card">' +
+                '<h3>' +
+                  escapar(grupo.nome) +
+                '</h3>' +
+                velocimetroGrupo(grupo) +
+              '</article>'
+            );
+          }).join('');
 
         $('estado').textContent = '';
         $('estado').className = 'estado';
       }
 
-      function numeroMeta(valor) {
-  var texto = String(valor || '')
-    .trim()
-    .replace(/\s/g, '');
+      function abrirMetas() {
+        if (!dadosAtuais) {
+          return;
+        }
 
-  if (texto.includes(',')) {
-    texto = texto.replace(/\./g, '').replace(',', '.');
-  }
+        var vendedores = dadosAtuais.opcoesVendedores ||
+          dadosAtuais.vendedores ||
+          [];
 
-  return Number(texto);
-}
+        $('listaMetas').innerHTML =
+          vendedores.map(function (vendedor) {
+            return (
+              '<label class="linha-meta">' +
+                '<strong>' +
+                  escapar(vendedor.vendedor) +
+                '</strong>' +
+                '<input class="input-meta-vendedor" ' +
+                  'type="text" ' +
+                  'inputmode="decimal" ' +
+                  'data-codigo="' +
+                    escapar(vendedor.codigoVendedor) +
+                  '" ' +
+                  'data-vendedor="' +
+                    escapar(vendedor.vendedor) +
+                  '" ' +
+                  'value="' +
+                    numero(vendedor.meta) +
+                  '">' +
+              '</label>'
+            );
+          }).join('') ||
+          '<div class="vazio">Nenhum vendedor encontrado.</div>';
 
-async function editarMetaProduto(botao) {
-  var card = botao.closest('.produto-card');
+        atualizarMetaTotalEdicao();
 
-  if (!card) {
-    return;
-  }
-
-  var metaAtual = numero(card.dataset.meta);
-
-  var valorInformado = window.prompt(
-    'Informe a meta de faturamento deste produto:',
-    String(metaAtual).replace('.', ',')
-  );
-
-  if (valorInformado === null) {
-    return;
-  }
-
-  var meta = numeroMeta(valorInformado);
-
-  if (!Number.isFinite(meta) || meta < 0) {
-    $('estado').textContent = 'Informe uma meta válida.';
-    $('estado').className = 'estado erro';
-    return;
-  }
-
-  botao.disabled = true;
-
-  try {
-    var resposta = await fetch(
-      '/api/vendas/metas-produtos',
-      {
-        method:'PUT',
-        headers:{
-          'content-type':'application/json'
-        },
-        body:JSON.stringify({
-          codigoProduto:card.dataset.codigo,
-          produto:card.dataset.produto,
-          meta:meta
-        })
+        $('modalMetas').classList.add('aberto');
       }
-    );
 
-    var dados = await resposta.json();
+      function fecharMetas() {
+        $('modalMetas').classList.remove('aberto');
+      }
 
-    if (!resposta.ok) {
-      throw Error(
-        dados.error ||
-        'Não foi possível salvar a meta do produto.'
-      );
-    }
+      function atualizarMetaTotalEdicao() {
+        var total = Array.from(
+          document.querySelectorAll('.input-meta-vendedor')
+        ).reduce(function (soma, input) {
+          var valor = numeroMeta(input.value);
 
-    await carregar();
-  } catch (erro) {
-    $('estado').textContent = erro.message;
-    $('estado').className = 'estado erro';
-  } finally {
-    botao.disabled = false;
-  }
-}
+          return soma + (
+            Number.isFinite(valor) && valor > 0
+              ? valor
+              : 0
+          );
+        }, 0);
+
+        $('metaTotalEdicao').value = moeda.format(total);
+      }
+
+      async function salvarMetas() {
+        var botao = $('salvarMetas');
+
+        var entradas = Array.from(
+          document.querySelectorAll('.input-meta-vendedor')
+        );
+
+        var metas = entradas.map(function (input) {
+          return {
+            codigoVendedor:input.dataset.codigo,
+            vendedor:input.dataset.vendedor,
+            meta:numeroMeta(input.value)
+          };
+        });
+
+        var invalida = metas.some(function (meta) {
+          return !Number.isFinite(meta.meta) || meta.meta < 0;
+        });
+
+        if (invalida) {
+          $('estado').textContent =
+            'Existem metas com valor inválido.';
+          $('estado').className = 'estado erro';
+          return;
+        }
+
+        botao.disabled = true;
+        botao.textContent = 'Salvando...';
+
+        try {
+          for (var indice = 0; indice < metas.length; indice++) {
+            var resposta = await fetch(
+              '/api/vendas/metas',
+              {
+                method:'PUT',
+                headers:{
+                  'content-type':'application/json'
+                },
+                body:JSON.stringify(metas[indice])
+              }
+            );
+
+            var dados = await resposta.json();
+
+            if (!resposta.ok) {
+              throw Error(
+                dados.error ||
+                'Não foi possível salvar as metas.'
+              );
+            }
+          }
+
+          fecharMetas();
+          await carregar();
+        } catch (erro) {
+          $('estado').textContent = erro.message;
+          $('estado').className = 'estado erro';
+        } finally {
+          botao.disabled = false;
+          botao.textContent = 'Salvar metas';
+        }
+      }
 
       async function carregar() {
         var botao = $('atualizar');
@@ -873,18 +1036,23 @@ async function editarMetaProduto(botao) {
         }
       );
 
-      $('cardsProdutos').addEventListener(
-  'click',
-  function (evento) {
-    var botao = evento.target.closest(
-      '.editar-meta-produto'
-    );
+      $('abrirMetas').addEventListener('click', abrirMetas);
+      $('cancelarMetas').addEventListener('click', fecharMetas);
+      $('salvarMetas').addEventListener('click', salvarMetas);
 
-    if (botao) {
-      editarMetaProduto(botao);
-    }
-  }
-);
+      $('listaMetas').addEventListener(
+        'input',
+        atualizarMetaTotalEdicao
+      );
+
+      $('modalMetas').addEventListener(
+        'click',
+        function (evento) {
+          if (evento.target === $('modalMetas')) {
+            fecharMetas();
+          }
+        }
+      );
 
       var hoje = new Date();
 
