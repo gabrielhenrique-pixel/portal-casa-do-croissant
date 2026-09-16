@@ -585,39 +585,38 @@ export function dashboardVendasPage() {
       }
 
       function gaugePequeno(vendedor) {
-        var metaAtingida = vendedor.percentualMeta;
-        var texto = metaAtingida == null
-          ? '—'
-          : percentual.format(metaAtingida);
+  var metaAtingida = vendedor.percentualMeta;
 
-        var progresso = Math.max(
-          0,
-          Math.min(numero(metaAtingida), 1)
-        ) * 245;
+  var texto = metaAtingida == null
+    ? '—'
+    : percentual.format(metaAtingida);
 
-        return `
-          <div class="mini-gauge">
-            <svg viewBox="0 0 200 125" aria-hidden="true">
-              <path d="M 22 101 A 78 78 0 0 1 178 101"
-                fill="none"
-                stroke="#e2e9f1"
-                stroke-width="23"/>
+  var progresso = Math.max(
+    0,
+    Math.min(numero(metaAtingida), 1)
+  ) * 245;
 
-              <path d="M 22 101 A 78 78 0 0 1 178 101"
-                fill="none"
-                stroke="${corMeta(metaAtingida)}"
-                stroke-width="23"
-                stroke-dasharray="${progresso.toFixed(1)} 245"/>
-            </svg>
-
-            <i style="transform:rotate(${angulo(metaAtingida)}deg)"></i>
-
-            <b style="color:${corMeta(metaAtingida)}">
-              ${texto}
-            </b>
-          </div>
-        `;
-      }
+  return (
+    '<div class="mini-gauge">' +
+      '<svg viewBox="0 0 200 125" aria-hidden="true">' +
+        '<path d="M 22 101 A 78 78 0 0 1 178 101" ' +
+          'fill="none" stroke="#e2e9f1" stroke-width="23"/>' +
+        '<path d="M 22 101 A 78 78 0 0 1 178 101" ' +
+          'fill="none" stroke="' + corMeta(metaAtingida) + '" ' +
+          'stroke-width="23" ' +
+          'stroke-dasharray="' + progresso.toFixed(1) + ' 245"/>' +
+      '</svg>' +
+      '<i style="transform:rotate(' +
+        angulo(metaAtingida) +
+        'deg)"></i>' +
+      '<b style="color:' +
+        corMeta(metaAtingida) +
+        '">' +
+        texto +
+      '</b>' +
+    '</div>'
+  );
+}
 
       function preencherFiltro(vendedores) {
         var select = $('vendedor');
@@ -626,12 +625,13 @@ export function dashboardVendasPage() {
         select.innerHTML =
           '<option value="">Todos</option>' +
           vendedores.map(function (vendedor) {
-            return `
-              <option value="${escapar(vendedor.codigoVendedor)}">
-                ${escapar(vendedor.vendedor)}
-              </option>
-            `;
-          }).join('');
+            return (
+            '<option value="' +
+            escapar(vendedor.codigoVendedor) +
+            '">' +
+            escapar(vendedor.vendedor) +
+            '</option>'
+          );
 
         var existe = Array.from(select.options).some(
           function (opcao) {
@@ -656,16 +656,21 @@ export function dashboardVendasPage() {
             ? '<span class="sem-meta">Sem meta</span>'
             : percentual.format(vendedor.percentualMeta);
 
-          return `
-            <tr>
-              <td><strong>${escapar(vendedor.vendedor)}</strong></td>
-              <td>${moeda.format(numero(vendedor.faturamento))}</td>
-              <td style="color:${corMeta(vendedor.percentualMeta)}">
-                ${percentualMeta}
-              </td>
-            </tr>
-          `;
-        }).join('') ||
+          return (
+          '<tr>' +
+          '<td><strong>' +
+          escapar(vendedor.vendedor) +
+        '</strong></td>' +
+    '<td>' +
+      moeda.format(numero(vendedor.faturamento)) +
+    '</td>' +
+    '<td style="color:' +
+      corMeta(vendedor.percentualMeta) +
+      '">' +
+      metaAtingida +
+    '</td>' +
+  '</tr>'
+);
           '<tr><td colspan="3" class="sem-meta">Nenhuma venda encontrada no período.</td></tr>';
 
         $('faturamentoTotal').textContent = moeda.format(
@@ -692,40 +697,32 @@ export function dashboardVendasPage() {
             ? moeda.format(numero(vendedor.meta))
             : 'não definida';
 
-          return `
-            <article class="card" data-codigo="${escapar(vendedor.codigoVendedor)}">
-              <h3>${escapar(vendedor.vendedor)}</h3>
-
-              ${gaugePequeno(vendedor)}
-
-              <span class="faturamento">
-                Faturamento
-                <strong>${moeda.format(numero(vendedor.faturamento))}</strong>
-              </span>
-
-              <div class="meta-card">
-                <span>
-                  Meta:
-                  <strong>${meta}</strong>
-                </span>
-
-                <button class="editar" type="button">
-                  Editar
-                </button>
-
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value="${numero(vendedor.meta)}">
-
-                <button class="salvar" type="button">
-                  Salvar
-                </button>
-              </div>
-            </article>
-          `;
-        }).join('') ||
+          return (
+  '<article class="card" data-codigo="' +
+    escapar(vendedor.codigoVendedor) +
+    '">' +
+    '<h3>' +
+      escapar(vendedor.vendedor) +
+    '</h3>' +
+    gaugePequeno(vendedor) +
+    '<span class="faturamento">' +
+      'Faturamento' +
+      '<strong>' +
+        moeda.format(numero(vendedor.faturamento)) +
+      '</strong>' +
+    '</span>' +
+    '<div class="meta-card">' +
+      '<span>Meta: <strong>' +
+        meta +
+      '</strong></span>' +
+      '<button class="editar" type="button">Editar</button>' +
+      '<input type="number" min="0" step="0.01" value="' +
+        numero(vendedor.meta) +
+      '">' +
+      '<button class="salvar" type="button">Salvar</button>' +
+    '</div>' +
+  '</article>'
+);
           '<div class="vazio">Nenhuma venda foi encontrada no período selecionado.</div>';
 
         $('estado').textContent = '';
