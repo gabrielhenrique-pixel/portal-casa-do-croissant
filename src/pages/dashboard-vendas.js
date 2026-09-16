@@ -644,9 +644,10 @@ export function dashboardVendasPage() {
 
       function render(dados) {
         var vendedores = dados.vendedores || [];
+        var opcoesVendedores = dados.opcoesVendedores || vendedores;
         var produtos = dados.produtos || [];
 
-        preencherFiltro(vendedores);
+      preencherFiltro(opcoesVendedores);
 
         $('linhas').innerHTML =
           vendedores.map(function (vendedor) {
