@@ -4,16 +4,18 @@ export function dashboardVendasPage() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Monitoramento de vendas</title>
+  <title>Painel monitoramento de vendas</title>
 
   <style>
     :root {
       --azul:#102e49;
-      --fundo:#edf3f9;
+      --azul-claro:#edf3f9;
+      --fundo:#dfe9f4;
       --verde:#15954f;
       --amarelo:#df9400;
       --vermelho:#e93d49;
       --texto:#112b55;
+      --cinza:#e3eaf2;
     }
 
     * {
@@ -22,15 +24,16 @@ export function dashboardVendasPage() {
 
     body {
       margin:0;
+      min-height:100vh;
       background:linear-gradient(135deg,#edf3f9,#dfe9f4);
       color:var(--texto);
       font-family:Arial,sans-serif;
     }
 
     main {
-      max-width:1500px;
+      max-width:1550px;
       margin:auto;
-      padding:18px 18px 34px;
+      padding:10px 12px 34px;
     }
 
     .cabecalho {
@@ -38,15 +41,16 @@ export function dashboardVendasPage() {
       align-items:center;
       justify-content:space-between;
       gap:24px;
-      padding:18px 28px;
+      padding:18px 34px;
       border-radius:18px;
-      background:rgba(255,255,255,.91);
+      background:rgba(255,255,255,.92);
       box-shadow:0 8px 22px #1730521c;
     }
 
     h1 {
       margin:0;
-      font-size:28px;
+      font-size:30px;
+      letter-spacing:.4px;
     }
 
     .cabecalho small {
@@ -61,11 +65,11 @@ export function dashboardVendasPage() {
       display:flex;
       align-items:end;
       flex-wrap:wrap;
-      gap:13px;
+      gap:18px;
       margin-top:15px;
-      padding:14px 28px;
+      padding:14px 34px;
       border-radius:15px;
-      background:rgba(255,255,255,.82);
+      background:rgba(255,255,255,.84);
       box-shadow:0 6px 18px #17305214;
     }
 
@@ -80,7 +84,8 @@ export function dashboardVendasPage() {
 
     input,
     select {
-      height:37px;
+      height:39px;
+      min-width:175px;
       border:1px solid #c6d4e4;
       border-radius:7px;
       padding:0 10px;
@@ -91,13 +96,14 @@ export function dashboardVendasPage() {
     }
 
     select {
-      min-width:210px;
+      min-width:245px;
     }
 
     button {
+      min-height:39px;
       border:0;
-      border-radius:7px;
-      padding:10px 16px;
+      border-radius:8px;
+      padding:10px 18px;
       background:var(--azul);
       color:#fff;
       font:inherit;
@@ -136,7 +142,7 @@ export function dashboardVendasPage() {
 
     .grade-principal {
       display:grid;
-      grid-template-columns:minmax(350px,.74fr) minmax(500px,1.26fr);
+      grid-template-columns:minmax(410px,.7fr) minmax(560px,1.3fr);
       gap:14px;
       margin-top:14px;
     }
@@ -160,7 +166,7 @@ export function dashboardVendasPage() {
 
     th,
     td {
-      padding:10px 9px;
+      padding:9px 10px;
       border-bottom:1px solid #dce6f0;
       font-size:13px;
       text-align:right;
@@ -186,14 +192,14 @@ export function dashboardVendasPage() {
     .gauge-total {
       display:grid;
       place-items:center;
-      min-height:259px;
+      min-height:250px;
     }
 
     .gauge {
       position:relative;
-      width:390px;
+      width:410px;
       max-width:100%;
-      height:205px;
+      height:215px;
     }
 
     .gauge svg {
@@ -204,24 +210,24 @@ export function dashboardVendasPage() {
 
     .ponteiro {
       position:absolute;
-      bottom:33px;
-      left:calc(50% - 2px);
-      width:4px;
-      height:105px;
-      border-radius:4px;
-      background:#112b55;
+      bottom:34px;
+      left:calc(50% - 3px);
+      width:6px;
+      height:108px;
+      border-radius:6px;
+      background:var(--texto);
       transform-origin:50% 100%;
       transition:transform .25s ease;
     }
 
     .pino {
       position:absolute;
-      bottom:25px;
+      bottom:27px;
       left:calc(50% - 8px);
       width:16px;
       height:16px;
       border-radius:50%;
-      background:#112b55;
+      background:var(--texto);
     }
 
     .gauge strong {
@@ -229,14 +235,14 @@ export function dashboardVendasPage() {
       right:0;
       bottom:0;
       left:0;
-      font-size:33px;
+      font-size:34px;
       text-align:center;
     }
 
     .gauge span {
       position:absolute;
       right:0;
-      bottom:-22px;
+      bottom:-21px;
       left:0;
       color:#58729a;
       font-size:15px;
@@ -247,7 +253,7 @@ export function dashboardVendasPage() {
       display:grid;
       grid-template-columns:repeat(2,1fr);
       gap:1px;
-      margin:5px 32px 0;
+      margin:5px 36px 0;
       background:#d7e1ed;
     }
 
@@ -269,14 +275,23 @@ export function dashboardVendasPage() {
       font-size:21px;
     }
 
-    .cards {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(220px,1fr));
-      gap:14px;
-      margin-top:14px;
+    .secao-produtos {
+      margin-top:16px;
     }
 
-    .card {
+    .secao-produtos h2 {
+      margin:0 0 12px 4px;
+      font-size:21px;
+    }
+
+    .cards-produtos {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(250px,1fr));
+      gap:14px;
+    }
+
+    .produto-card {
+      min-height:248px;
       padding:16px 14px;
       border-radius:16px;
       background:rgba(255,255,255,.94);
@@ -284,94 +299,58 @@ export function dashboardVendasPage() {
       text-align:center;
     }
 
-    .card h3 {
+    .produto-card h3 {
+      min-height:42px;
       margin:0;
       font-size:18px;
     }
 
-    .mini-gauge {
+    .produto-gauge {
       position:relative;
-      width:200px;
+      width:210px;
       max-width:100%;
-      height:113px;
-      margin:12px auto 2px;
+      height:122px;
+      margin:7px auto 0;
     }
 
-    .mini-gauge svg {
+    .produto-gauge svg {
       width:100%;
       height:100%;
       overflow:visible;
     }
 
-    .mini-gauge i {
+    .produto-ponteiro {
       position:absolute;
-      bottom:22px;
+      bottom:25px;
       left:calc(50% - 2px);
       width:4px;
-      height:64px;
+      height:67px;
       border-radius:4px;
       background:var(--texto);
       transform-origin:50% 100%;
     }
 
-    .mini-gauge b {
+    .produto-gauge b {
       position:absolute;
       right:0;
       bottom:0;
       left:0;
-      font-size:25px;
+      font-size:27px;
       text-align:center;
     }
 
-    .faturamento {
+    .produto-faturamento {
       display:block;
-      margin-top:5px;
+      margin-top:4px;
       color:#617697;
       font-size:13px;
     }
 
-    .faturamento strong {
+    .produto-faturamento strong {
       display:block;
       margin-top:4px;
       color:var(--texto);
-      font-size:19px;
-    }
-
-    .meta-card {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:7px;
-      margin-top:11px;
-      color:#5a7091;
-      font-size:12px;
-    }
-
-    .meta-card input {
-      display:none;
-      width:116px;
-      height:29px;
-      font-size:12px;
-    }
-
-    .meta-card button {
-      padding:5px 8px;
-      font-size:11px;
-    }
-
-    .meta-card.editando span,
-    .meta-card.editando .editar {
-      display:none;
-    }
-
-    .meta-card.editando input,
-    .meta-card.editando .salvar {
-      display:block;
-    }
-
-    .salvar {
-      display:none;
-      background:#138347;
+      font-size:21px;
     }
 
     .vazio {
@@ -383,17 +362,17 @@ export function dashboardVendasPage() {
       text-align:center;
     }
 
-    @media (max-width:900px) {
+    @media (max-width:1000px) {
       .grade-principal {
         grid-template-columns:1fr;
       }
 
-      .cards {
-        grid-template-columns:repeat(2,minmax(200px,1fr));
+      .cards-produtos {
+        grid-template-columns:repeat(2,minmax(240px,1fr));
       }
     }
 
-    @media (max-width:620px) {
+    @media (max-width:650px) {
       main {
         padding:10px;
       }
@@ -408,21 +387,25 @@ export function dashboardVendasPage() {
         font-size:23px;
       }
 
+      .cabecalho small {
+        white-space:normal;
+      }
+
       .filtros {
         padding:14px;
       }
 
       label,
-      select,
-      input {
+      input,
+      select {
         width:100%;
       }
 
       .voltar {
-        margin:3px 0 0;
+        margin:2px 0 0;
       }
 
-      .cards {
+      .cards-produtos {
         grid-template-columns:1fr;
       }
 
@@ -489,31 +472,38 @@ export function dashboardVendasPage() {
 
         <div class="gauge-total">
           <div class="gauge">
-            <svg viewBox="0 0 390 220" aria-hidden="true">
-              <path d="M 48 164 A 147 147 0 0 1 342 164"
+            <svg viewBox="0 0 410 230" aria-hidden="true">
+              <path
+                d="M 52 170 A 153 153 0 0 1 358 170"
                 fill="none"
                 stroke="#e5ebf2"
-                stroke-width="31"/>
+                stroke-width="32"
+              />
 
-              <path d="M 48 164 A 147 147 0 0 1 148 34"
+              <path
+                d="M 52 170 A 153 153 0 0 1 156 34"
                 fill="none"
                 stroke="#eb5560"
-                stroke-width="31"/>
+                stroke-width="32"
+              />
 
-              <path d="M 148 34 A 147 147 0 0 1 244 34"
+              <path
+                d="M 156 34 A 153 153 0 0 1 254 34"
                 fill="none"
                 stroke="#f4b22f"
-                stroke-width="31"/>
+                stroke-width="32"
+              />
 
-              <path d="M 244 34 A 147 147 0 0 1 342 164"
+              <path
+                d="M 254 34 A 153 153 0 0 1 358 170"
                 fill="none"
                 stroke="#5dcc7b"
-                stroke-width="31"/>
+                stroke-width="32"
+              />
             </svg>
 
             <i id="ponteiroTotal" class="ponteiro"></i>
             <i class="pino"></i>
-
             <strong id="pctTotal">—</strong>
             <span>Meta atingida</span>
           </div>
@@ -533,7 +523,10 @@ export function dashboardVendasPage() {
       </article>
     </section>
 
-    <section id="cards" class="cards"></section>
+    <section class="secao-produtos">
+      <h2>Produtos</h2>
+      <div id="cardsProdutos" class="cards-produtos"></div>
+    </section>
   </main>
 
   <script>
@@ -541,8 +534,6 @@ export function dashboardVendasPage() {
       var $ = function (id) {
         return document.getElementById(id);
       };
-
-      var dadosAtuais = null;
 
       var moeda = new Intl.NumberFormat('pt-BR', {
         style:'currency',
@@ -573,9 +564,18 @@ export function dashboardVendasPage() {
       }
 
       function corMeta(valor) {
-        if (valor == null) return '#60738e';
-        if (valor < .5) return '#e93d49';
-        if (valor < .8) return '#df9400';
+        if (valor == null) {
+          return '#60738e';
+        }
+
+        if (valor < .5) {
+          return '#e93d49';
+        }
+
+        if (valor < .8) {
+          return '#df9400';
+        }
+
         return '#15954f';
       }
 
@@ -583,40 +583,6 @@ export function dashboardVendasPage() {
         valor = Math.max(0, Math.min(numero(valor), 1));
         return -90 + valor * 180;
       }
-
-      function gaugePequeno(vendedor) {
-  var metaAtingida = vendedor.percentualMeta;
-
-  var texto = metaAtingida == null
-    ? '—'
-    : percentual.format(metaAtingida);
-
-  var progresso = Math.max(
-    0,
-    Math.min(numero(metaAtingida), 1)
-  ) * 245;
-
-  return (
-    '<div class="mini-gauge">' +
-      '<svg viewBox="0 0 200 125" aria-hidden="true">' +
-        '<path d="M 22 101 A 78 78 0 0 1 178 101" ' +
-          'fill="none" stroke="#e2e9f1" stroke-width="23"/>' +
-        '<path d="M 22 101 A 78 78 0 0 1 178 101" ' +
-          'fill="none" stroke="' + corMeta(metaAtingida) + '" ' +
-          'stroke-width="23" ' +
-          'stroke-dasharray="' + progresso.toFixed(1) + ' 245"/>' +
-      '</svg>' +
-      '<i style="transform:rotate(' +
-        angulo(metaAtingida) +
-        'deg)"></i>' +
-      '<b style="color:' +
-        corMeta(metaAtingida) +
-        '">' +
-        texto +
-      '</b>' +
-    '</div>'
-  );
-}
 
       function preencherFiltro(vendedores) {
         var select = $('vendedor');
@@ -626,12 +592,13 @@ export function dashboardVendasPage() {
           '<option value="">Todos</option>' +
           vendedores.map(function (vendedor) {
             return (
-            '<option value="' +
-            escapar(vendedor.codigoVendedor) +
-            '">' +
-            escapar(vendedor.vendedor) +
-            '</option>'
-          );
+              '<option value="' +
+                escapar(vendedor.codigoVendedor) +
+                '">' +
+                escapar(vendedor.vendedor) +
+              '</option>'
+            );
+          }).join('');
 
         var existe = Array.from(select.options).some(
           function (opcao) {
@@ -644,34 +611,69 @@ export function dashboardVendasPage() {
         }
       }
 
-      function render(dados) {
-        dadosAtuais = dados;
+      function velocimetroProduto(produto) {
+        var metaAtingida = produto.percentualMeta;
+        var cor = corMeta(metaAtingida);
 
+        var texto = metaAtingida == null
+          ? '—'
+          : percentual.format(metaAtingida);
+
+        var progresso = Math.max(
+          0,
+          Math.min(numero(metaAtingida), 1)
+        ) * 245;
+
+        return (
+          '<div class="produto-gauge">' +
+            '<svg viewBox="0 0 210 130" aria-hidden="true">' +
+              '<path d="M 25 105 A 80 80 0 0 1 185 105" ' +
+                'fill="none" stroke="#e2e9f1" stroke-width="24"/>' +
+              '<path d="M 25 105 A 80 80 0 0 1 185 105" ' +
+                'fill="none" stroke="' + cor + '" stroke-width="24" ' +
+                'stroke-dasharray="' + progresso.toFixed(1) + ' 245"/>' +
+            '</svg>' +
+            '<i class="produto-ponteiro" style="transform:rotate(' +
+              angulo(metaAtingida) +
+              'deg)"></i>' +
+            '<b style="color:' + cor + '">' +
+              texto +
+            '</b>' +
+          '</div>'
+        );
+      }
+
+      function render(dados) {
         var vendedores = dados.vendedores || [];
+        var produtos = dados.produtos || [];
 
         preencherFiltro(vendedores);
 
-        $('linhas').innerHTML = vendedores.map(function (vendedor) {
-          var percentualMeta = vendedor.percentualMeta == null
-            ? '<span class="sem-meta">Sem meta</span>'
-            : percentual.format(vendedor.percentualMeta);
+        $('linhas').innerHTML =
+          vendedores.map(function (vendedor) {
+            var metaAtingida = vendedor.percentualMeta == null
+              ? '<span class="sem-meta">Sem meta</span>'
+              : percentual.format(vendedor.percentualMeta);
 
-          return (
-          '<tr>' +
-          '<td><strong>' +
-          escapar(vendedor.vendedor) +
-        '</strong></td>' +
-    '<td>' +
-      moeda.format(numero(vendedor.faturamento)) +
-    '</td>' +
-    '<td style="color:' +
-      corMeta(vendedor.percentualMeta) +
-      '">' +
-      metaAtingida +
-    '</td>' +
-  '</tr>'
-);
-          '<tr><td colspan="3" class="sem-meta">Nenhuma venda encontrada no período.</td></tr>';
+            return (
+              '<tr>' +
+                '<td><strong>' +
+                  escapar(vendedor.vendedor) +
+                '</strong></td>' +
+                '<td>' +
+                  moeda.format(numero(vendedor.faturamento)) +
+                '</td>' +
+                '<td style="color:' +
+                  corMeta(vendedor.percentualMeta) +
+                  '">' +
+                  metaAtingida +
+                '</td>' +
+              '</tr>'
+            );
+          }).join('') ||
+          '<tr><td colspan="3" class="sem-meta">' +
+            'Nenhuma venda encontrada no período.' +
+          '</td></tr>';
 
         $('faturamentoTotal').textContent = moeda.format(
           numero(dados.totalFaturamento)
@@ -692,38 +694,26 @@ export function dashboardVendasPage() {
         $('ponteiroTotal').style.transform =
           'rotate(' + angulo(dados.percentualMeta) + 'deg)';
 
-        $('cards').innerHTML = vendedores.map(function (vendedor) {
-          var meta = vendedor.meta
-            ? moeda.format(numero(vendedor.meta))
-            : 'não definida';
-
-          return (
-  '<article class="card" data-codigo="' +
-    escapar(vendedor.codigoVendedor) +
-    '">' +
-    '<h3>' +
-      escapar(vendedor.vendedor) +
-    '</h3>' +
-    gaugePequeno(vendedor) +
-    '<span class="faturamento">' +
-      'Faturamento' +
-      '<strong>' +
-        moeda.format(numero(vendedor.faturamento)) +
-      '</strong>' +
-    '</span>' +
-    '<div class="meta-card">' +
-      '<span>Meta: <strong>' +
-        meta +
-      '</strong></span>' +
-      '<button class="editar" type="button">Editar</button>' +
-      '<input type="number" min="0" step="0.01" value="' +
-        numero(vendedor.meta) +
-      '">' +
-      '<button class="salvar" type="button">Salvar</button>' +
-    '</div>' +
-  '</article>'
-);
-          '<div class="vazio">Nenhuma venda foi encontrada no período selecionado.</div>';
+        $('cardsProdutos').innerHTML =
+          produtos.map(function (produto) {
+            return (
+              '<article class="produto-card">' +
+                '<h3>' +
+                  escapar(produto.produto) +
+                '</h3>' +
+                velocimetroProduto(produto) +
+                '<span class="produto-faturamento">' +
+                  'Faturamento' +
+                  '<strong>' +
+                    moeda.format(numero(produto.faturamento)) +
+                  '</strong>' +
+                '</span>' +
+              '</article>'
+            );
+          }).join('') ||
+          '<div class="vazio">' +
+            'Nenhum produto foi encontrado no período selecionado.' +
+          '</div>';
 
         $('estado').textContent = '';
         $('estado').className = 'estado';
@@ -766,92 +756,11 @@ export function dashboardVendasPage() {
         }
       }
 
-      async function salvarMeta(card) {
-        var vendedor = (dadosAtuais.vendedores || []).find(
-          function (item) {
-            return String(item.codigoVendedor) ===
-              String(card.dataset.codigo);
-          }
-        );
-
-        if (!vendedor) return;
-
-        var valor = Number(
-          card.querySelector('input').value
-        );
-
-        if (!Number.isFinite(valor) || valor < 0) {
-          $('estado').textContent =
-            'Informe uma meta válida.';
-          $('estado').className = 'estado erro';
-          return;
-        }
-
-        var botao = card.querySelector('.salvar');
-        botao.disabled = true;
-
-        try {
-          var resposta = await fetch(
-            '/api/vendas/metas',
-            {
-              method:'PUT',
-              headers:{
-                'content-type':'application/json'
-              },
-              body:JSON.stringify({
-                codigoVendedor:vendedor.codigoVendedor,
-                vendedor:vendedor.vendedor,
-                meta:valor
-              })
-            }
-          );
-
-          var dados = await resposta.json();
-
-          if (!resposta.ok) {
-            throw Error(
-              dados.error ||
-              'Não foi possível salvar a meta.'
-            );
-          }
-
-          card.querySelector('.meta-card')
-            .classList.remove('editando');
-
-          await carregar();
-        } catch (erro) {
-          $('estado').textContent = erro.message;
-          $('estado').className = 'estado erro';
-        } finally {
-          botao.disabled = false;
-        }
-      }
-
       $('filtros').addEventListener(
         'submit',
         function (evento) {
           evento.preventDefault();
           carregar();
-        }
-      );
-
-      $('cards').addEventListener(
-        'click',
-        function (evento) {
-          var card = evento.target.closest('.card');
-
-          if (!card) return;
-
-          if (evento.target.classList.contains('editar')) {
-            card.querySelector('.meta-card')
-              .classList.add('editando');
-
-            card.querySelector('input').focus();
-          }
-
-          if (evento.target.classList.contains('salvar')) {
-            salvarMeta(card);
-          }
         }
       );
 
