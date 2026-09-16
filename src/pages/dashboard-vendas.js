@@ -619,11 +619,11 @@ export function dashboardVendasPage() {
   <div id="modalMetas" class="modal">
     <section class="janela-metas">
       <h2>Atualizar metas de vendedores</h2>
-      <p>Altere os valores individuais. A meta total é recalculada automaticamente.</p>
+      <p>Defina a meta total da empresa e as metas individuais dos vendedores.</p>
 
       <div class="meta-total">
         <span>Meta total</span>
-        <input id="metaTotalEdicao" type="text" readonly>
+        <input id="metaTotalEdicao" type="text" inputmode="decimal">
       </div>
 
       <div id="listaMetas" class="lista-metas"></div>
@@ -903,29 +903,15 @@ export function dashboardVendasPage() {
           }).join('') ||
           '<div class="vazio">Nenhum vendedor encontrado.</div>';
 
-        atualizarMetaTotalEdicao();
+        $('metaTotalEdicao').value = numero(
+  dadosAtuais.totalMeta
+);
 
         $('modalMetas').classList.add('aberto');
       }
 
       function fecharMetas() {
         $('modalMetas').classList.remove('aberto');
-      }
-
-      function atualizarMetaTotalEdicao() {
-        var total = Array.from(
-          document.querySelectorAll('.input-meta-vendedor')
-        ).reduce(function (soma, input) {
-          var valor = numeroMeta(input.value);
-
-          return soma + (
-            Number.isFinite(valor) && valor > 0
-              ? valor
-              : 0
-          );
-        }, 0);
-
-        $('metaTotalEdicao').value = moeda.format(total);
       }
 
       async function salvarMetas() {
@@ -943,6 +929,17 @@ export function dashboardVendasPage() {
           };
         });
 
+        var metaEmpresa = numeroMeta(
+  $('metaTotalEdicao').value
+);
+
+if (!Number.isFinite(metaEmpresa) || metaEmpresa < 0) {
+  $('estado').textContent =
+    'Informe uma meta total válida.';
+  $('estado').className = 'estado erro';
+  return;
+}
+
         var invalida = metas.some(function (meta) {
           return !Number.isFinite(meta.meta) || meta.meta < 0;
         });
@@ -958,6 +955,28 @@ export function dashboardVendasPage() {
         botao.textContent = 'Salvando...';
 
         try {
+        var respostaMetaEmpresa = await fetch(
+  '/api/vendas/meta-empresa',
+  {
+    method:'PUT',
+    headers:{
+      'content-type':'application/json'
+    },
+    body:JSON.stringify({
+      meta:metaEmpresa
+    })
+  }
+);
+
+var dadosMetaEmpresa =
+  await respostaMetaEmpresa.json();
+
+if (!respostaMetaEmpresa.ok) {
+  throw Error(
+    dadosMetaEmpresa.error ||
+    'Não foi possível salvar a meta total.'
+  );
+}
           for (var indice = 0; indice < metas.length; indice++) {
             var resposta = await fetch(
               '/api/vendas/metas',
@@ -1039,12 +1058,6 @@ export function dashboardVendasPage() {
       $('abrirMetas').addEventListener('click', abrirMetas);
       $('cancelarMetas').addEventListener('click', fecharMetas);
       $('salvarMetas').addEventListener('click', salvarMetas);
-
-      $('listaMetas').addEventListener(
-        'input',
-        atualizarMetaTotalEdicao
-      );
-
       $('modalMetas').addEventListener(
         'click',
         function (evento) {
