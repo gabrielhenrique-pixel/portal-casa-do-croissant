@@ -35,94 +35,109 @@ export function dashboardRentabilidadePage() {
     .topo {
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      padding:13px 18px 10px;
-      background:var(--navy);
-      color:#fff;
+      gap:16px;
+      padding:18px 34px;
+      border-radius:18px;
+      background:rgba(255,255,255,.92);
+      box-shadow:0 8px 22px #1730521c;
+    }
+
+    .navegacao-topo {
+      display:flex;
+      gap:8px;
+      flex-shrink:0;
+    }
+
+    .nav-icone {
+      display:grid;
+      width:48px;
+      height:48px;
+      place-items:center;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 5px 15px #1730521c;
+      color:var(--navy);
+      font-size:25px;
+      font-weight:700;
+      text-decoration:none;
+      transition:transform .15s,background .15s;
+    }
+
+    .nav-icone:hover {
+      background:#edf3f9;
+      transform:translateY(-2px);
     }
 
     .marca {
-      display:flex;
-      align-items:center;
-      flex-wrap:wrap;
-      gap:12px;
-    }
-
-    .marca strong { font-size:16px; }
-
-    .marca i {
-      width:1px;
-      height:20px;
-      background:#fff;
-      opacity:.75;
+      flex:1;
     }
 
     .marca span {
-      color:#ffde16;
-      font-size:15px;
+      color:var(--navy);
+      font-size:30px;
+      font-weight:700;
     }
 
     .controles {
       display:flex;
       align-items:end;
       flex-wrap:wrap;
-      gap:12px;
+      gap:18px;
+      margin-top:15px;
+      padding:14px 34px;
+      border-radius:15px;
+      background:rgba(255,255,255,.84);
+      box-shadow:0 6px 18px #17305214;
     }
 
     .campo {
       display:grid;
-      grid-template-columns:auto 1fr;
-      align-items:center;
-      gap:6px;
-      color:#fff;
-      font-size:9px;
+      gap:5px;
+      color:#17375f;
+      font-size:11px;
       font-weight:700;
+      text-transform:uppercase;
     }
 
     input[type=date] {
-      width:110px;
-      height:27px;
-      border:1px solid #e1b900;
-      border-radius:5px;
-      background:#123a58;
-      color:#fff;
-      padding:4px 6px;
+      width:175px;
+      height:39px;
+      border:1px solid #c6d4e4;
+      border-radius:7px;
+      padding:0 10px;
+      color:#142f57;
+      background:#fff;
       font:inherit;
-      font-size:11px;
+      font-size:14px;
     }
 
     input[type=date]::-webkit-calendar-picker-indicator {
-      filter:invert(1);
+      filter:none;
     }
 
     button {
       border:0;
-      border-radius:5px;
+      border-radius:8px;
       font:inherit;
       cursor:pointer;
     }
 
     #atualizar {
-      min-height:29px;
-      padding:6px 11px;
-      border:1px solid #eaf5fb;
-      background:#176990;
+      min-height:39px;
+      padding:10px 18px;
+      background:var(--navy);
       color:#fff;
-      font-size:9px;
+      font-size:13px;
       font-weight:700;
+    }
+
+    #atualizar:hover {
+      background:#1b4b7b;
     }
 
     #atualizar:disabled {
       opacity:.7;
       cursor:wait;
-    }
-
-    .voltar {
-      color:#dceaf1;
-      text-decoration:none;
-      font-size:11px;
-      font-weight:700;
     }
 
     .estado {
@@ -608,8 +623,19 @@ export function dashboardRentabilidadePage() {
     @media(max-width:620px) {
       main { padding:4px; }
       .topo {
-        align-items:flex-start;
-        flex-direction:column;
+        gap:12px;
+        padding:16px;
+      }
+      .nav-icone {
+        width:42px;
+        height:42px;
+        font-size:22px;
+      }
+      .marca span {
+        font-size:23px;
+      }
+      .controles {
+        padding:14px;
       }
       .cards { grid-template-columns:repeat(2,1fr); }
       .controles { width:100%; }
@@ -631,25 +657,26 @@ export function dashboardRentabilidadePage() {
 <body>
   <main>
     <header class="topo">
-      <div class="marca">
-  <span>RENTABILIDADE COMERCIAL</span>
-</div>
-      <form id="filtros" class="controles">
-        <label class="campo">
-          Data inicial
-          <input id="inicio" type="date" required>
-        </label>
-
-        <label class="campo">
-          Data final
-          <input id="fim" type="date" required>
-        </label>
-
-        <button id="atualizar" type="submit">↻ ATUALIZAR DADOS</button>
-      </form>
-
-      <a class="voltar" href="/">Página inicial</a>
+      <nav class="navegacao-topo" aria-label="Navegação">
+        <a class="nav-icone" href="/dashboards" aria-label="Voltar aos dashboards">←</a>
+        <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
+      </nav>
+      <div class="marca"><span>RENTABILIDADE COMERCIAL</span></div>
     </header>
+
+    <form id="filtros" class="controles">
+      <label class="campo">
+        Data inicial
+        <input id="inicio" type="date" required>
+      </label>
+
+      <label class="campo">
+        Data final
+        <input id="fim" type="date" required>
+      </label>
+
+      <button id="atualizar" type="submit">↻ ATUALIZAR DADOS</button>
+    </form>
 
     <p id="estado" class="estado">Carregando dados...</p>
 
