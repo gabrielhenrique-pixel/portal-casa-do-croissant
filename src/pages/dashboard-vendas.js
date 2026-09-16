@@ -37,24 +37,43 @@ export function dashboardVendasPage() {
     .cabecalho {
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      gap:24px;
+      gap:16px;
       padding:18px 34px;
       border-radius:18px;
       background:rgba(255,255,255,.92);
       box-shadow:0 8px 22px #1730521c;
     }
 
-    h1 {
-      margin:0;
-      font-size:30px;
+    .navegacao-topo {
+      display:flex;
+      gap:8px;
+      flex-shrink:0;
     }
 
-    .cabecalho small {
-      color:#6680a5;
-      font-size:11px;
+    .nav-icone {
+      display:grid;
+      width:48px;
+      height:48px;
+      place-items:center;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 5px 15px #1730521c;
+      color:var(--azul);
+      font-size:25px;
       font-weight:700;
-      letter-spacing:4px;
+      text-decoration:none;
+      transition:transform .15s,background .15s;
+    }
+
+    .nav-icone:hover {
+      background:#edf3f9;
+      transform:translateY(-2px);
+    }
+
+    h1 {
+      flex:1;
+      margin:0;
+      font-size:30px;
     }
 
     .filtros {
@@ -115,14 +134,6 @@ export function dashboardVendasPage() {
     button:disabled {
       cursor:wait;
       opacity:.7;
-    }
-
-    .voltar {
-      margin-left:auto;
-      color:var(--azul);
-      font-size:13px;
-      font-weight:700;
-      text-decoration:none;
     }
 
     .estado {
@@ -462,9 +473,14 @@ export function dashboardVendasPage() {
       }
 
       .cabecalho {
-        align-items:flex-start;
-        flex-direction:column;
-        padding:18px;
+        gap:12px;
+        padding:16px;
+      }
+
+      .nav-icone {
+        width:42px;
+        height:42px;
+        font-size:22px;
       }
 
       h1 {
@@ -481,9 +497,6 @@ export function dashboardVendasPage() {
         width:100%;
       }
 
-      .voltar {
-        margin:2px 0 0;
-      }
 
       .cards-grupos {
         grid-template-columns:1fr;
@@ -504,6 +517,10 @@ export function dashboardVendasPage() {
 <body>
   <main>
     <header class="cabecalho">
+      <nav class="navegacao-topo" aria-label="Navegação">
+        <a class="nav-icone" href="/dashboards" aria-label="Voltar aos dashboards">←</a>
+        <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
+      </nav>
       <h1>PAINEL MONITORAMENTO DE VENDAS</h1>
     </header>
 
@@ -529,7 +546,6 @@ export function dashboardVendasPage() {
         ATUALIZAR DADOS
       </button>
 
-      <a class="voltar" href="/">Página inicial</a>
     </form>
 
     <p id="estado" class="estado">Carregando dados...</p>
