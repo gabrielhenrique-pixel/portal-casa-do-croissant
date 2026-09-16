@@ -15,6 +15,7 @@ import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,l
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
+import { dashboardsPage } from './pages/dashboards.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -212,6 +213,16 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
 }
+ if (url.pathname === '/dashboards' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return dashboardsPage();
+}
+
  if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
   const session = await getSession(request, env);
 
@@ -1878,7 +1889,6 @@ body.inicializando #inicializacao {
       .cartao label { display:block; margin:16px 0 7px; font-size:13px; font-weight:700; }.cartao input{width:100%;padding:13px 14px;border:1px solid #bdd1c7;border-radius:9px;font-size:16px;}.cartao button{width:100%;border:0;border-radius:9px;padding:13px 16px;margin-top:22px;background:#075638;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
       .link { display:block; width:100%; margin-top:14px; background:transparent!important; color:#075638!important; text-decoration:underline; }.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
       .painel { min-height:100vh; display:flex; background:#f6f8f7; color:#183128; }.menu { width:250px; min-height:100vh; flex-shrink:0; padding:28px 16px; background:#123d2d; color:#fff; }.marca-portal { padding:4px 12px 28px; font-size:20px; font-weight:700; }.marca-portal small { display:block; margin-top:6px; color:#b7d7c6; font-size:12px; font-weight:400; }.nav-btn { display:block; width:100%; margin:4px 0; padding:13px 12px; border:0; border-radius:8px; background:transparent; color:#d7e9df; text-align:left; font-size:14px; cursor:pointer; }.nav-btn:hover,.nav-btn.ativo { background:#256e50; color:#fff; }.nav-btn--sair { margin-top:24px; border-top:1px solid rgba(255,255,255,.18); border-radius:0; padding-top:19px; }.conteudo { flex:1; min-width:0; padding:38px; }.topo{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}.topo h1{margin:0 0 8px;font-size:27px;}.topo p{margin:0;color:#66746d;}.tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#e9f4ee;color:#075638;font-weight:700;font-size:13px;}.visao{max-width:940px;margin:42px auto 0;}.boas-vindas{padding:38px;text-align:center;background:#fff;border:1px solid #d6e4dd;border-radius:18px;}.boas-vindas p{max-width:620px;margin:12px auto;color:#52665d;}.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-top:22px;}.cartao-modulo{padding:20px;border:1px solid #d6e4dd;border-radius:14px;background:#fff;}.cartao-modulo strong{display:block;color:#123d2d;}.cartao-modulo span{display:block;margin-top:7px;color:#66746d;font-size:13px;}.acao{border:0;border-radius:8px;padding:11px 14px;background:#075638;color:#fff;font-weight:700;cursor:pointer;}.acao-secundaria{border:1px solid #a8c5b5;border-radius:8px;padding:10px 13px;background:#fff;color:#075638;font-weight:700;cursor:pointer;}.painel-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;}.tabela-wrap{overflow:auto;border:1px solid #d6e4dd;border-radius:12px;background:#fff;}.tabela{width:100%;border-collapse:collapse;min-width:640px;}.tabela th,.tabela td{padding:14px 16px;border-bottom:1px solid #edf2ef;text-align:left;font-size:14px;}.tabela th{color:#52665d;font-size:12px;text-transform:uppercase;letter-spacing:.04em;}.formulario{max-width:640px;padding:24px;border:1px solid #d6e4dd;border-radius:14px;background:#fff;}.linha-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.formulario label{display:block;margin:14px 0 6px;font-size:13px;font-weight:700;}.formulario input,.formulario select{width:100%;padding:11px 12px;border:1px solid #bdd1c7;border-radius:8px;font:inherit;}.acoes-form{display:flex;gap:10px;margin-top:20px;}.permissoes{display:grid;gap:12px;}.permissao-item{padding:16px;border:1px solid #d6e4dd;border-radius:12px;background:#fff;}.permissao-titulo{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;font-weight:700;}.checks{display:flex;flex-wrap:wrap;gap:13px;}.checks label{display:flex;gap:5px;align-items:center;font-size:13px;color:#52665d;}.vazio{padding:30px;text-align:center;color:#66746d;border:1px dashed #bdd1c7;border-radius:12px;background:#fff;}.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
-      .dashboards-intro{margin-bottom:22px;}.dashboards-intro h2{margin:0;color:#123d2d;font-size:28px;}.dashboards-intro p{margin:8px 0 0;color:#66746d;}.grade-dashboards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;}.cartao-dashboard{min-height:270px;display:flex;flex-direction:column;padding:28px;border-radius:18px;text-decoration:none;color:#fff;box-shadow:0 10px 25px rgba(18,61,45,.16);transition:transform .18s ease,box-shadow .18s ease;}.cartao-dashboard:hover{transform:translateY(-5px);box-shadow:0 16px 30px rgba(18,61,45,.24);}.cartao-dashboard__icone{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.2);font-size:20px;font-weight:800;}.cartao-dashboard strong{margin-top:28px;font-size:22px;line-height:1.15;}.cartao-dashboard small{margin-top:12px;font-size:14px;line-height:1.5;color:rgba(255,255,255,.88);}.cartao-dashboard__abrir{margin-top:auto;padding-top:20px;font-size:14px;font-weight:700;}.cartao-dashboard--rentabilidade{background:linear-gradient(135deg,#0b4d35,#1d8a5c);}.cartao-dashboard--vendas{background:linear-gradient(135deg,#0f3b68,#1977b9);}.cartao-dashboard--devolucoes{background:linear-gradient(135deg,#8b2222,#cf4a35);}
       @keyframes girarLogin { to { transform:rotate(360deg); } }
       @media (max-width:700px) { .painel{display:block;}.menu{width:100%;min-height:auto;padding:16px;}.marca-portal{padding:4px 8px 12px;}.menu nav{display:flex;overflow:auto;gap:4px;}.nav-btn{width:auto;white-space:nowrap;margin:0;}.nav-btn--sair{margin-top:0;border-top:0;padding-top:13px;}.conteudo{padding:22px;}.topo{align-items:flex-start;flex-direction:column;}.linha-form{grid-template-columns:1fr;}.grade-dashboards{grid-template-columns:1fr;}.cartao { padding:26px; } }
     </style>
@@ -1932,14 +1942,6 @@ body.inicializando #inicializacao {
           <div class="boas-vindas"><h2>Portal em migração</h2><p></p></div>
           <div class="grade"><div class="cartao-modulo"><strong>Usuários</strong><span></span></div><div class="cartao-modulo"><strong>Acessos</strong><span></span></div><div class="cartao-modulo"><strong>Próximas etapas</strong><span></span></div></div>
         </section>
-        <section id="viewDashboards" class="visao oculto">
-          <div class="dashboards-intro"><h2>Dashboards</h2><p></p></div>
-          <div class="grade-dashboards">
-            <a class="cartao-dashboard cartao-dashboard--rentabilidade" href="/dashboard-rentabilidade"><span class="cartao-dashboard__icone">R$</span><strong>Rentabilidade</strong><small>Acompanhe faturamento, margem, investimentos e frete.</small><span class="cartao-dashboard__abrir">Abrir painel →</span></a>
-            <a class="cartao-dashboard cartao-dashboard--vendas" href="/dashboard-vendas"><span class="cartao-dashboard__icone">↗</span><strong>Monitoramento de vendas</strong><small>Consulte metas, vendedores e grupos de produtos.</small><span class="cartao-dashboard__abrir">Abrir painel →</span></a>
-            <a class="cartao-dashboard cartao-dashboard--devolucoes" href="/devolucoes"><span class="cartao-dashboard__icone">↶</span><strong>Painel de devoluções</strong><small>Visualize as devoluções e seus indicadores.</small><span class="cartao-dashboard__abrir">Abrir painel →</span></a>
-          </div>
-        </section>
         <section id="viewUsuarios" class="visao oculto">
           <div class="painel-cabecalho"><div><h2>Usuários cadastrados</h2><p>Cadastre os acessos da equipe ao novo portal.</p></div><button id="novoUsuario" class="acao" type="button">Novo usuário</button></div>
           <form id="formUsuario" class="formulario oculto">
@@ -1976,6 +1978,10 @@ body.inicializando #inicializacao {
       function html(value) { const node = document.createElement('span'); node.textContent = value || ''; return node.innerHTML; }
       function hasModule(id) { return sessionData && sessionData.modules.some((module) => module.id === id); }
       function openView(view) {
+        if (view === 'dashboards') {
+          window.location.href = '/dashboards';
+          return;
+        }
           if (view === 'dashboard-rentabilidade') {
           window.location.href = '/dashboard-rentabilidade';
           return;
@@ -2017,7 +2023,6 @@ if (view === 'acessos') {
         document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
         document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
         if (view === 'inicio') { $('tituloPagina').textContent = 'Página inicial'; $('viewInicio').classList.remove('oculto'); return; }
-        if (view === 'dashboards') { $('tituloPagina').textContent = 'Dashboards'; $('viewDashboards').classList.remove('oculto'); return; }
         if (view === 'usuarios') { $('tituloPagina').textContent = 'Usuários cadastrados'; $('viewUsuarios').classList.remove('oculto'); loadUsers(); return; }
         if (view === 'acessos') { $('tituloPagina').textContent = 'Acessos'; $('viewAcessos').classList.remove('oculto'); loadUsers(); return; }
         $('tituloPagina').textContent = moduleTitles[view] || 'Módulo em migração'; $('tituloMigracao').textContent = $('tituloPagina').textContent; $('viewEmMigracao').classList.remove('oculto');
