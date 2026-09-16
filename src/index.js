@@ -8,30 +8,17 @@ import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
 import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
-import {
-  carregarClientesRentabilidade,
-  atualizarPercentuaisClienteRentabilidade
-} from './clientes-rentabilidade.js';
+import {carregarClientesRentabilidade,atualizarPercentuaisClienteRentabilidade} from './clientes-rentabilidade.js';
 import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
-import {
-  redesRentabilidade,
-  salvarInvestimentoRentabilidade,
-  excluirInvestimento,
-  listarTodosInvestimentos,
-  listarInvestimentosPendentes,
-  informarValorRealInvestimento
-} from './investimentos-rentabilidade.js';
+import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
+import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
+import { dashboardVendasPage } from './pages/dashboard-vendas.js';
+import {listarMonitoramentoVendasSankhya,salvarMetaVendedor} from './vendas-monitoramento-service.js';
 
-import {
-  carregarMetaFaturamento,
-  salvarMetaFaturamento
-} from './dashboard-rentabilidade-service.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
-
-
 
 export default {
   async fetch(request, env) {
@@ -233,6 +220,88 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   }
 
   return dashboardRentabilidadePage();
+}
+
+      if (url.pathname === '/dashboard-vendas' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return redirectToPortal();
+  }
+
+  return dashboardVendasPage();
+}
+
+if (
+  url.pathname === '/api/vendas/monitoramento' &&
+  request.method === 'GET'
+) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const resultado = await listarMonitoramentoVendasSankhya(
+      request,
+      env
+    );
+
+    if (resultado.error) {
+      return json(
+        { error: resultado.error },
+        resultado.status || 400
+      );
+    }
+
+    return json(resultado);
+  } catch (error) {
+    console.error('Falha no monitoramento de vendas:', error);
+
+    return json({
+      error:
+        error.message ||
+        'Não foi possível consultar as vendas no Sankhya.'
+    }, 502);
+  }
+}
+
+if (
+  url.pathname === '/api/vendas/metas' &&
+  request.method === 'PUT'
+) {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const resultado = await salvarMetaVendedor(
+    env,
+    await bodyAsJson(request)
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
+    );
+  }
+
+  await writeAudit(
+    env,
+    session.username,
+    'META_VENDEDOR_ATUALIZADA',
+    'Vendedor: ' +
+      resultado.vendedor +
+      ' | Meta: R$ ' +
+      resultado.meta
+  );
+
+  return json({
+    meta: resultado
+  });
 }
 
 if (url.pathname === '/rentabilidade-sku' && request.method === 'GET') {
@@ -1777,6 +1846,7 @@ body.inicializando #inicializacao {
         <nav id="menuPortal">
           <button class="nav-btn ativo" type="button" data-view="inicio">Página inicial</button>
           <button id="navDashboardRentabilidade"class="nav-btn"type="button"data-view="dashboard-rentabilidade">Dashboard de rentabilidade</button>
+          <buttonid="navDashboardVendas"class="nav-btn"type="button"data-view="dashboard-vendas">Monitoramento de vendas</button>
           <button class="nav-btn" type="button" data-view="investimentos" data-module="INVESTIMENTOS">Investimentos</button>
           <button class="nav-btn" type="button" data-view="pendentes" data-module="INVESTIMENTOS_PENDENTES">Investimentos pendentes</button>
           <button class="nav-btn" type="button" data-view="devolucoes" data-module="DEVOLUCOES">Painel de devoluções</button>
@@ -1832,6 +1902,10 @@ body.inicializando #inicializacao {
           window.location.href = '/dashboard-rentabilidade';
           return;
          }
+         if (view === 'dashboard-vendas') {
+         window.location.href = '/dashboard-vendas';
+         return;
+        }
          if (view === 'investimentos') {
          window.location.href = '/investimentos';
          return;
@@ -1870,7 +1944,7 @@ if (view === 'acessos') {
         $('tituloPagina').textContent = moduleTitles[view] || 'Módulo em migração'; $('tituloMigracao').textContent = $('tituloPagina').textContent; $('viewEmMigracao').classList.remove('oculto');
       }
       
-      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') { $('navUsuarios').classList.add('oculto'); $('navAcessos').classList.add('oculto'); $('navDashboardRentabilidade').classList.add('oculto'); } show('dashboard'); openView('inicio'); }
+      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') { $('navUsuarios').classList.add('oculto'); $('navAcessos').classList.add('oculto'); $('navDashboardRentabilidade').classList.add('oculto');$('navDashboardVendas').classList.add('oculto'); } show('dashboard'); openView('inicio'); }
       async function loadSession() { try { startDashboard(await request('/api/me')); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
       async function loadUsers() { if (!sessionData || sessionData.user.role !== 'Administrador') return; try { const data = await request('/api/users'); cachedUsers = data.users; renderUsers(); renderUserSelector(); } catch (err) { error('erroUsuario', err.message); } }
       function renderUsers() { const target = $('listaUsuarios'); if (!cachedUsers.length) { target.innerHTML = '<div class="vazio">Nenhum usuário cadastrado.</div>'; return; } target.innerHTML = '<table class="tabela"><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Acessos configurados</th></tr></thead><tbody>' + cachedUsers.map((user) => '<tr><td><strong>' + html(user.username) + '</strong></td><td>' + html(user.email) + '</td><td>' + html(user.role) + '</td><td>' + Number(user.permission_count || 0) + '</td></tr>').join('') + '</tbody></table>'; }
