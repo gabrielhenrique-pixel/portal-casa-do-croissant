@@ -66,7 +66,7 @@ export function clientesRentabilidadePage() {
 
   <section class="barra">
     <input id="busca" class="busca" placeholder="Pesquisar código, cliente, rede ou percentual">
-    <button id="sincronizar" class="botao verde" type="button">Sincronizar Sankhya</button>
+    <button id="sincronizar" class="botao verde" type="button"hidden>Sincronizar Sankhya</button>
     <button id="editar" class="botao" type="button" disabled>Editar selecionados</button>
     <strong id="contagem" class="contagem">Carregando...</strong>
   </section>
