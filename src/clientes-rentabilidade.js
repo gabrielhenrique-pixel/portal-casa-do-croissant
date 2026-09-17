@@ -152,7 +152,35 @@ export async function sincronizarClientesRentabilidadeSankhya(env, linhas) {
     );
   }
 
-  return { totalSincronizado: clientes.length };
+  const existentes = await env.DB.prepare(
+  'SELECT codigo_parceiro AS codigoParceiro ' +
+  'FROM rentabilidade_clientes'
+).all();
+
+const codigosAtuais = new Set(
+  clientes.map((cliente) => cliente.codigoParceiro)
+);
+
+const codigosParaExcluir = (existentes.results || [])
+  .map((cliente) => String(cliente.codigoParceiro))
+  .filter((codigo) => !codigosAtuais.has(codigo));
+
+for (let inicio = 0; inicio < codigosParaExcluir.length; inicio += tamanhoDoLote) {
+  const lote = codigosParaExcluir.slice(inicio, inicio + tamanhoDoLote);
+
+  await env.DB.batch(
+    lote.map((codigoParceiro) =>
+      env.DB.prepare(
+        'DELETE FROM rentabilidade_clientes WHERE codigo_parceiro = ?'
+      ).bind(codigoParceiro)
+    )
+  );
+}
+
+return {
+  totalSincronizado: clientes.length,
+  totalRemovido: codigosParaExcluir.length
+};
 }
 
 export async function atualizarClientesRentabilidadeEmLote(
