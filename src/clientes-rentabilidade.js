@@ -42,8 +42,6 @@ return rede;
 
 const DADOS_MANUAIS_CLIENTES = {};
 
-  const DADOS_MANUAIS_CLIENTES = {};
-
 function adicionarClientesManuais(promotoria, rede, codigos) {
   codigos.split(',').forEach((codigo) => {
     DADOS_MANUAIS_CLIENTES[codigo.trim()] = {
@@ -139,20 +137,17 @@ export async function sincronizarClientesRentabilidadeSankhya(env, linhas) {
             'percentual_comissao = excluded.percentual_comissao, ' +
             'updated_at = excluded.updated_at, ' +
             'updated_by = excluded.updated_by'
-        .bind(
-          cliente.codigoParceiro,
-          cliente.cliente,
-          cliente.rede,
-          cliente.percentualContrato,
-          'SEM REDE',
-          cliente.rede,
-          cliente.percentualContrato,
-          cliente.percentualPromotoria,
-          cliente.percentualComissao,
-          agora,
-          agora,
-          'Sankhya'
-        )
+        ).bind(
+  cliente.codigoParceiro,
+  cliente.cliente,
+  cliente.rede,
+  cliente.percentualContrato,
+  cliente.percentualPromotoria,
+  cliente.percentualComissao,
+  agora,
+  agora,
+  'Sankhya'
+)
       )
     );
   }
