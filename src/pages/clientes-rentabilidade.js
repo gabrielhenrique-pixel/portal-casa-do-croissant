@@ -61,7 +61,6 @@ export function clientesRentabilidadePage() {
     <a class="inicio" href="/" title="Página inicial">⌂</a>
     <div>
       <h1>Cadastro de clientes</h1>
-      <p>Clientes ativos importados do Sankhya. Rede e Promotoria são controladas no portal.</p>
     </div>
   </header>
 
