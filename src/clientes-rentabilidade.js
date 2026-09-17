@@ -136,7 +136,11 @@ export async function sincronizarClientesRentabilidadeSankhya(env, linhas) {
             'percentual_contrato = excluded.percentual_contrato, ' +
             'percentual_comissao = excluded.percentual_comissao, ' +
             'updated_at = excluded.updated_at, ' +
-            'updated_by = excluded.updated_by'
+            'updated_by = CASE ' +
+            'WHEN rentabilidade_clientes.updated_by IS NULL ' +
+            'OR rentabilidade_clientes.updated_by = \'Sankhya\' ' +
+            'THEN excluded.updated_by ' +
+            'ELSE rentabilidade_clientes.updated_by END'
         ).bind(
   cliente.codigoParceiro,
   cliente.cliente,
@@ -254,8 +258,8 @@ export async function atualizarClientesRentabilidadeEmLote(
   await garantirCadastroClientesRentabilidade(env);
 
   const atualizadoEm = new Date().toISOString();
-  const tamanhoDoLote = 50;
-
+const atualizadoPor = String(username || 'Portal').trim() || 'Portal';
+const tamanhoDoLote = 50;
   for (let inicio = 0; inicio < codigos.length; inicio += tamanhoDoLote) {
     const lote = codigos.slice(inicio, inicio + tamanhoDoLote);
 
@@ -279,7 +283,7 @@ export async function atualizarClientesRentabilidadeEmLote(
           alterarComissao ? 1 : 0,
           comissao,
           atualizadoEm,
-          username,
+          atualizadoPor,
           codigoParceiro
         )
       )
