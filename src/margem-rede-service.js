@@ -334,7 +334,7 @@ function montarSqlDevolucoes(inicio, fim) {
     '  ITE.QTDNEG AS QTD_NEG,',
     '  ITE.VLRUNIT AS VLR_UNITARIO,',
     '  (',
-'    NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)',
+'    NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0)',
 '    - (',
 '      GREATEST(',
 '        NVL(CAB.VLRDESCTOT, 0) - NVL(CAB.VLRDESCTOTITEM, 0),',
