@@ -654,7 +654,7 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
         'NVL(PAR.DESCFIN, 0) AS DESCONTO_FINANCEIRO,',
         'NVL(PAR.AD_COMVENDA, 0) AS COMISSAO_VENDA',
         'FROM TGFPAR PAR',
-        "WHERE PAR.AD_TIPODECLIENTE = 'Cliente'",
+        "WHERE UPPER(TRIM(NVL(PAR.AD_TIPODECLIENTE, ''))) IN ('C', 'CLIENTE')",
         "AND PAR.ATIVO = 'S'",
         'ORDER BY PAR.NOMEPARC'
       ].join(String.fromCharCode(10)));
@@ -704,7 +704,7 @@ if (
       'NVL(PAR.DESCFIN, 0) AS DESCONTO_FINANCEIRO,',
       'NVL(PAR.AD_COMVENDA, 0) AS COMISSAO_VENDA',
       'FROM TGFPAR PAR',
-      "WHERE PAR.AD_TIPODECLIENTE = 'Cliente'",
+      "WHERE UPPER(TRIM(NVL(PAR.AD_TIPODECLIENTE, ''))) IN ('C', 'CLIENTE')",
       "AND PAR.ATIVO = 'S'",
       'ORDER BY PAR.NOMEPARC'
     ].join(String.fromCharCode(10))
