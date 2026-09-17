@@ -291,13 +291,8 @@ export function rentabilidadeSkuPage() {
 </head>
 <body>
   <main>
-    <header class="cabecalho">
-      <div>
-        <h1>Rentabilidade SKU</h1>
-        <p class="subtitulo">Cálculo de rentabilidade por item de venda.</p>
-      </div>
 
-      <header class="topo">
+    <header class="topo">
   <nav class="navegacao-topo" aria-label="Navegação">
     <a class="nav-icone" href="/dashboard-rentabilidade" aria-label="Voltar à rentabilidade">←</a>
     <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
