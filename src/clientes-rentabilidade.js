@@ -199,3 +199,219 @@ export async function atualizarClientesRentabilidadeEmLote(
     totalAtualizado: codigos.length
   };
 }
+
+export async function garantirCadastroClientesRentabilidade(env) {
+  await env.DB.prepare(
+    'CREATE TABLE IF NOT EXISTS rentabilidade_clientes (' +
+      'codigo_parceiro TEXT PRIMARY KEY NOT NULL, ' +
+      'cliente TEXT NOT NULL, ' +
+      'rede TEXT NOT NULL, ' +
+      'percentual_contrato REAL, ' +
+      'percentual_promotoria REAL, ' +
+      'percentual_comissao REAL, ' +
+      'created_at TEXT NOT NULL, ' +
+      'updated_at TEXT NOT NULL, ' +
+      'updated_by TEXT, ' +
+      'CHECK (percentual_contrato IS NULL OR ' +
+        '(percentual_contrato >= 0 AND percentual_contrato <= 1)), ' +
+      'CHECK (percentual_promotoria IS NULL OR ' +
+        '(percentual_promotoria >= 0 AND percentual_promotoria <= 1)), ' +
+      'CHECK (percentual_comissao IS NULL OR ' +
+        '(percentual_comissao >= 0 AND percentual_comissao <= 1))' +
+    ')'
+  ).run();
+
+  await env.DB.prepare(
+    'CREATE INDEX IF NOT EXISTS idx_rentabilidade_clientes_rede ' +
+    'ON rentabilidade_clientes (rede)'
+  ).run();
+
+  const contagem = await env.DB.prepare(
+    'SELECT COUNT(*) AS total FROM rentabilidade_clientes'
+  ).first();
+
+  if (Number(contagem?.total || 0) >= clientesRentabilidade.length) {
+    return;
+  }
+
+  const agora = new Date().toISOString();
+  const tamanhoDoLote = 50;
+
+  for (
+    let inicio = 0;
+    inicio < clientesRentabilidade.length;
+    inicio += tamanhoDoLote
+  ) {
+    const lote = clientesRentabilidade.slice(
+      inicio,
+      inicio + tamanhoDoLote
+    );
+
+    await env.DB.batch(
+      lote.map((cliente) =>
+        env.DB.prepare(
+          'INSERT INTO rentabilidade_clientes (' +
+            'codigo_parceiro, cliente, rede, percentual_contrato, ' +
+            'percentual_promotoria, percentual_comissao, created_at, ' +
+            'updated_at, updated_by' +
+          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ' +
+          'ON CONFLICT(codigo_parceiro) DO NOTHING'
+        ).bind(
+          cliente.codigoParceiro,
+          cliente.cliente,
+          cliente.rede,
+          cliente.percentualContrato,
+          cliente.percentualPromotoria,
+          cliente.percentualComissao,
+          agora,
+          agora,
+          null
+        )
+      )
+    );
+  }
+}
+
+export async function carregarClientesRentabilidade(env) {
+  await garantirCadastroClientesRentabilidade(env);
+
+  const resultado = await env.DB.prepare(
+    'SELECT ' +
+      'codigo_parceiro AS codigoParceiro, ' +
+      'cliente, ' +
+      'rede, ' +
+      'percentual_contrato AS percentualContrato, ' +
+      'percentual_promotoria AS percentualPromotoria, ' +
+      'percentual_comissao AS percentualComissao, ' +
+      'updated_at AS atualizadoEm, ' +
+      'updated_by AS atualizadoPor ' +
+    'FROM rentabilidade_clientes ' +
+    'ORDER BY rede COLLATE NOCASE, cliente COLLATE NOCASE'
+  ).all();
+
+  return resultado.results || [];
+}
+
+function normalizarPercentualRentabilidade(valor, campo) {
+  if (valor === null || valor === '') {
+    return null;
+  }
+
+  if (
+    typeof valor !== 'number' ||
+    !Number.isFinite(valor) ||
+    valor < 0 ||
+    valor > 1
+  ) {
+    throw new Error(
+      campo + ' deve ser um percentual entre 0 e 1, ou ficar vazio.'
+    );
+  }
+
+  return valor;
+}
+
+function possuiCampo(objeto, campo) {
+  return Object.prototype.hasOwnProperty.call(objeto, campo);
+}
+
+export async function atualizarPercentuaisClienteRentabilidade(
+  env,
+  codigoDaUrl,
+  dadosRecebidos,
+  username
+) {
+  const codigoParceiro = decodeURIComponent(
+    String(codigoDaUrl || '')
+  ).trim();
+
+  if (!codigoParceiro) {
+    return { status: 400, error: 'Código do parceiro inválido.' };
+  }
+
+  const dados = dadosRecebidos &&
+    typeof dadosRecebidos === 'object' &&
+    !Array.isArray(dadosRecebidos)
+    ? dadosRecebidos
+    : {};
+
+  const possuiContrato = possuiCampo(dados, 'percentualContrato');
+  const possuiPromotoria = possuiCampo(dados, 'percentualPromotoria');
+  const possuiComissao = possuiCampo(dados, 'percentualComissao');
+
+  if (!possuiContrato && !possuiPromotoria && !possuiComissao) {
+    return {
+      status: 400,
+      error: 'Informe desconto, promotoria ou comissão para atualizar.'
+    };
+  }
+
+  await garantirCadastroClientesRentabilidade(env);
+
+  const existente = await env.DB.prepare(
+    'SELECT ' +
+      'codigo_parceiro AS codigoParceiro, ' +
+      'cliente, rede, ' +
+      'percentual_contrato AS percentualContrato, ' +
+      'percentual_promotoria AS percentualPromotoria, ' +
+      'percentual_comissao AS percentualComissao ' +
+    'FROM rentabilidade_clientes WHERE codigo_parceiro = ?'
+  ).bind(codigoParceiro).first();
+
+  if (!existente) {
+    return {
+      status: 404,
+      error: 'Cliente não encontrado no cadastro de rentabilidade.'
+    };
+  }
+
+  let percentualContrato;
+  let percentualPromotoria;
+  let percentualComissao;
+
+  try {
+    percentualContrato = possuiContrato
+      ? normalizarPercentualRentabilidade(
+        dados.percentualContrato,
+        'Desconto financeiro'
+      )
+      : existente.percentualContrato;
+
+    percentualPromotoria = possuiPromotoria
+      ? normalizarPercentualRentabilidade(
+        dados.percentualPromotoria,
+        'Promotoria'
+      )
+      : existente.percentualPromotoria;
+
+    percentualComissao = possuiComissao
+      ? normalizarPercentualRentabilidade(
+        dados.percentualComissao,
+        'Comissão de venda'
+      )
+      : existente.percentualComissao;
+  } catch (error) {
+    return { status: 400, error: error.message };
+  }
+
+  const atualizadoEm = new Date().toISOString();
+
+  await env.DB.prepare(
+    'UPDATE rentabilidade_clientes SET ' +
+      'percentual_contrato = ?, ' +
+      'percentual_promotoria = ?, ' +
+      'percentual_comissao = ?, ' +
+      'updated_at = ?, ' +
+      'updated_by = ? ' +
+    'WHERE codigo_parceiro = ?'
+  ).bind(
+    percentualContrato,
+    percentualPromotoria,
+    percentualComissao,
+    atualizadoEm,
+    username,
+    codigoParceiro
+  ).run();
+
+  return { status: 200 };
+}
