@@ -1,3 +1,4 @@
+import { paginaInicialPage } from './pages/pagina-inicial.js';
 import { investimentosPage } from './pages/investimentos.js';
 import { investimentosListaPage } from './pages/investimentos-lista.js';
 import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
@@ -2041,11 +2042,7 @@ body.inicializando #inicializacao {
       </aside>
       <section class="conteudo">
         <header class="topo"><div><h1 id="tituloPagina">Página inicial</h1><p id="greeting"></p></div><span id="role" class="tag"></span></header>
-        <section id="viewInicio" class="visao">
-  <div class="portal-desenvolvimento">
-    <h2>Portal em desenvolvimento</h2>
-  </div>
-</section>
+        ${paginaInicialPage()}
         <section id="viewUsuarios" class="visao oculto">
           <div class="painel-cabecalho"><div><h2>Usuários cadastrados</h2><p>Cadastre os acessos da equipe ao novo portal.</p></div><button id="novoUsuario" class="acao" type="button">Novo usuário</button></div>
           <form id="formUsuario" class="formulario oculto">
