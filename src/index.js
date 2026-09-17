@@ -643,15 +643,23 @@ if (investimentoPendenteMatch && request.method === 'PUT') {
 }
 
 if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
-  await requireAdministrator(request, env);
+  try {
+    await requireAdministrator(request, env);
 
-  const clientes = await carregarClientesRentabilidade(env);
+    const clientes = await carregarClientesRentabilidade(env);
 
-  return json({
-    total: clientes.length,
-    redes: REDES_RENTABILIDADE,
-    clientes
-  });
+    return json({
+      total: clientes.length,
+      redes: REDES_RENTABILIDADE,
+      clientes
+    });
+  } catch (error) {
+    console.error('Erro ao carregar clientes:', error);
+
+    return json({
+      error: error.message || 'Erro desconhecido ao carregar clientes.'
+    }, 500);
+  }
 }
 
       if (url.pathname === '/rentabilidade/clientes' && request.method === 'GET') {
