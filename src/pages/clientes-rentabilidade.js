@@ -57,7 +57,7 @@ export function clientesRentabilidadePage() {
 <body>
 <main>
   <header class="topo">
-    <a class="voltar" href="/dashboard-rentabilidade" title="Voltar">←</a>
+    <a class="voltar" href="/" title="Voltar ao menu">←</a>
     <a class="inicio" href="/" title="Página inicial">⌂</a>
     <div>
       <h1>Cadastro de clientes</h1>
