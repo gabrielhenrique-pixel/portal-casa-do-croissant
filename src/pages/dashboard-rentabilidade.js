@@ -987,7 +987,10 @@ function render(d) {
     }, 0);
   };
 
-  var faturamento = soma('faturamentoBruto');
+  var faturamentoPorRedes = soma('faturamentoBruto');
+  var faturamento = typeof d.faturamentoGeral === 'number'
+    ? n(d.faturamentoGeral)
+    : faturamentoPorRedes;
   var receita = soma('receitaLiquida');
   var resultado = soma('resultadoFinal');
   var investimentos = soma('investimentos');
@@ -1110,12 +1113,14 @@ function render(d) {
       ? dadosMesAtual.redes
       : [];
 
-    var faturamentoMesAtual = redesMesAtual.reduce(
-      function(total, rede) {
-        return total + n(rede.faturamentoBruto);
-      },
-      0
-    );
+    var faturamentoMesAtual = typeof dadosMesAtual.faturamentoGeral === 'number'
+      ? n(dadosMesAtual.faturamentoGeral)
+      : redesMesAtual.reduce(
+          function(total, rede) {
+            return total + n(rede.faturamentoBruto);
+          },
+          0
+        );
 
     render(dados);
     atualizarVelocimetro(faturamentoMesAtual);
