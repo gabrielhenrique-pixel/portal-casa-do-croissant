@@ -280,6 +280,107 @@ export function rentabilidadeSkuPage() {
   background:#1b4b7b;
 }
 
+.th-com-filtro {
+  position: sticky;
+  padding-right: 34px;
+}
+
+.botao-filtro-coluna {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 23px;
+  min-height: 23px;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 5px;
+  padding: 0;
+  background: #39729d;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.botao-filtro-coluna:hover,
+.botao-filtro-coluna.ativo {
+  background: #0d3858;
+}
+
+.menu-filtro-coluna {
+  position: fixed;
+  z-index: 50;
+  width: 290px;
+  padding: 12px;
+  border: 1px solid #b9cad9;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(16, 46, 73, .24);
+  color: #17375f;
+}
+
+.menu-filtro-titulo {
+  margin-bottom: 9px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.menu-filtro-pesquisa {
+  width: 100%;
+  min-height: 34px;
+  margin-bottom: 8px;
+  border: 1px solid #bdcede;
+  border-radius: 5px;
+  padding: 7px 9px;
+  color: #17375f;
+  font: inherit;
+}
+
+.menu-filtro-selecionar-todos,
+.menu-filtro-opcao {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #263e55;
+  font-size: 13px;
+}
+
+.menu-filtro-selecionar-todos {
+  margin: 4px 0 7px;
+}
+
+.menu-filtro-opcoes {
+  max-height: 235px;
+  overflow-y: auto;
+  border: 1px solid #d5e0e9;
+  padding: 4px 7px;
+}
+
+.menu-filtro-opcao {
+  min-height: 27px;
+}
+
+.menu-filtro-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.menu-filtro-acoes button {
+  min-height: 37px;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 13px;
+  background: #102e49;
+  color: #fff;
+}
+
+.menu-filtro-acoes .limpar {
+  border: 1px solid #bdcede;
+  background: #fff;
+  color: #17375f;
+}
+
     @media (max-width: 720px) {
       main { padding: 12px 10px 24px; }
       .cabecalho { align-items: stretch; flex-direction: column; padding: 16px; }
@@ -364,6 +465,75 @@ export function rentabilidadeSkuPage() {
       var estado = document.getElementById('estado');
       var linhasTabela = document.getElementById('linhasTabela');
       var quantidadeColunas = 25;
+
+      var todosItens = [];
+var filtrosColunas = {};
+var menusFiltroAbertos = [];
+
+function tituloDaColuna(indice) {
+  var titulos = [
+    'Data', 'Código do parceiro', 'Parceiro', 'Produto', 'Quantidade',
+    'Valor líquido', 'Valor ST', '', 'Faturamento', 'Impostos',
+    'Acordos', 'Receita líquida', 'CMV unitário', 'CMV total',
+    'Promotoria', 'Custo promotoria', 'Contrato', 'Custo contrato',
+    'Investimentos', 'Comissão', 'Custo comissão', 'Resultado',
+    'Margem', 'Meta margem', 'Gap margem'
+  ];
+
+  return titulos[indice] || 'Coluna';
+}
+
+function valorDaColuna(item, indice) {
+  var valorLiquido = valorDoItem(item, ['valorLiquido', 'vlrLiquido']);
+  var valorSt = valorDoItem(item, ['valorSt', 'vlrSt']);
+  var faturamento = valorDoItem(item, ['faturamento', 'faturamentoBruto']);
+  var impostos = valorDoItem(item, ['impostos']);
+  var acordos = valorDoItem(item, ['acordos']);
+  var receitaLiquida = valorDoItem(item, ['receitaLiquida']);
+  var cmvUnitario = valorDoItem(item, ['cmvUnitario']);
+  var cmvTotal = valorDoItem(item, ['cmvTotal']);
+  var promotoria = valorDoItem(item, ['percentualPromotoria', 'promotoria']);
+  var custoPromotoria = valorDoItem(item, ['custoPromotoria']);
+  var contrato = valorDoItem(item, ['percentualContrato', 'contrato']);
+  var custoContrato = valorDoItem(item, ['custoContrato']);
+  var investimentos = valorDoItem(item, ['investimentos']);
+  var comissao = valorDoItem(item, ['percentualComissao', 'comissao']);
+  var custoComissao = valorDoItem(item, ['custoComissao']);
+  var resultado = valorDoItem(item, ['resultado']);
+  var margem = valorDoItem(item, ['margem', 'margemPercentual']);
+  var metaMargem = valorDoItem(item, ['metaMargem']);
+  var gapMargem = valorDoItem(item, ['gapMargem']);
+
+  var valores = [
+    formatarData(item.data),
+    item.codigoParceiro || '—',
+    item.parceiro || '—',
+    item.produto || '—',
+    formatarNumero(item.quantidade),
+    formatarMoeda(valorLiquido),
+    formatarMoeda(valorSt),
+    '—',
+    formatarMoeda(faturamento),
+    formatarMoeda(impostos),
+    formatarMoeda(acordos),
+    formatarMoeda(receitaLiquida),
+    formatarMoeda(cmvUnitario),
+    formatarMoeda(cmvTotal),
+    formatarPercentual(promotoria),
+    formatarMoeda(custoPromotoria),
+    formatarPercentual(contrato),
+    formatarMoeda(custoContrato),
+    formatarMoeda(investimentos),
+    formatarPercentual(comissao),
+    formatarMoeda(custoComissao),
+    formatarMoeda(resultado),
+    formatarPercentual(margem),
+    formatarPercentual(metaMargem),
+    formatarPercentual(gapMargem)
+  ];
+
+  return String(valores[indice] || '—');
+}
 
       function dataParaInput(data) {
         return [
@@ -491,7 +661,7 @@ export function rentabilidadeSkuPage() {
         linha.appendChild(celula);
       }
 
-      function renderizarTabela(itens) {
+      function renderizarLinhas(itens) {
         linhasTabela.replaceChildren();
 
         if (!itens.length) {
@@ -561,6 +731,218 @@ export function rentabilidadeSkuPage() {
         linhasTabela.appendChild(fragmento);
       }
 
+      function fecharMenusFiltro() {
+  menusFiltroAbertos.forEach(function(menu) {
+    menu.remove();
+  });
+
+  menusFiltroAbertos = [];
+}
+
+function atualizarIndicadoresFiltros() {
+  document.querySelectorAll('.botao-filtro-coluna').forEach(function(botao) {
+    var indice = Number(botao.dataset.indice);
+    botao.classList.toggle(
+      'ativo',
+      filtrosColunas[indice] instanceof Set
+    );
+  });
+}
+
+function aplicarFiltrosTabela() {
+  var itensFiltrados = todosItens.filter(function(item) {
+    return Object.keys(filtrosColunas).every(function(chave) {
+      var valoresSelecionados = filtrosColunas[chave];
+
+      return valoresSelecionados.has(
+        valorDaColuna(item, Number(chave))
+      );
+    });
+  });
+
+  renderizarLinhas(itensFiltrados);
+  atualizarIndicadoresFiltros();
+}
+
+function renderizarTabela(itens) {
+  todosItens = Array.isArray(itens) ? itens : [];
+  aplicarFiltrosTabela();
+}
+
+function abrirFiltroColuna(indice, botao) {
+  fecharMenusFiltro();
+
+  var valores = Array.from(
+    new Set(
+      todosItens.map(function(item) {
+        return valorDaColuna(item, indice);
+      })
+    )
+  ).sort(function(a, b) {
+    return a.localeCompare(b, 'pt-BR', { numeric: true });
+  });
+
+  var selecionados = filtrosColunas[indice]
+    ? new Set(filtrosColunas[indice])
+    : new Set(valores);
+
+  var menu = document.createElement('div');
+  menu.className = 'menu-filtro-coluna';
+
+  var posicao = botao.getBoundingClientRect();
+  menu.style.top = Math.min(posicao.bottom + 6, window.innerHeight - 420) + 'px';
+  menu.style.left = Math.min(posicao.left - 250, window.innerWidth - 300) + 'px';
+
+  var titulo = document.createElement('div');
+  titulo.className = 'menu-filtro-titulo';
+  titulo.textContent = 'Filtro: ' + tituloDaColuna(indice);
+
+  var pesquisa = document.createElement('input');
+  pesquisa.type = 'search';
+  pesquisa.className = 'menu-filtro-pesquisa';
+  pesquisa.placeholder = 'Pesquisar';
+
+  var selecionarTudoLabel = document.createElement('label');
+  selecionarTudoLabel.className = 'menu-filtro-selecionar-todos';
+
+  var selecionarTudo = document.createElement('input');
+  selecionarTudo.type = 'checkbox';
+
+  selecionarTudoLabel.appendChild(selecionarTudo);
+  selecionarTudoLabel.appendChild(
+    document.createTextNode('Selecionar tudo')
+  );
+
+  var opcoes = document.createElement('div');
+  opcoes.className = 'menu-filtro-opcoes';
+
+  function atualizarSelecaoTotal() {
+    selecionarTudo.checked = valores.length > 0 &&
+      valores.every(function(valor) {
+        return selecionados.has(valor);
+      });
+
+    selecionarTudo.indeterminate = !selecionarTudo.checked &&
+      valores.some(function(valor) {
+        return selecionados.has(valor);
+      });
+  }
+
+  function desenharOpcoes() {
+    var termo = pesquisa.value.trim().toLocaleLowerCase('pt-BR');
+    opcoes.replaceChildren();
+
+    valores.filter(function(valor) {
+      return valor.toLocaleLowerCase('pt-BR').includes(termo);
+    }).forEach(function(valor) {
+      var label = document.createElement('label');
+      label.className = 'menu-filtro-opcao';
+
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = selecionados.has(valor);
+
+      checkbox.addEventListener('change', function() {
+        if (checkbox.checked) {
+          selecionados.add(valor);
+        } else {
+          selecionados.delete(valor);
+        }
+
+        atualizarSelecaoTotal();
+      });
+
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(valor));
+      opcoes.appendChild(label);
+    });
+
+    atualizarSelecaoTotal();
+  }
+
+  selecionarTudo.addEventListener('change', function() {
+    if (selecionarTudo.checked) {
+      valores.forEach(function(valor) {
+        selecionados.add(valor);
+      });
+    } else {
+      selecionados.clear();
+    }
+
+    desenharOpcoes();
+  });
+
+  pesquisa.addEventListener('input', desenharOpcoes);
+
+  var acoes = document.createElement('div');
+  acoes.className = 'menu-filtro-acoes';
+
+  var limpar = document.createElement('button');
+  limpar.type = 'button';
+  limpar.className = 'limpar';
+  limpar.textContent = 'Limpar';
+
+  limpar.addEventListener('click', function() {
+    delete filtrosColunas[indice];
+    fecharMenusFiltro();
+    aplicarFiltrosTabela();
+  });
+
+  var aplicar = document.createElement('button');
+  aplicar.type = 'button';
+  aplicar.textContent = 'Aplicar';
+
+  aplicar.addEventListener('click', function() {
+    filtrosColunas[indice] = new Set(selecionados);
+    fecharMenusFiltro();
+    aplicarFiltrosTabela();
+  });
+
+  acoes.appendChild(limpar);
+  acoes.appendChild(aplicar);
+
+  menu.appendChild(titulo);
+  menu.appendChild(pesquisa);
+  menu.appendChild(selecionarTudoLabel);
+  menu.appendChild(opcoes);
+  menu.appendChild(acoes);
+
+  document.body.appendChild(menu);
+  menusFiltroAbertos.push(menu);
+  desenharOpcoes();
+}
+
+function prepararFiltrosColunas() {
+  document.querySelectorAll('thead th').forEach(function(cabecalho, indice) {
+    if (indice === 7) return;
+
+    cabecalho.classList.add('th-com-filtro');
+
+    var botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'botao-filtro-coluna';
+    botao.dataset.indice = indice;
+    botao.title = 'Filtrar ' + tituloDaColuna(indice);
+    botao.textContent = '▼';
+
+    botao.addEventListener('click', function(evento) {
+      evento.stopPropagation();
+      abrirFiltroColuna(indice, botao);
+    });
+
+    cabecalho.appendChild(botao);
+  });
+
+  document.addEventListener('click', function(evento) {
+    if (
+      !evento.target.closest('.menu-filtro-coluna') &&
+      !evento.target.closest('.botao-filtro-coluna')
+    ) {
+      fecharMenusFiltro();
+    }
+  });
+}
+
       function mostrarEstado(mensagem, erro) {
         estado.textContent = mensagem;
         estado.classList.toggle('erro', Boolean(erro));
@@ -616,6 +998,7 @@ export function rentabilidadeSkuPage() {
         carregarDados();
       });
 
+      prepararFiltrosColunas();
       definirPeriodoInicial();
       carregarDados();
     })();
