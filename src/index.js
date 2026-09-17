@@ -8,7 +8,7 @@ import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
 import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
-import {carregarClientesRentabilidade,atualizarPercentuaisClienteRentabilidade} from './clientes-rentabilidade.js';
+import {carregarClientesRentabilidade,atualizarPercentuaisClienteRentabilidade,atualizarClientesRentabilidadeEmLote,sincronizarClientesRentabilidadeSankhya,REDES_RENTABILIDADE} from './clientes-rentabilidade.js';
 import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
 import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
@@ -17,6 +17,7 @@ import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabi
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
 import { dashboardsPage } from './pages/dashboards.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
+import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
@@ -648,8 +649,83 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
 
   return json({
     total: clientes.length,
+    redes: REDES_RENTABILIDADE,
     clientes
   });
+}
+
+      if (url.pathname === '/rentabilidade/clientes' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session || session.role !== 'Administrador') {
+    return new Response('Acesso não autorizado.', { status: 403 });
+  }
+
+  return clientesRentabilidadePage();
+}
+
+if (
+  url.pathname === '/api/rentabilidade/clientes/sincronizar' &&
+  request.method === 'POST'
+) {
+  const administrador = await requireAdministrator(request, env);
+  const token = await obterTokenSankhya(env);
+
+  const linhas = await executarConsultaSankhya(
+    token,
+    [
+      'SELECT PAR.CODPARC, PAR.NOMEPARC,',
+      'NVL(PAR.DESCFIN, 0) AS DESCONTO_FINANCEIRO,',
+      'NVL(PAR.AD_COMVENDA, 0) AS COMISSAO_VENDA',
+      'FROM TGFPAR PAR',
+      "WHERE PAR.CLIENTE = 'S'",
+      "AND PAR.ATIVO = 'S'",
+      'ORDER BY PAR.NOMEPARC'
+    ].join(String.fromCharCode(10))
+  );
+
+  const resultado = await sincronizarClientesRentabilidadeSankhya(
+    env,
+    linhas
+  );
+
+  await writeAudit(
+    env,
+    administrador.username,
+    'RENTABILIDADE_CLIENTES_SINCRONIZADOS',
+    resultado.totalSincronizado +
+      ' clientes ativos sincronizados pelo Sankhya.'
+  );
+
+  return json(resultado);
+}
+
+if (
+  url.pathname === '/api/rentabilidade/clientes/lote' &&
+  request.method === 'PUT'
+) {
+  const administrador = await requireAdministrator(request, env);
+  const dados = await bodyAsJson(request);
+
+  const resultado = await atualizarClientesRentabilidadeEmLote(
+    env,
+    dados.codigoParceiros,
+    dados.campos,
+    administrador.username
+  );
+
+  if (resultado.error) {
+    return json({ error: resultado.error }, resultado.status || 400);
+  }
+
+  await writeAudit(
+    env,
+    administrador.username,
+    'RENTABILIDADE_CLIENTES_EDITADOS_EM_LOTE',
+    resultado.totalAtualizado + ' clientes atualizados em lote.'
+  );
+
+  return json(resultado);
 }
 
 const clienteRentabilidadeMatch =
