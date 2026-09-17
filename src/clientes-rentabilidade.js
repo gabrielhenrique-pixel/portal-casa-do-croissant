@@ -291,10 +291,6 @@ export async function garantirCadastroClientesRentabilidade(env) {
     'ON rentabilidade_clientes (rede)'
   ).run();
 
-  if (Number(contagem?.total || 0) >= clientesRentabilidade.length) {
-    return;
-  }
-
   const agora = new Date().toISOString();
   const tamanhoDoLote = 50;
 
