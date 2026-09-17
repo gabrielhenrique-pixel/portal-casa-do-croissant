@@ -610,10 +610,6 @@ export function dashboardRentabilidadePage() {
       text-decoration:none;
     }
 
-    .acoes a:last-child {
-      background:#0a6237;
-    }
-
     @media(max-width:700px) {
       .cards { grid-template-columns:repeat(3,1fr); }
       .grade { grid-template-columns:1fr; }
@@ -830,7 +826,6 @@ export function dashboardRentabilidadePage() {
     <nav class="acoes">
       <a href="/margem-rede">Abrir Margem por Rede</a>
       <a href="/rentabilidade-sku">Abrir Rentabilidade SKU</a>
-      <a href="/rentabilidade/clientes">Cadastro de clientes</a>
     </nav>
   </main>
 
