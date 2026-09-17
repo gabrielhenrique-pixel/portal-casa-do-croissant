@@ -1,4 +1,4 @@
-import {carregarClientesRentabilidade,sincronizarClientesRentabilidadeSankhya} from './clientes-rentabilidade.js';
+import { carregarClientesRentabilidade } from './clientes-rentabilidade.js';
 import { listarInvestimentosDaMargemRede } from './investimentos-rentabilidade.js';
 import { calcularLinhaRentabilidadeSku } from './rentabilidade-sku-service.js';
 
@@ -42,18 +42,10 @@ export async function listarMargemRedeSankhya(request, env, session) {
   }
 
   try {
-    const accessToken = await obterTokenSankhya(env);
-
-const linhasCadastro = await executarConsultaSankhya(
-  accessToken,
-  montarSqlClientesAtivos()
-);
-
-await sincronizarClientesRentabilidadeSankhya(env, linhasCadastro);
-
-const [clientes, investimentos] = await Promise.all([
+    const [clientes, investimentos, accessToken] = await Promise.all([
   carregarClientesRentabilidade(env),
-  listarInvestimentosDaMargemRede(env, inicio, fim)
+  listarInvestimentosDaMargemRede(env, inicio, fim),
+  obterTokenSankhya(env)
 ]);
 
     const [linhasVendas, linhasDevolucoes, linhasFrete] = await Promise.all([
