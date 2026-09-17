@@ -34,8 +34,13 @@ function redeEditavel(valor) {
   const rede = String(valor || '').trim().toUpperCase() || 'SEM REDE';
 
   if (!REDES_RENTABILIDADE.includes(rede)) {
-    throw new Error('Selecione uma rede válida.');
-  }
+  throw new Error('Selecione uma rede válida.');
+}
+
+return rede;
+}
+
+const DADOS_MANUAIS_CLIENTES = {};
 
   const DADOS_MANUAIS_CLIENTES = {};
 
@@ -92,9 +97,6 @@ adicionarClientesManuais(null, 'VERONA', '1537,1538,1529,1530,1533,1531,1532,152
 adicionarClientesManuais(0.0384, 'VERONA', '1534,1536');
 adicionarClientesManuais(null, 'ZAMPROGNA', '318,260,261,262');
 
-  return rede;
-}
-
 export async function sincronizarClientesRentabilidadeSankhya(env, linhas) {
   await garantirCadastroClientesRentabilidade(env);
 
@@ -137,9 +139,11 @@ export async function sincronizarClientesRentabilidadeSankhya(env, linhas) {
             'percentual_comissao = excluded.percentual_comissao, ' +
             'updated_at = excluded.updated_at, ' +
             'updated_by = excluded.updated_by'
-        ).bind(
+        .bind(
           cliente.codigoParceiro,
           cliente.cliente,
+          cliente.rede,
+          cliente.percentualContrato,
           'SEM REDE',
           cliente.rede,
           cliente.percentualContrato,
@@ -290,43 +294,6 @@ export async function garantirCadastroClientesRentabilidade(env) {
     'CREATE INDEX IF NOT EXISTS idx_rentabilidade_clientes_rede ' +
     'ON rentabilidade_clientes (rede)'
   ).run();
-
-  const agora = new Date().toISOString();
-  const tamanhoDoLote = 50;
-
-  for (
-    let inicio = 0;
-    inicio < clientesRentabilidade.length;
-    inicio += tamanhoDoLote
-  ) {
-    const lote = clientesRentabilidade.slice(
-      inicio,
-      inicio + tamanhoDoLote
-    );
-
-    await env.DB.batch(
-      lote.map((cliente) =>
-        env.DB.prepare(
-          'INSERT INTO rentabilidade_clientes (' +
-            'codigo_parceiro, cliente, rede, percentual_contrato, ' +
-            'percentual_promotoria, percentual_comissao, created_at, ' +
-            'updated_at, updated_by' +
-          ') VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ' +
-          'ON CONFLICT(codigo_parceiro) DO NOTHING'
-        ).bind(
-          cliente.codigoParceiro,
-          cliente.cliente,
-          cliente.rede,
-          cliente.percentualContrato,
-          cliente.percentualPromotoria,
-          cliente.percentualComissao,
-          agora,
-          agora,
-          null
-        )
-      )
-    );
-  }
 }
 
 export async function carregarClientesRentabilidade(env) {
