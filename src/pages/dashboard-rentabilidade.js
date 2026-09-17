@@ -830,6 +830,7 @@ export function dashboardRentabilidadePage() {
     <nav class="acoes">
       <a href="/margem-rede">Abrir Margem por Rede</a>
       <a href="/rentabilidade-sku">Abrir Rentabilidade SKU</a>
+      <a href="/rentabilidade/clientes">Cadastro de clientes</a>
     </nav>
   </main>
 
