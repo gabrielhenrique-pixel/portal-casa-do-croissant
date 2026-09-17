@@ -646,6 +646,24 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
   try {
     await requireAdministrator(request, env);
 
+    try {
+      const token = await obterTokenSankhya(env);
+
+      const linhas = await executarConsultaSankhya(token, [
+        'SELECT PAR.CODPARC, PAR.NOMEPARC,',
+        'NVL(PAR.DESCFIN, 0) AS DESCONTO_FINANCEIRO,',
+        'NVL(PAR.AD_COMVENDA, 0) AS COMISSAO_VENDA',
+        'FROM TGFPAR PAR',
+        "WHERE PAR.CLIENTE = 'S'",
+        "AND PAR.ATIVO = 'S'",
+        'ORDER BY PAR.NOMEPARC'
+      ].join(String.fromCharCode(10)));
+
+      await sincronizarClientesRentabilidadeSankhya(env, linhas);
+    } catch (erroSankhya) {
+      console.error('Não foi possível sincronizar clientes automaticamente:', erroSankhya);
+    }
+
     const clientes = await carregarClientesRentabilidade(env);
 
     return json({
