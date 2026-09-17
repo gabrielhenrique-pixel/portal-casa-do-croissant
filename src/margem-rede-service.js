@@ -1,4 +1,4 @@
-import { carregarClientesRentabilidade } from './clientes-rentabilidade.js';
+import {carregarClientesRentabilidade,sincronizarClientesRentabilidadeSankhya} from './clientes-rentabilidade.js';
 import { listarInvestimentosDaMargemRede } from './investimentos-rentabilidade.js';
 import { calcularLinhaRentabilidadeSku } from './rentabilidade-sku-service.js';
 
@@ -42,11 +42,19 @@ export async function listarMargemRedeSankhya(request, env, session) {
   }
 
   try {
-    const [clientes, investimentos, accessToken] = await Promise.all([
-      carregarClientesRentabilidade(env),
-      listarInvestimentosDaMargemRede(env, inicio, fim),
-      obterTokenSankhya(env)
-    ]);
+    const accessToken = await obterTokenSankhya(env);
+
+const linhasCadastro = await executarConsultaSankhya(
+  accessToken,
+  montarSqlClientesAtivos()
+);
+
+await sincronizarClientesRentabilidadeSankhya(env, linhasCadastro);
+
+const [clientes, investimentos] = await Promise.all([
+  carregarClientesRentabilidade(env),
+  listarInvestimentosDaMargemRede(env, inicio, fim)
+]);
 
     const [linhasVendas, linhasDevolucoes, linhasFrete] = await Promise.all([
       executarConsultaSankhya(accessToken, montarSqlVendas(inicio, fim)),
@@ -279,6 +287,19 @@ function listaDeAlertas(mapa) {
     parceiro: item.parceiro,
     valor: limparMenosZero(item.valor)
   }));
+
+}
+
+function montarSqlClientesAtivos() {
+  return [
+    'SELECT PAR.CODPARC, PAR.NOMEPARC,',
+    'NVL(PAR.DESCFIN, 0) AS DESCONTO_FINANCEIRO,',
+    'NVL(PAR.AD_COMVENDA, 0) AS COMISSAO_VENDA',
+    'FROM TGFPAR PAR',
+    "WHERE UPPER(TRIM(NVL(PAR.AD_TIPODECLIENTE, ''))) IN ('C', 'CLIENTE')",
+    "AND PAR.ATIVO = 'S'",
+    'ORDER BY PAR.NOMEPARC'
+  ].join(String.fromCharCode(10));
 }
 
 function montarSqlVendas(inicio, fim) {
