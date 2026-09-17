@@ -83,6 +83,7 @@ clientes.forEach((cliente) => {
       fretesSemCadastro: new Map(),
       investimentosForaDoModelo: new Map()
     };
+    let faturamentoGeral = 0;
 
     linhasVendas.forEach((linha) => {
       const valores = valoresDaLinha(linha);
@@ -90,6 +91,7 @@ clientes.forEach((cliente) => {
       const parceiro = String(valores[3] || '');
       const cadastro = clientesPorCodigo.get(codigoParceiro);
       const item = calcularLinhaRentabilidadeSku(valores, clientesPorCodigo);
+      faturamentoGeral += item.faturamento;
       const resumo = resumoDaRede(resumoPorRede, cadastro?.rede);
 
       if (!resumo) {
@@ -189,6 +191,7 @@ clientes.forEach((cliente) => {
     return responderJson({
       inicio,
       fim,
+      faturamentoGeral: limparMenosZero(faturamentoGeral),
       redes,
       alertas: {
         vendasSemCadastro: listaDeAlertas(alertas.vendasSemCadastro),
