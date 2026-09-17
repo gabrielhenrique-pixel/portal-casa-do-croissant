@@ -84,6 +84,7 @@ clientes.forEach((cliente) => {
       investimentosForaDoModelo: new Map()
     };
     let faturamentoGeral = 0;
+    let devolucoesGeral = 0;
 
     linhasVendas.forEach((linha) => {
       const valores = valoresDaLinha(linha);
@@ -119,6 +120,8 @@ clientes.forEach((cliente) => {
       const codigoParceiro = String(valores[2] || '').trim();
       const parceiro = String(valores[3] || '');
       const valorTotal = numeroSankhya(valores[7]);
+      devolucoesGeral += valorTotal;
+
       const cadastro = clientesPorCodigo.get(codigoParceiro);
       const resumo = resumoDaRede(resumoPorRede, cadastro?.rede);
 
@@ -192,6 +195,7 @@ clientes.forEach((cliente) => {
       inicio,
       fim,
       faturamentoGeral: limparMenosZero(faturamentoGeral),
+      devolucoesGeral: limparMenosZero(devolucoesGeral),
       redes,
       alertas: {
         vendasSemCadastro: listaDeAlertas(alertas.vendasSemCadastro),
