@@ -990,7 +990,11 @@ function render(d) {
   var receita = soma('receitaLiquida');
   var resultado = soma('resultadoFinal');
   var investimentos = soma('investimentos');
-  var devolucoes = soma('devolucoes');
+  var devolucoesPorRedes = soma('devolucoes');
+
+  var devolucoes = typeof d.devolucoesGeral === 'number'
+  ? n(d.devolucoesGeral)
+  : devolucoesPorRedes;
   var frete = soma('frete');
   var clientes = soma('clientesPositivados');
   var margem = receita ? resultado / Math.abs(receita) : 0;
