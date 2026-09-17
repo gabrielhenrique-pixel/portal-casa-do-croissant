@@ -2004,6 +2004,7 @@ body.inicializando #inicializacao {
         <nav id="menuPortal">
           <button class="nav-btn ativo" type="button" data-view="inicio">Página inicial</button>
           <button id="navDashboards" class="nav-btn" type="button" data-view="dashboards">Dashboards</button>
+          <button id="navClientes" class="nav-btn" type="button" data-view="clientes">Clientes</button>
           <button class="nav-btn" type="button" data-view="investimentos" data-module="INVESTIMENTOS">Investimentos</button>
           <button class="nav-btn" type="button" data-view="pendentes" data-module="INVESTIMENTOS_PENDENTES">Investimentos pendentes</button>
           <button id="navUsuarios" class="nav-btn" type="button" data-view="usuarios" data-module="USUARIOS">Usuários cadastrados</button>
@@ -2059,6 +2060,11 @@ body.inicializando #inicializacao {
           window.location.href = '/dashboards';
           return;
         }
+
+        if (view === 'clientes') {
+  window.location.href = '/rentabilidade/clientes';
+  return;
+}
           if (view === 'dashboard-rentabilidade') {
           window.location.href = '/dashboard-rentabilidade';
           return;
@@ -2105,7 +2111,12 @@ if (view === 'acessos') {
         $('tituloPagina').textContent = moduleTitles[view] || 'Módulo em migração'; $('tituloMigracao').textContent = $('tituloPagina').textContent; $('viewEmMigracao').classList.remove('oculto');
       }
       
-      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') { $('navUsuarios').classList.add('oculto'); $('navAcessos').classList.add('oculto'); $('navDashboards').classList.add('oculto'); } show('dashboard'); openView('inicio'); }
+      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') {
+  $('navUsuarios').classList.add('oculto');
+  $('navAcessos').classList.add('oculto');
+  $('navDashboards').classList.add('oculto');
+  $('navClientes').classList.add('oculto');
+} show('dashboard'); openView('inicio'); }
       async function loadSession() { try { startDashboard(await request('/api/me')); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
       async function loadUsers() { if (!sessionData || sessionData.user.role !== 'Administrador') return; try { const data = await request('/api/users'); cachedUsers = data.users; renderUsers(); renderUserSelector(); } catch (err) { error('erroUsuario', err.message); } }
       function renderUsers() { const target = $('listaUsuarios'); if (!cachedUsers.length) { target.innerHTML = '<div class="vazio">Nenhum usuário cadastrado.</div>'; return; } target.innerHTML = '<table class="tabela"><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Acessos configurados</th></tr></thead><tbody>' + cachedUsers.map((user) => '<tr><td><strong>' + html(user.username) + '</strong></td><td>' + html(user.email) + '</td><td>' + html(user.role) + '</td><td>' + Number(user.permission_count || 0) + '</td></tr>').join('') + '</tbody></table>'; }
