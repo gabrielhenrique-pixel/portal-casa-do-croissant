@@ -133,6 +133,93 @@ export function margemRedePage() {
       font-size:13px;
     }
 
+    .alerta-botao {
+  display: block;
+  min-height: 0;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #755500;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.alerta-botao:hover {
+  background: transparent;
+  color: #102e49;
+}
+
+.modal-sem-cadastro {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 18px;
+  background: rgba(16, 46, 73, .45);
+}
+
+.modal-sem-cadastro.visivel {
+  display: grid;
+}
+
+.modal-sem-cadastro-caixa {
+  width: min(680px, 100%);
+  max-height: 78vh;
+  overflow: auto;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .28);
+}
+
+.modal-sem-cadastro-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #d6e1da;
+  color: #102e49;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-fechar {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #102e49;
+  color: #fff;
+  cursor: pointer;
+}
+
+.lista-sem-cadastro {
+  margin: 0;
+  padding: 10px 20px 18px;
+  list-style: none;
+}
+
+.lista-sem-cadastro li {
+  padding: 10px 0;
+  border-bottom: 1px solid #e3e9e5;
+  color: #263e55;
+  font-size: 13px;
+}
+
+.lista-sem-cadastro li:last-child {
+  border-bottom: 0;
+}
+
+.lista-sem-cadastro strong {
+  color: #102e49;
+}
+
     .alertas.visivel { display:block; }
 
     .tabela-area {
@@ -451,23 +538,106 @@ export function margemRedePage() {
         });
       }
 
-      function mostrarAlertas(dados) {
-        var grupos = [
-          ['vendasSemCadastro', 'venda(s)'],
-          ['devolucoesSemCadastro', 'devolução(ões)'],
-          ['fretesSemCadastro', 'frete(s)'],
-          ['investimentosForaDoModelo', 'investimento(s)']
-        ];
-        var mensagens = grupos.map(function(grupo) {
-          var itens = dados && dados[grupo[0]];
-          return Array.isArray(itens) && itens.length
-            ? itens.length + ' ' + grupo[1] + ' sem rede válida no Cadastro_Clientes'
-            : '';
-        }).filter(Boolean);
+      function abrirModalSemCadastro(titulo, itens) {
+  var modal = document.getElementById('modalSemCadastro');
 
-        alertas.textContent = mensagens.join('. ');
-        alertas.className = mensagens.length ? 'alertas visivel' : 'alertas';
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalSemCadastro';
+    modal.className = 'modal-sem-cadastro';
+
+    modal.addEventListener('click', function(evento) {
+      if (evento.target === modal) {
+        modal.className = 'modal-sem-cadastro';
       }
+    });
+
+    document.body.appendChild(modal);
+  }
+
+  modal.replaceChildren();
+
+  var caixa = document.createElement('div');
+  caixa.className = 'modal-sem-cadastro-caixa';
+
+  var topo = document.createElement('div');
+  topo.className = 'modal-sem-cadastro-topo';
+
+  var tituloModal = document.createElement('span');
+  tituloModal.textContent = titulo;
+
+  var fechar = document.createElement('button');
+  fechar.type = 'button';
+  fechar.className = 'modal-fechar';
+  fechar.textContent = 'Fechar';
+
+  fechar.addEventListener('click', function() {
+    modal.className = 'modal-sem-cadastro';
+  });
+
+  topo.appendChild(tituloModal);
+  topo.appendChild(fechar);
+
+  var lista = document.createElement('ul');
+  lista.className = 'lista-sem-cadastro';
+
+  itens.forEach(function(item) {
+    var linha = document.createElement('li');
+    var valor = Number(item.valor || 0);
+
+    linha.innerHTML =
+      '<strong>Código ' + (item.codigoParceiro || '—') + '</strong><br>' +
+      (item.parceiro || 'Parceiro sem nome') +
+      (valor
+        ? '<br>Valor: ' + valor.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          })
+        : '');
+
+    lista.appendChild(linha);
+  });
+
+  caixa.appendChild(topo);
+  caixa.appendChild(lista);
+  modal.appendChild(caixa);
+  modal.className = 'modal-sem-cadastro visivel';
+}
+
+function mostrarAlertas(dados) {
+  var grupos = [
+    ['vendasSemCadastro', 'venda(s)', 'Vendas sem rede válida'],
+    ['devolucoesSemCadastro', 'devolução(ões)', 'Devoluções sem rede válida'],
+    ['fretesSemCadastro', 'frete(s)', 'Fretes sem rede válida'],
+    ['investimentosForaDoModelo', 'investimento(s)', 'Investimentos sem rede válida']
+  ];
+
+  alertas.replaceChildren();
+  var encontrouAlerta = false;
+
+  grupos.forEach(function(grupo) {
+    var itens = dados && dados[grupo[0]];
+
+    if (!Array.isArray(itens) || !itens.length) return;
+
+    encontrouAlerta = true;
+
+    var botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'alerta-botao';
+    botao.textContent =
+      itens.length + ' ' + grupo[1] +
+      ' sem rede válida no Cadastro_Clientes — ver clientes';
+
+    botao.addEventListener('click', function() {
+      abrirModalSemCadastro(grupo[2], itens);
+    });
+
+    alertas.appendChild(botao);
+  });
+
+  alertas.className = encontrouAlerta ? 'alertas visivel' : 'alertas';
+}
 
       function mostrarEstado(texto, erro) {
         estado.textContent = texto;
