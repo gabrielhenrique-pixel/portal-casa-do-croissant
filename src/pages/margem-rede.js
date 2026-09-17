@@ -515,10 +515,9 @@ export function margemRedePage() {
             erro.message || 'Não foi possível calcular a Margem_Rede.',
             true
           );
-        } finally {
+                } finally {
           atualizar.disabled = false;
         }
-      }
       }
 
       form.addEventListener('submit', function(evento) {
