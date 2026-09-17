@@ -197,6 +197,103 @@ export function margemRedePage() {
       text-align:center;
     }
 
+    .topo {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:18px 34px;
+  border-radius:18px;
+  background:rgba(255,255,255,.92);
+  box-shadow:0 8px 22px #1730521c;
+}
+
+.navegacao-topo {
+  display:flex;
+  gap:8px;
+  flex-shrink:0;
+}
+
+.nav-icone {
+  display:grid;
+  width:48px;
+  height:48px;
+  place-items:center;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 5px 15px #1730521c;
+  color:#102e49;
+  font-size:25px;
+  font-weight:700;
+  text-decoration:none;
+  transition:transform .15s, background .15s;
+}
+
+.nav-icone:hover {
+  background:#edf3f9;
+  transform:translateY(-2px);
+}
+
+.marca {
+  flex:1;
+}
+
+.marca span {
+  color:#102e49;
+  font-size:30px;
+  font-weight:700;
+}
+
+.controles {
+  display:flex;
+  align-items:end;
+  flex-wrap:wrap;
+  gap:18px;
+  margin-top:15px;
+  padding:14px 34px;
+  border:0;
+  border-radius:15px;
+  background:rgba(255,255,255,.84);
+  box-shadow:0 6px 18px #17305214;
+}
+
+.campo {
+  display:grid;
+  gap:5px;
+  min-width:175px;
+  color:#17375f;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+.campo span {
+  font-size:11px;
+}
+
+.campo input[type="date"] {
+  width:175px;
+  min-height:39px;
+  border:1px solid #c6d4e4;
+  border-radius:7px;
+  padding:0 10px;
+  color:#142f57;
+  background:#fff;
+  font-size:14px;
+}
+
+#atualizar {
+  min-height:39px;
+  padding:10px 18px;
+  background:#102e49;
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+}
+
+#atualizar:hover:not(:disabled) {
+  background:#1b4b7b;
+}
+
     @media (max-width:720px) {
       main { padding:12px 10px 24px; }
       .faixa-titulo { padding:16px; }
@@ -209,21 +306,30 @@ export function margemRedePage() {
 </head>
 <body>
   <main>
-    <header class="faixa-titulo">
-      <h1>RESUMO DE RENTABILIDADE | REDE</h1>
-    </header>
+    <header class="topo">
+  <nav class="navegacao-topo" aria-label="Navegação">
+    <a class="nav-icone" href="/dashboard-rentabilidade" aria-label="Voltar à rentabilidade">←</a>
+    <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
+  </nav>
 
-    <form class="controles" id="formFiltros">
-      <label class="campo" for="inicio">
-        <span>Data inicial</span>
-        <input id="inicio" type="date" required>
-      </label>
-      <label class="campo" for="fim">
-        <span>Data final</span>
-        <input id="fim" type="date" required>
-      </label>
-    </form>
+  <div class="marca">
+    <span>MARGEM POR REDE</span>
+  </div>
+</header>
 
+<form class="controles" id="formFiltros">
+  <label class="campo" for="inicio">
+    <span>Data inicial</span>
+    <input id="inicio" type="date" required>
+  </label>
+
+  <label class="campo" for="fim">
+    <span>Data final</span>
+    <input id="fim" type="date" required>
+  </label>
+
+  <button id="atualizar" type="submit">↻ ATUALIZAR DADOS</button>
+</form>
     <p class="estado" id="estado" aria-live="polite">Carregando dados...</p>
     <div class="alertas" id="alertas" role="status"></div>
 
@@ -258,6 +364,7 @@ export function margemRedePage() {
       var estado = document.getElementById('estado');
       var alertas = document.getElementById('alertas');
       var linhasTabela = document.getElementById('linhasTabela');
+      var atualizar = document.getElementById('atualizar');
 
       function dataParaInput(data) {
         return [
@@ -376,6 +483,8 @@ export function margemRedePage() {
           return;
         }
 
+        atualizar.disabled = true;
+
         mostrarEstado('Carregando Margem_Rede...', false);
         alertas.className = 'alertas';
 
@@ -399,11 +508,17 @@ export function margemRedePage() {
           mostrarAlertas(dados.alertas);
           mostrarEstado('Período consultado: ' + inicio.value.split('-').reverse().join('/') +
             ' a ' + fim.value.split('-').reverse().join('/'), false);
-        } catch (erro) {
+               } catch (erro) {
           if (numeroConsulta !== consultaAtual) return;
           preencherTabela([]);
-          mostrarEstado(erro.message || 'Não foi possível calcular a Margem_Rede.', true);
+          mostrarEstado(
+            erro.message || 'Não foi possível calcular a Margem_Rede.',
+            true
+          );
+        } finally {
+          atualizar.disabled = false;
         }
+      }
       }
 
       form.addEventListener('submit', function(evento) {
