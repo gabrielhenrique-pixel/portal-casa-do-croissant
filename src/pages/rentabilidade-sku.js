@@ -178,6 +178,108 @@ export function rentabilidadeSkuPage() {
       text-align: center;
     }
 
+    main {
+  max-width:1440px;
+  padding:6px 8px 38px;
+}
+
+.topo {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:18px 34px;
+  border-radius:18px;
+  background:rgba(255,255,255,.92);
+  box-shadow:0 8px 22px #1730521c;
+}
+
+.navegacao-topo {
+  display:flex;
+  gap:8px;
+  flex-shrink:0;
+}
+
+.nav-icone {
+  display:grid;
+  width:48px;
+  height:48px;
+  place-items:center;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 5px 15px #1730521c;
+  color:#102e49;
+  font-size:25px;
+  font-weight:700;
+  text-decoration:none;
+  transition:transform .15s,background .15s;
+}
+
+.nav-icone:hover {
+  background:#edf3f9;
+  transform:translateY(-2px);
+}
+
+.marca {
+  flex:1;
+}
+
+.marca span {
+  color:#102e49;
+  font-size:30px;
+  font-weight:700;
+}
+
+.filtros {
+  display:flex;
+  align-items:end;
+  flex-wrap:wrap;
+  gap:18px;
+  margin-top:15px;
+  padding:14px 34px;
+  border-radius:15px;
+  background:rgba(255,255,255,.84);
+  box-shadow:0 6px 18px #17305214;
+}
+
+.campo {
+  display:grid;
+  gap:5px;
+  min-width:175px;
+}
+
+.campo span {
+  color:#17375f;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+.campo input[type="date"] {
+  width:175px;
+  min-height:39px;
+  border:1px solid #c6d4e4;
+  border-radius:7px;
+  padding:0 10px;
+  color:#142f57;
+  background:#fff;
+  font-size:14px;
+}
+
+#botaoAtualizar {
+  min-height:39px;
+  border:0;
+  border-radius:8px;
+  padding:10px 18px;
+  background:#102e49;
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+}
+
+#botaoAtualizar:hover:not(:disabled) {
+  background:#1b4b7b;
+}
+
     @media (max-width: 720px) {
       main { padding: 12px 10px 24px; }
       .cabecalho { align-items: stretch; flex-direction: column; padding: 16px; }
@@ -195,18 +297,30 @@ export function rentabilidadeSkuPage() {
         <p class="subtitulo">Cálculo de rentabilidade por item de venda.</p>
       </div>
 
-      <form class="filtros" id="formFiltros">
-        <label class="campo">
-          <span>Data inicial</span>
-          <input id="inicio" name="inicio" type="date" required>
-        </label>
-        <label class="campo">
-          <span>Data final</span>
-          <input id="fim" name="fim" type="date" required>
-        </label>
-        <button id="botaoAtualizar" type="submit">Atualizar dados</button>
-      </form>
-    </header>
+      <header class="topo">
+  <nav class="navegacao-topo" aria-label="Navegação">
+    <a class="nav-icone" href="/dashboard-rentabilidade" aria-label="Voltar à rentabilidade">←</a>
+    <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
+  </nav>
+
+  <div class="marca">
+    <span>RENTABILIDADE SKU</span>
+  </div>
+</header>
+
+<form class="filtros" id="formFiltros">
+  <label class="campo">
+    <span>Data inicial</span>
+    <input id="inicio" name="inicio" type="date" required>
+  </label>
+
+  <label class="campo">
+    <span>Data final</span>
+    <input id="fim" name="fim" type="date" required>
+  </label>
+
+  <button id="botaoAtualizar" type="submit">↻ ATUALIZAR DADOS</button>
+</form>
 
     <p class="estado" id="estado" aria-live="polite">Carregando dados...</p>
 
