@@ -90,8 +90,8 @@ export async function listarInvestimentosDaMargemRede(env, inicio, fim) {
       valor_previsto,
       valor_real
     FROM rentabilidade_investimentos
-    WHERE data_fim >= ?
-      AND data_inicio <= ?
+    WHERE data_inicio >= ?
+  AND data_inicio <= ?
       AND (
         valor_real IS NOT NULL
         OR valor_previsto > 0
@@ -146,33 +146,7 @@ export function calcularRateioInvestimento(registro, inicio, fim) {
     throw new Error('Investimento com valor inválido.');
   }
 
-  const primeiroDia = registro.data_inicio > inicio
-    ? registro.data_inicio
-    : inicio;
-
-  const ultimoDia = registro.data_fim < fim
-    ? registro.data_fim
-    : fim;
-
-  if (primeiroDia > ultimoDia) {
-    return 0;
-  }
-
-  const diaUtc = function(data) {
-    return Date.parse(data + 'T00:00:00Z') / 86400000;
-  };
-
-  const diasTotais =
-    diaUtc(registro.data_fim) -
-    diaUtc(registro.data_inicio) +
-    1;
-
-  const diasConsultados =
-    diaUtc(ultimoDia) -
-    diaUtc(primeiroDia) +
-    1;
-
-  return Number(valorBase) * diasConsultados / diasTotais;
+ return Number(valorBase);
 }
 
 function validarPeriodo(inicio, fim) {
