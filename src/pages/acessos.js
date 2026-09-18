@@ -292,6 +292,25 @@ export function acessosPage() {
   padding-left:13px;
 }
 
+.toast{
+  position:fixed;
+  z-index:50;
+  right:24px;
+  bottom:24px;
+  display:none;
+  min-width:230px;
+  padding:14px 18px;
+  border-radius:9px;
+  background:#0a6237;
+  color:#fff;
+  font-weight:700;
+  box-shadow:0 10px 26px #1235;
+}
+
+.toast.visivel{
+  display:block;
+}
+
   @media (max-width: 800px) {
     main {
       padding: 24px 16px;
@@ -322,6 +341,7 @@ export function acessosPage() {
     </header>
 
     <div id="msg" class="msg" role="status"></div>
+    <div id="toast" class="toast" role="status"></div>
 
     <section class="grade">
       <article class="painel">
@@ -386,6 +406,21 @@ export function acessosPage() {
     let modulos = [];
     let usuarios = [];
     let usuariosModal = [];
+
+    let temporizadorToast;
+
+function mostrarToast(texto) {
+  const toast = $('toast');
+
+  toast.textContent = texto;
+  toast.classList.add('visivel');
+
+  clearTimeout(temporizadorToast);
+
+  temporizadorToast = setTimeout(() => {
+    toast.classList.remove('visivel');
+  }, 3000);
+}
 
     const PAINEIS_DASHBOARD = [
   'DASHBOARD_RENTABILIDADE',
@@ -730,8 +765,15 @@ export function acessosPage() {
           })
         });
 
-        aviso('Acessos salvos para todos os usuários selecionados.', false);
+        modulos = [];
+         usuarios = [];
+          usuariosModal = [];
+
+        $('msg').className = 'msg';
+
         await carregar();
+
+        mostrarToast('Acessos salvos.');
       } catch (erro) {
         aviso(erro.message, true);
       }
