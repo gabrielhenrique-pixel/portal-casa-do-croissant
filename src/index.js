@@ -2677,13 +2677,14 @@ const APP_HTML = `<!doctype html>
       </button>
 
       <button
-        id="navDashboards"
-        class="nav-btn"
-        type="button"
-        data-view="dashboards"
-      >
-        Dashboards
-      </button>
+  id="navDashboards"
+  class="nav-btn"
+  type="button"
+  data-view="dashboards"
+  data-module="DASHBOARDS"
+>
+  Dashboards
+</button>
 
       <button
         id="navClientes"
@@ -3049,11 +3050,9 @@ const APP_HTML = `<!doctype html>
       });
 
     if (data.user.role !== 'Administrador') {
-      $('navUsuarios').classList.add('oculto');
-      $('navAcessos').classList.add('oculto');
-      $('navDashboards').classList.add('oculto');
-      $('navClientes').classList.add('oculto');
-    }
+  $('navUsuarios').classList.add('oculto');
+  $('navAcessos').classList.add('oculto');
+}
 
     show('dashboard');
     openView('inicio');
