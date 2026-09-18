@@ -3049,11 +3049,6 @@ const APP_HTML = `<!doctype html>
         );
       });
 
-    if (data.user.role !== 'Administrador') {
-  $('navUsuarios').classList.add('oculto');
-  $('navAcessos').classList.add('oculto');
-}
-
     show('dashboard');
     openView('inicio');
   }
