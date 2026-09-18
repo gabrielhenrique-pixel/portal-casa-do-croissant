@@ -767,18 +767,33 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
   }
 }
 
-      if (url.pathname === '/rentabilidade/clientes' && request.method === 'GET') {
-  const session = await getSession(request, env);
+      if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'CLIENTES'
+  );
 
-  if (!session || session.role !== 'Administrador') {
-    return new Response('Acesso não autorizado.', { status: 403 });
+  if (!acesso?.permissions.view) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
   }
 
-  return clientesRentabilidadePage();
-}
+  try {
+    const clientes = await carregarClientesRentabilidade(env);
 
-if (
-  url.pathname === '/api/rentabilidade/clientes/sincronizar' &&
+    return json({
+      total: clientes.length,
+      redes: REDES_RENTABILIDADE,
+      clientes
+    });
+  } catch (error) {
+    console.error('Erro ao carregar clientes:', error);
+
+    return json({
+      error: error.message || 'Erro desconhecido ao carregar clientes.'
+    }, 500);
+  }
+}
   request.method === 'POST'
 ) {
   const administrador = await requireAdministrator(request, env);
