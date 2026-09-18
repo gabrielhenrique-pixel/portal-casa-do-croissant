@@ -2006,59 +2006,589 @@ function redirectToPortal() {
 const APP_HTML = `<!doctype html>
 <html lang="pt-BR">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Portal Casa do Croissant</title>
-    <style>
-      :root { color-scheme:light; --verde:#1b744d; --texto:#123d2d; --erro:#a52b20; }
-      * { box-sizing:border-box; }
-      body { margin:0; min-height:100vh; font-family:Arial,sans-serif; }
-      .tela-login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:linear-gradient(rgba(8,35,25,.58),rgba(8,35,25,.58)),url('https://drive.google.com/thumbnail?id=1x2lOopgDUcTsdDeytSn6Mo_-TgjlaS03&sz=w1920'); background-size:cover; background-position:center; }
-      .cartao-login { width:100%; max-width:390px; padding:30px; border-radius:14px; background:rgba(255,255,255,.90); box-shadow:0 15px 45px rgba(0,0,0,.35); text-align:center; }
-      .cartao-login h1 { color:var(--texto); margin:0 0 18px; font-size:28px; }
-      .logo-login { width:240px; max-width:100%; height:100px; object-fit:contain; margin:0 auto 18px; filter:brightness(0) saturate(100%) invert(20%) sepia(24%) saturate(1217%) hue-rotate(104deg); }
-      .campo-login { display:flex; align-items:center; height:40px; margin-bottom:24px; overflow:hidden; border:1px solid #d9dfe6; border-radius:6px; background:#fff; box-shadow:0 2px 4px rgba(0,0,0,.18); transition:.15s; }
-      .campo-login:focus-within { border-color:#76a9fa; box-shadow:0 0 0 3px rgba(118,169,250,.45); }
-      .campo-login span { display:flex; align-items:center; justify-content:center; width:42px; height:100%; flex-shrink:0; border-right:1px solid #d9dfe6; color:#000; }
-      .campo-login svg { width:26px; height:26px; fill:#000; }
-      .campo-login input { width:100%; height:100%; border:0; outline:0; padding:0 10px; color:#444; font-size:15px; background:#fff; }
-      .botao-entrar { width:100%; border:0; border-radius:7px; padding:12px; background:var(--verde); color:#fff; font-size:15px; font-weight:700; cursor:pointer; transition:transform .12s ease,background .18s ease,box-shadow .18s ease; }
-      .botao-entrar:hover { background:#35ad69; box-shadow:0 5px 12px rgba(27,116,77,.28); transform:translateY(-1px); }
-      .botao-entrar:active { transform:scale(.96); background:#126d37; box-shadow:none; }
-      .botao-entrar:disabled { cursor:wait; background:#126d37; }
-      .botao-entrar.entrando { display:flex; align-items:center; justify-content:center; gap:9px; }
-      .botao-entrar.entrando::before { content:''; width:14px; height:14px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:girarLogin .7s linear infinite; }
-      .link-recuperar { width:100%; margin-top:12px; border:0; background:transparent; color:var(--verde); font-size:14px; font-weight:bold; cursor:pointer; }
-      .mensagem { min-height:18px; margin-top:16px; color:var(--erro); font-size:14px; }
-      .oculto { display:none !important; }
-      body.inicializando #login,
-body.inicializando #setup,
-body.inicializando #dashboard {
-  display: none !important;
-}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portal Casa do Croissant</title>
 
-#inicializacao {
-  display: none;
-  min-height: 100vh;
-  place-items: center;
-  background: #f6f8f7;
-  color: #123d2d;
-  font-family: Arial, sans-serif;
-  font-weight: 700;
-}
+  <style>
+    :root {
+      color-scheme: light;
+      --verde: #1b744d;
+      --texto: #123d2d;
+      --erro: #a52b20;
+    }
 
-body.inicializando #inicializacao {
-  display: grid;
-}
-      .tela { min-height:100vh; display:grid; place-items:center; padding:24px; background:linear-gradient(135deg,#f5faf7,#eef4f1); }
-      .cartao { width:min(100%,440px); background:#fff; border:1px solid #d6e4dd; border-radius:18px; padding:34px; box-shadow:0 16px 42px rgba(5,57,37,.12); }
-      .cartao label { display:block; margin:16px 0 7px; font-size:13px; font-weight:700; }.cartao input{width:100%;padding:13px 14px;border:1px solid #bdd1c7;border-radius:9px;font-size:16px;}.cartao button{width:100%;border:0;border-radius:9px;padding:13px 16px;margin-top:22px;background:#075638;color:#fff;font-size:15px;font-weight:700;cursor:pointer;}
-      .link { display:block; width:100%; margin-top:14px; background:transparent!important; color:#075638!important; text-decoration:underline; }.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
-      .painel { min-height:100vh; display:flex; background:#f6f8f7; color:#183128; }.menu { width:250px; min-height:100vh; flex-shrink:0; padding:28px 16px; background:#123d2d; color:#fff; }.marca-portal { padding:4px 12px 28px; font-size:20px; font-weight:700; }.marca-portal small { display:block; margin-top:6px; color:#b7d7c6; font-size:12px; font-weight:400; }.nav-btn { display:block; width:100%; margin:4px 0; padding:13px 12px; border:0; border-radius:8px; background:transparent; color:#d7e9df; text-align:left; font-size:14px; cursor:pointer; }.nav-btn:hover,.nav-btn.ativo { background:#256e50; color:#fff; }.nav-btn--sair { margin-top:24px; border-top:1px solid rgba(255,255,255,.18); border-radius:0; padding-top:19px; }.conteudo { flex:1; min-width:0; padding:38px; }.topo{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}.topo h1{margin:0 0 8px;font-size:27px;}.topo p{margin:0;color:#66746d;}.tag{display:inline-block;padding:6px 10px;border-radius:999px;background:#e9f4ee;color:#075638;font-weight:700;font-size:13px;}.visao{max-width:940px;margin:42px auto 0;}.boas-vindas{padding:38px;text-align:center;background:#fff;border:1px solid #d6e4dd;border-radius:18px;}.boas-vindas p{max-width:620px;margin:12px auto;color:#52665d;}.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-top:22px;}.cartao-modulo{padding:20px;border:1px solid #d6e4dd;border-radius:14px;background:#fff;}.cartao-modulo strong{display:block;color:#123d2d;}.cartao-modulo span{display:block;margin-top:7px;color:#66746d;font-size:13px;}.acao{border:0;border-radius:8px;padding:11px 14px;background:#075638;color:#fff;font-weight:700;cursor:pointer;}.acao-secundaria{border:1px solid #a8c5b5;border-radius:8px;padding:10px 13px;background:#fff;color:#075638;font-weight:700;cursor:pointer;}.painel-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;}.tabela-wrap{overflow:auto;border:1px solid #d6e4dd;border-radius:12px;background:#fff;}.tabela{width:100%;border-collapse:collapse;min-width:640px;}.tabela th,.tabela td{padding:14px 16px;border-bottom:1px solid #edf2ef;text-align:left;font-size:14px;}.tabela th{color:#52665d;font-size:12px;text-transform:uppercase;letter-spacing:.04em;}.formulario{max-width:640px;padding:24px;border:1px solid #d6e4dd;border-radius:14px;background:#fff;}.linha-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.formulario label{display:block;margin:14px 0 6px;font-size:13px;font-weight:700;}.formulario input,.formulario select{width:100%;padding:11px 12px;border:1px solid #bdd1c7;border-radius:8px;font:inherit;}.acoes-form{display:flex;gap:10px;margin-top:20px;}.permissoes{display:grid;gap:12px;}.permissao-item{padding:16px;border:1px solid #d6e4dd;border-radius:12px;background:#fff;}.permissao-titulo{display:flex;justify-content:space-between;gap:12px;margin-bottom:12px;font-weight:700;}.checks{display:flex;flex-wrap:wrap;gap:13px;}.checks label{display:flex;gap:5px;align-items:center;font-size:13px;color:#52665d;}.vazio{padding:30px;text-align:center;color:#66746d;border:1px dashed #bdd1c7;border-radius:12px;background:#fff;}.erro{min-height:20px;margin-top:14px;color:var(--erro);font-size:14px;}
-      @keyframes girarLogin { to { transform:rotate(360deg); } }
-      @media (max-width:700px) { .painel{display:block;}.menu{width:100%;min-height:auto;padding:16px;}.marca-portal{padding:4px 8px 12px;}.menu nav{display:flex;overflow:auto;gap:4px;}.nav-btn{width:auto;white-space:nowrap;margin:0;}.nav-btn--sair{margin-top:0;border-top:0;padding-top:13px;}.conteudo{padding:22px;}.topo{align-items:flex-start;flex-direction:column;}.linha-form{grid-template-columns:1fr;}.grade-dashboards{grid-template-columns:1fr;}.cartao { padding:26px; } }
-    </style>
-  </head>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Inicialização */
+
+    body.inicializando #login,
+    body.inicializando #setup,
+    body.inicializando #dashboard {
+      display: none !important;
+    }
+
+    #inicializacao {
+      display: none;
+      min-height: 100vh;
+      place-items: center;
+      background: #f6f8f7;
+      color: var(--texto);
+      font-family: Arial, sans-serif;
+      font-weight: 700;
+    }
+
+    body.inicializando #inicializacao {
+      display: grid;
+    }
+
+    /* Login */
+
+    .tela-login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      background:
+        linear-gradient(rgba(8, 35, 25, .58), rgba(8, 35, 25, .58)),
+        url('https://drive.google.com/thumbnail?id=1x2lOopgDUcTsdDeytSn6Mo_-TgjlaS03&sz=w1920');
+      background-position: center;
+      background-size: cover;
+    }
+
+    .cartao-login {
+      width: 100%;
+      max-width: 390px;
+      padding: 30px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, .90);
+      box-shadow: 0 15px 45px rgba(0, 0, 0, .35);
+      text-align: center;
+    }
+
+    .cartao-login h1 {
+      margin: 0 0 18px;
+      color: var(--texto);
+      font-size: 28px;
+    }
+
+    .logo-login {
+      width: 240px;
+      max-width: 100%;
+      height: 100px;
+      margin: 0 auto 18px;
+      object-fit: contain;
+      filter: brightness(0) saturate(100%) invert(20%) sepia(24%)
+        saturate(1217%) hue-rotate(104deg);
+    }
+
+    .campo-login {
+      display: flex;
+      align-items: center;
+      height: 40px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      border: 1px solid #d9dfe6;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, .18);
+      transition: .15s;
+    }
+
+    .campo-login:focus-within {
+      border-color: #76a9fa;
+      box-shadow: 0 0 0 3px rgba(118, 169, 250, .45);
+    }
+
+    .campo-login span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 100%;
+      flex-shrink: 0;
+      border-right: 1px solid #d9dfe6;
+      color: #000;
+    }
+
+    .campo-login svg {
+      width: 26px;
+      height: 26px;
+      fill: #000;
+    }
+
+    .campo-login input {
+      width: 100%;
+      height: 100%;
+      padding: 0 10px;
+      border: 0;
+      outline: 0;
+      background: #fff;
+      color: #444;
+      font-size: 15px;
+    }
+
+    .botao-entrar {
+      width: 100%;
+      padding: 12px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--verde);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .botao-entrar:hover {
+      background: #35ad69;
+      box-shadow: 0 5px 12px rgba(27, 116, 77, .28);
+      transform: translateY(-1px);
+    }
+
+    .botao-entrar:active {
+      background: #126d37;
+      box-shadow: none;
+      transform: scale(.96);
+    }
+
+    .botao-entrar:disabled {
+      background: #126d37;
+      cursor: wait;
+    }
+
+    .botao-entrar.entrando {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+    }
+
+    .botao-entrar.entrando::before {
+      content: '';
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, .45);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: girarLogin .7s linear infinite;
+    }
+
+    .link-recuperar {
+      width: 100%;
+      margin-top: 12px;
+      border: 0;
+      background: transparent;
+      color: var(--verde);
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .mensagem,
+    .erro {
+      min-height: 20px;
+      margin-top: 14px;
+      color: var(--erro);
+      font-size: 14px;
+    }
+
+    .oculto {
+      display: none !important;
+    }
+
+    /* Telas e formulários */
+
+    .tela {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 24px;
+      background: linear-gradient(135deg, #f5faf7, #eef4f1);
+    }
+
+    .cartao {
+      width: min(100%, 440px);
+      padding: 34px;
+      border: 1px solid #d6e4dd;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(5, 57, 37, .12);
+    }
+
+    .cartao label,
+    .formulario label {
+      display: block;
+      margin: 16px 0 7px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .cartao input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #bdd1c7;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+
+    .cartao button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px 16px;
+      border: 0;
+      border-radius: 9px;
+      background: #075638;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .link {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      background: transparent !important;
+      color: #075638 !important;
+      text-decoration: underline;
+    }
+
+    /* Estrutura do portal */
+
+    .painel {
+      display: flex;
+      min-height: 100vh;
+      background: #f6f8f7;
+      color: #183128;
+    }
+
+    .menu {
+      width: 250px;
+      min-height: 100vh;
+      flex-shrink: 0;
+      padding: 28px 16px;
+      background: #123d2d;
+      color: #fff;
+    }
+
+    .marca-portal {
+      padding: 4px 12px 28px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .marca-portal small {
+      display: block;
+      margin-top: 6px;
+      color: #b7d7c6;
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .nav-btn {
+      display: block;
+      width: 100%;
+      margin: 4px 0;
+      padding: 13px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #d7e9df;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.ativo {
+      background: #256e50;
+      color: #fff;
+    }
+
+    .nav-btn--sair {
+      margin-top: 24px;
+      padding-top: 19px;
+      border-top: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 0;
+    }
+
+    .conteudo {
+      min-width: 0;
+      flex: 1;
+      padding: 38px;
+    }
+
+    .topo,
+    .painel-cabecalho {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .topo {
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .topo h1 {
+      margin: 0 0 8px;
+      font-size: 27px;
+    }
+
+    .topo p {
+      margin: 0;
+      color: #66746d;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #e9f4ee;
+      color: #075638;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Conteúdo */
+
+    .visao {
+      max-width: 940px;
+      margin: 42px auto 0;
+    }
+
+    .boas-vindas {
+      padding: 38px;
+      border: 1px solid #d6e4dd;
+      border-radius: 18px;
+      background: #fff;
+      text-align: center;
+    }
+
+    .boas-vindas p {
+      max-width: 620px;
+      margin: 12px auto;
+      color: #52665d;
+    }
+
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .cartao-modulo {
+      padding: 20px;
+      border: 1px solid #d6e4dd;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .cartao-modulo strong {
+      display: block;
+      color: var(--texto);
+    }
+
+    .cartao-modulo span {
+      display: block;
+      margin-top: 7px;
+      color: #66746d;
+      font-size: 13px;
+    }
+
+    .acao,
+    .acao-secundaria {
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .acao {
+      border: 0;
+      background: #075638;
+      color: #fff;
+    }
+
+    .acao-secundaria {
+      padding: 10px 13px;
+      border: 1px solid #a8c5b5;
+      background: #fff;
+      color: #075638;
+    }
+
+    .tabela-wrap {
+      overflow: auto;
+      border: 1px solid #d6e4dd;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .tabela {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+    }
+
+    .tabela th,
+    .tabela td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #edf2ef;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .tabela th {
+      color: #52665d;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .formulario {
+      max-width: 640px;
+      padding: 24px;
+      border: 1px solid #d6e4dd;
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .formulario input,
+    .formulario select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #bdd1c7;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    .linha-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .acoes-form {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .permissoes {
+      display: grid;
+      gap: 12px;
+    }
+
+    .permissao-item {
+      padding: 16px;
+      border: 1px solid #d6e4dd;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .permissao-titulo {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+    }
+
+    .checks label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #52665d;
+      font-size: 13px;
+    }
+
+    .vazio {
+      padding: 30px;
+      border: 1px dashed #bdd1c7;
+      border-radius: 12px;
+      background: #fff;
+      color: #66746d;
+      text-align: center;
+    }
+
+    @keyframes girarLogin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 700px) {
+      .painel {
+        display: block;
+      }
+
+      .menu {
+        width: 100%;
+        min-height: auto;
+        padding: 16px;
+      }
+
+      .marca-portal {
+        padding: 4px 8px 12px;
+      }
+
+      .menu nav {
+        display: flex;
+        gap: 4px;
+        overflow: auto;
+      }
+
+      .nav-btn {
+        width: auto;
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .nav-btn--sair {
+        margin-top: 0;
+        padding-top: 13px;
+        border-top: 0;
+      }
+
+      .conteudo {
+        padding: 22px;
+      }
+
+      .topo {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .linha-form,
+      .grade-dashboards {
+        grid-template-columns: 1fr;
+      }
+
+      .cartao {
+        padding: 26px;
+      }
+    }
+  </style>
+</head>
   <body class="inicializando">
   <div id="inicializacao" role="status">Carregando portal...</div>
     <section id="login" class="tela-login">
@@ -2075,153 +2605,797 @@ body.inicializando #inicializacao {
     </section>
 
     <section id="setup" class="tela oculto">
-      <form id="formSetup" class="cartao">
-        <div class="marca"><div class="marca__icone">C</div><div><h1>Primeiro acesso</h1><small>Configuração protegida</small></div></div>
-        <p>Crie o administrador inicial do portal novo.</p>
-        <label for="setupUsername">Usuário</label><input id="setupUsername" autocomplete="username" required>
-        <label for="setupEmail">E-mail</label><input id="setupEmail" type="email" autocomplete="email" required>
-        <label for="setupPassword">Nova senha</label><input id="setupPassword" type="password" autocomplete="new-password" minlength="8" required>
-        <label for="setupToken">Código de configuração</label><input id="setupToken" type="password" required>
-        <div id="setupError" class="erro" role="alert"></div>
-        <button id="setupButton" type="submit">Criar administrador</button>
-        <button id="backToLogin" type="button" class="link">Voltar ao login</button>
+  <form id="formSetup" class="cartao">
+    <div class="marca">
+      <div class="marca__icone">C</div>
+
+      <div>
+        <h1>Primeiro acesso</h1>
+        <small>Configuração protegida</small>
+      </div>
+    </div>
+
+    <p>Crie o administrador inicial do portal novo.</p>
+
+    <label for="setupUsername">Usuário</label>
+    <input
+      id="setupUsername"
+      autocomplete="username"
+      required
+    >
+
+    <label for="setupEmail">E-mail</label>
+    <input
+      id="setupEmail"
+      type="email"
+      autocomplete="email"
+      required
+    >
+
+    <label for="setupPassword">Nova senha</label>
+    <input
+      id="setupPassword"
+      type="password"
+      autocomplete="new-password"
+      minlength="8"
+      required
+    >
+
+    <label for="setupToken">Código de configuração</label>
+    <input
+      id="setupToken"
+      type="password"
+      required
+    >
+
+    <div id="setupError" class="erro" role="alert"></div>
+
+    <button id="setupButton" type="submit">
+      Criar administrador
+    </button>
+
+    <button id="backToLogin" type="button" class="link">
+      Voltar ao login
+    </button>
+  </form>
+</section>
+
+<main id="dashboard" class="painel oculto">
+  <aside class="menu">
+    <div class="marca-portal">
+      Casa do Croissant
+      <small>Portal interno</small>
+    </div>
+
+    <nav id="menuPortal">
+      <button
+        class="nav-btn ativo"
+        type="button"
+        data-view="inicio"
+      >
+        Página inicial
+      </button>
+
+      <button
+        id="navDashboards"
+        class="nav-btn"
+        type="button"
+        data-view="dashboards"
+      >
+        Dashboards
+      </button>
+
+      <button
+        id="navClientes"
+        class="nav-btn"
+        type="button"
+        data-view="clientes"
+      >
+        Clientes
+      </button>
+
+      <button
+        class="nav-btn"
+        type="button"
+        data-view="investimentos"
+        data-module="INVESTIMENTOS"
+      >
+        Investimentos
+      </button>
+
+      <button
+        class="nav-btn"
+        type="button"
+        data-view="pendentes"
+        data-module="INVESTIMENTOS_PENDENTES"
+      >
+        Investimentos pendentes
+      </button>
+
+      <button
+        id="navUsuarios"
+        class="nav-btn"
+        type="button"
+        data-view="usuarios"
+        data-module="USUARIOS"
+      >
+        Usuários cadastrados
+      </button>
+
+      <button
+        class="nav-btn"
+        type="button"
+        data-view="historico"
+        data-module="HISTORICO"
+      >
+        Histórico de ações
+      </button>
+
+      <button
+        id="navAcessos"
+        class="nav-btn"
+        type="button"
+        data-view="acessos"
+        data-module="ACESSOS"
+      >
+        Acessos
+      </button>
+
+      <button
+        id="logout"
+        class="nav-btn nav-btn--sair"
+        type="button"
+      >
+        Sair
+      </button>
+    </nav>
+  </aside>
+
+  <section class="conteudo">
+    <header class="topo">
+      <div>
+        <h1 id="tituloPagina">Página inicial</h1>
+        <p id="greeting"></p>
+      </div>
+
+      <span id="role" class="tag"></span>
+    </header>
+
+    ${paginaInicialPage()}
+
+    <section id="viewUsuarios" class="visao oculto">
+      <div class="painel-cabecalho">
+        <div>
+          <h2>Usuários cadastrados</h2>
+          <p>Cadastre os acessos da equipe ao novo portal.</p>
+        </div>
+
+        <button id="novoUsuario" class="acao" type="button">
+          Novo usuário
+        </button>
+      </div>
+
+      <form id="formUsuario" class="formulario oculto">
+        <h3>Novo usuário</h3>
+
+        <div class="linha-form">
+          <div>
+            <label for="novoNome">Usuário</label>
+            <input
+              id="novoNome"
+              required
+              minlength="3"
+              autocomplete="username"
+            >
+          </div>
+
+          <div>
+            <label for="novoPerfil">Perfil</label>
+
+            <select id="novoPerfil">
+              <option>Colaborador</option>
+              <option>Gestor</option>
+              <option>Administrador</option>
+            </select>
+          </div>
+        </div>
+
+        <label for="novoEmail">E-mail</label>
+        <input
+          id="novoEmail"
+          type="email"
+          required
+          autocomplete="email"
+        >
+
+        <label for="novaSenha">Senha inicial</label>
+        <input
+          id="novaSenha"
+          type="password"
+          required
+          minlength="8"
+          autocomplete="new-password"
+        >
+
+        <div id="erroUsuario" class="erro" role="alert"></div>
+
+        <div class="acoes-form">
+          <button class="acao" type="submit">
+            Cadastrar usuário
+          </button>
+
+          <button
+            id="cancelarUsuario"
+            class="acao-secundaria"
+            type="button"
+          >
+            Cancelar
+          </button>
+        </div>
       </form>
+
+      <div id="listaUsuarios" class="tabela-wrap"></div>
     </section>
 
-    <main id="dashboard" class="painel oculto">
-      <aside class="menu">
-        <div class="marca-portal">Casa do Croissant<small>Portal interno</small></div>
-        <nav id="menuPortal">
-          <button class="nav-btn ativo" type="button" data-view="inicio">Página inicial</button>
-          <button id="navDashboards" class="nav-btn" type="button" data-view="dashboards">Dashboards</button>
-          <button id="navClientes" class="nav-btn" type="button" data-view="clientes">Clientes</button>
-          <button class="nav-btn" type="button" data-view="investimentos" data-module="INVESTIMENTOS">Investimentos</button>
-          <button class="nav-btn" type="button" data-view="pendentes" data-module="INVESTIMENTOS_PENDENTES">Investimentos pendentes</button>
-          <button id="navUsuarios" class="nav-btn" type="button" data-view="usuarios" data-module="USUARIOS">Usuários cadastrados</button>
-          <button class="nav-btn" type="button" data-view="historico" data-module="HISTORICO">Histórico de ações</button>
-          <button id="navAcessos" class="nav-btn" type="button" data-view="acessos" data-module="ACESSOS">Acessos</button>
-          <button id="logout" class="nav-btn nav-btn--sair" type="button">Sair</button>
-        </nav>
-      </aside>
-      <section class="conteudo">
-        <header class="topo"><div><h1 id="tituloPagina">Página inicial</h1><p id="greeting"></p></div><span id="role" class="tag"></span></header>
-        ${paginaInicialPage()}
-        <section id="viewUsuarios" class="visao oculto">
-          <div class="painel-cabecalho"><div><h2>Usuários cadastrados</h2><p>Cadastre os acessos da equipe ao novo portal.</p></div><button id="novoUsuario" class="acao" type="button">Novo usuário</button></div>
-          <form id="formUsuario" class="formulario oculto">
-            <h3>Novo usuário</h3>
-            <div class="linha-form"><div><label for="novoNome">Usuário</label><input id="novoNome" required minlength="3" autocomplete="username"></div><div><label for="novoPerfil">Perfil</label><select id="novoPerfil"><option>Colaborador</option><option>Gestor</option><option>Administrador</option></select></div></div>
-            <label for="novoEmail">E-mail</label><input id="novoEmail" type="email" required autocomplete="email">
-            <label for="novaSenha">Senha inicial</label><input id="novaSenha" type="password" required minlength="8" autocomplete="new-password">
-            <div id="erroUsuario" class="erro" role="alert"></div><div class="acoes-form"><button class="acao" type="submit">Cadastrar usuário</button><button id="cancelarUsuario" class="acao-secundaria" type="button">Cancelar</button></div>
-          </form>
-          <div id="listaUsuarios" class="tabela-wrap"></div>
-        </section>
-        <section id="viewAcessos" class="visao oculto">
-          <div class="painel-cabecalho"><div><h2>Acessos</h2><p>Escolha quais operações cada usuário poderá realizar.</p></div></div>
-          <div class="formulario"><label for="usuarioPermissoes">Usuário</label><select id="usuarioPermissoes"></select><div id="permissoesUsuario" class="permissoes" style="margin-top:20px"></div><div id="erroPermissoes" class="erro" role="alert"></div><button id="salvarPermissoes" class="acao" type="button">Salvar acessos</button></div>
-        </section>
-        <section id="viewEmMigracao" class="visao oculto"><div class="boas-vindas"><h2 id="tituloMigracao">Módulo em migração</h2><p>Este módulo será incluído depois de concluirmos a adaptação segura dos dados e integrações do portal anterior.</p></div></section>
-      </section>
-    </main>
+    <section id="viewAcessos" class="visao oculto">
+      <div class="painel-cabecalho">
+        <div>
+          <h2>Acessos</h2>
+          <p>Escolha quais operações cada usuário poderá realizar.</p>
+        </div>
+      </div>
+
+      <div class="formulario">
+        <label for="usuarioPermissoes">Usuário</label>
+        <select id="usuarioPermissoes"></select>
+
+        <div
+          id="permissoesUsuario"
+          class="permissoes"
+          style="margin-top:20px"
+        ></div>
+
+        <div id="erroPermissoes" class="erro" role="alert"></div>
+
+        <button id="salvarPermissoes" class="acao" type="button">
+          Salvar acessos
+        </button>
+      </div>
+    </section>
+
+    <section id="viewEmMigracao" class="visao oculto">
+      <div class="boas-vindas">
+        <h2 id="tituloMigracao">Módulo em migração</h2>
+
+        <p>
+          Este módulo será incluído depois de concluirmos a adaptação segura
+          dos dados e integrações do portal anterior.
+        </p>
+      </div>
+    </section>
+  </section>
+</main>
 
     <script>
-      const $ = (id) => document.getElementById(id);
-      const login = $('login'), setup = $('setup'), dashboard = $('dashboard');
-      let sessionData = null, cachedUsers = [], permissionModules = [];
-      const moduleTitles = { investimentos:'Investimentos', pendentes:'Investimentos pendentes', devolucoes:'Painel de devoluções', historico:'Histórico de ações' };
-      function show(view) {
-  document.body.classList.remove('inicializando');
-  $('inicializacao').classList.add('oculto');
-  login.classList.toggle('oculto', view !== 'login');
-  setup.classList.toggle('oculto', view !== 'setup');
-  dashboard.classList.toggle('oculto', view !== 'dashboard');
-}
-      function error(id, message) { $(id).textContent = message || ''; }
-      async function request(path, options = {}) { const response = await fetch(path, { headers: {'content-type':'application/json', ...(options.headers || {})}, ...options }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Não foi possível concluir esta ação.'); return data; }
-      function html(value) { const node = document.createElement('span'); node.textContent = value || ''; return node.innerHTML; }
-      function hasModule(id) { return sessionData && sessionData.modules.some((module) => module.id === id); }
-      function openView(view) {
-        if (view === 'dashboards') {
-          window.location.href = '/dashboards';
-          return;
+  const $ = (id) => document.getElementById(id);
+
+  const login = $('login');
+  const setup = $('setup');
+  const dashboard = $('dashboard');
+
+  let sessionData = null;
+  let cachedUsers = [];
+  let permissionModules = [];
+
+  const moduleTitles = {
+    investimentos: 'Investimentos',
+    pendentes: 'Investimentos pendentes',
+    devolucoes: 'Painel de devoluções',
+    historico: 'Histórico de ações'
+  };
+
+  function show(view) {
+    document.body.classList.remove('inicializando');
+    $('inicializacao').classList.add('oculto');
+
+    login.classList.toggle('oculto', view !== 'login');
+    setup.classList.toggle('oculto', view !== 'setup');
+    dashboard.classList.toggle('oculto', view !== 'dashboard');
+  }
+
+  function error(id, message) {
+    $(id).textContent = message || '';
+  }
+
+  async function request(path, options = {}) {
+    const response = await fetch(path, {
+      headers: {
+        'content-type': 'application/json',
+        ...(options.headers || {})
+      },
+      ...options
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || 'Não foi possível concluir esta ação.'
+      );
+    }
+
+    return data;
+  }
+
+  function html(value) {
+    const node = document.createElement('span');
+    node.textContent = value || '';
+    return node.innerHTML;
+  }
+
+  function hasModule(id) {
+    return sessionData &&
+      sessionData.modules.some((module) => module.id === id);
+  }
+
+  function openView(view) {
+    if (view === 'dashboards') {
+      window.location.href = '/dashboards';
+      return;
+    }
+
+    if (view === 'clientes') {
+      window.location.href = '/rentabilidade/clientes';
+      return;
+    }
+
+    if (view === 'dashboard-rentabilidade') {
+      window.location.href = '/dashboard-rentabilidade';
+      return;
+    }
+
+    if (view === 'dashboard-vendas') {
+      window.location.href = '/dashboard-vendas';
+      return;
+    }
+
+    if (view === 'investimentos') {
+      window.location.href = '/investimentos';
+      return;
+    }
+
+    if (view === 'pendentes') {
+      window.location.href = '/investimentos-pendentes';
+      return;
+    }
+
+    if (view === 'usuarios') {
+      window.location.href = '/usuarios';
+      return;
+    }
+
+    if (view === 'historico') {
+      window.location.href = '/historico-acoes';
+      return;
+    }
+
+    if (view === 'devolucoes') {
+      window.location.href = '/devolucoes';
+      return;
+    }
+
+    if (view === 'acessos') {
+      window.location.href = '/acessos';
+      return;
+    }
+
+    document
+      .querySelectorAll('.visao')
+      .forEach((item) => item.classList.add('oculto'));
+
+    document
+      .querySelectorAll('[data-view]')
+      .forEach((item) => {
+        item.classList.toggle(
+          'ativo',
+          item.dataset.view === view
+        );
+      });
+
+    if (view === 'inicio') {
+      $('tituloPagina').textContent = 'Página inicial';
+      $('viewInicio').classList.remove('oculto');
+      return;
+    }
+
+    if (view === 'usuarios') {
+      $('tituloPagina').textContent = 'Usuários cadastrados';
+      $('viewUsuarios').classList.remove('oculto');
+      loadUsers();
+      return;
+    }
+
+    if (view === 'acessos') {
+      $('tituloPagina').textContent = 'Acessos';
+      $('viewAcessos').classList.remove('oculto');
+      loadUsers();
+      return;
+    }
+
+    $('tituloPagina').textContent =
+      moduleTitles[view] || 'Módulo em migração';
+
+    $('tituloMigracao').textContent =
+      $('tituloPagina').textContent;
+
+    $('viewEmMigracao').classList.remove('oculto');
+  }
+
+  function startDashboard(data) {
+    sessionData = data;
+
+    $('greeting').textContent =
+      'Bem-vindo, ' + data.user.username + '.';
+
+    $('role').textContent = data.user.role;
+
+    document
+      .querySelectorAll('[data-module]')
+      .forEach((button) => {
+        button.classList.toggle(
+          'oculto',
+          !hasModule(button.dataset.module)
+        );
+      });
+
+    if (data.user.role !== 'Administrador') {
+      $('navUsuarios').classList.add('oculto');
+      $('navAcessos').classList.add('oculto');
+      $('navDashboards').classList.add('oculto');
+      $('navClientes').classList.add('oculto');
+    }
+
+    show('dashboard');
+    openView('inicio');
+  }
+
+  async function loadSession() {
+    try {
+      const data = await request('/api/me');
+      startDashboard(data);
+    } catch {
+      const status = await request('/api/status');
+
+      $('setupLink').classList.toggle(
+        'oculto',
+        status.hasUsers
+      );
+
+      show('login');
+    }
+  }
+
+  async function loadUsers() {
+    if (
+      !sessionData ||
+      sessionData.user.role !== 'Administrador'
+    ) {
+      return;
+    }
+
+    try {
+      const data = await request('/api/users');
+
+      cachedUsers = data.users;
+
+      renderUsers();
+      renderUserSelector();
+    } catch (err) {
+      error('erroUsuario', err.message);
+    }
+  }
+
+  function renderUsers() {
+    const target = $('listaUsuarios');
+
+    if (!cachedUsers.length) {
+      target.innerHTML =
+        '<div class="vazio">Nenhum usuário cadastrado.</div>';
+      return;
+    }
+
+    target.innerHTML =
+      '<table class="tabela">' +
+        '<thead>' +
+          '<tr>' +
+            '<th>Usuário</th>' +
+            '<th>E-mail</th>' +
+            '<th>Perfil</th>' +
+            '<th>Acessos configurados</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' +
+          cachedUsers.map((user) =>
+            '<tr>' +
+              '<td><strong>' + html(user.username) + '</strong></td>' +
+              '<td>' + html(user.email) + '</td>' +
+              '<td>' + html(user.role) + '</td>' +
+              '<td>' + Number(user.permission_count || 0) + '</td>' +
+            '</tr>'
+          ).join('') +
+        '</tbody>' +
+      '</table>';
+  }
+
+  function renderUserSelector() {
+    const select = $('usuarioPermissoes');
+    const previous = select.value;
+
+    const nonAdmins = cachedUsers.filter(
+      (user) => user.role !== 'Administrador'
+    );
+
+    select.innerHTML =
+      '<option value="">Selecione um usuário</option>' +
+      nonAdmins.map((user) =>
+        '<option value="' + html(user.id) + '">' +
+          html(user.username) +
+          ' — ' +
+          html(user.role) +
+        '</option>'
+      ).join('');
+
+    if (nonAdmins.some((user) => user.id === previous)) {
+      select.value = previous;
+    }
+  }
+
+  async function loadPermissions() {
+    const userId = $('usuarioPermissoes').value;
+
+    $('permissoesUsuario').innerHTML = '';
+    error('erroPermissoes');
+
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const data = await request(
+        '/api/users/' +
+        encodeURIComponent(userId) +
+        '/permissions'
+      );
+
+      permissionModules = data.modules;
+
+      $('permissoesUsuario').innerHTML = data.modules.map((module) =>
+        '<div class="permissao-item" data-permission="' +
+          html(module.id) +
+        '">' +
+          '<div class="permissao-titulo">' +
+            html(module.name) +
+          '</div>' +
+
+          '<div class="checks">' +
+            '<label>' +
+              '<input data-key="view" type="checkbox" ' +
+              (module.can_view ? 'checked' : '') +
+              '> Consultar' +
+            '</label>' +
+
+            '<label>' +
+              '<input data-key="create" type="checkbox" ' +
+              (module.can_create ? 'checked' : '') +
+              '> Incluir' +
+            '</label>' +
+
+            '<label>' +
+              '<input data-key="update" type="checkbox" ' +
+              (module.can_update ? 'checked' : '') +
+              '> Alterar' +
+            '</label>' +
+
+            '<label>' +
+              '<input data-key="delete" type="checkbox" ' +
+              (module.can_delete ? 'checked' : '') +
+              '> Excluir' +
+            '</label>' +
+
+            '<label>' +
+              '<input data-key="configure" type="checkbox" ' +
+              (module.can_configure ? 'checked' : '') +
+              '> Configurar' +
+            '</label>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+    } catch (err) {
+      error('erroPermissoes', err.message);
+    }
+  }
+
+  async function savePermissions() {
+    const userId = $('usuarioPermissoes').value;
+
+    if (!userId) {
+      error('erroPermissoes', 'Selecione um usuário.');
+      return;
+    }
+
+    const permissions = Array
+      .from(document.querySelectorAll('[data-permission]'))
+      .map((item) => {
+        const checked = (key) =>
+          item.querySelector('[data-key="' + key + '"]').checked;
+
+        return {
+          moduleId: item.dataset.permission,
+          view: checked('view'),
+          create: checked('create'),
+          update: checked('update'),
+          delete: checked('delete'),
+          configure: checked('configure')
+        };
+      });
+
+    try {
+      await request(
+        '/api/users/' +
+        encodeURIComponent(userId) +
+        '/permissions',
+        {
+          method: 'PUT',
+          body: JSON.stringify({ permissions })
         }
+      );
 
-        if (view === 'clientes') {
-  window.location.href = '/rentabilidade/clientes';
-  return;
-}
-          if (view === 'dashboard-rentabilidade') {
-          window.location.href = '/dashboard-rentabilidade';
-          return;
-         }
-         if (view === 'dashboard-vendas') {
-         window.location.href = '/dashboard-vendas';
-         return;
-        }
-         if (view === 'investimentos') {
-         window.location.href = '/investimentos';
-         return;
-        }
+      error('erroPermissoes', 'Acessos salvos.');
+      $('erroPermissoes').style.color = '#075638';
 
-        if (view === 'pendentes') {
-        window.location.href = '/investimentos-pendentes';
-        return;
-        }
+      await loadUsers();
+    } catch (err) {
+      $('erroPermissoes').style.color = '';
+      error('erroPermissoes', err.message);
+    }
+  }
 
-       if (view === 'usuarios') {
-       window.location.href = '/usuarios';
-       return;
-       }
+  $('formLogin').addEventListener('submit', async (event) => {
+    event.preventDefault();
 
-if (view === 'historico') {
-  window.location.href = '/historico-acoes';
-  return;
-}
+    error('loginError');
 
-if (view === 'devolucoes') {
-  window.location.href = '/devolucoes';
-  return;
-}
+    const button = $('loginButton');
 
-if (view === 'acessos') {
-  window.location.href = '/acessos';
-  return;
-}
-         
-        document.querySelectorAll('.visao').forEach((item) => item.classList.add('oculto'));
-        document.querySelectorAll('[data-view]').forEach((item) => item.classList.toggle('ativo', item.dataset.view === view));
-        if (view === 'inicio') { $('tituloPagina').textContent = 'Página inicial'; $('viewInicio').classList.remove('oculto'); return; }
-        if (view === 'usuarios') { $('tituloPagina').textContent = 'Usuários cadastrados'; $('viewUsuarios').classList.remove('oculto'); loadUsers(); return; }
-        if (view === 'acessos') { $('tituloPagina').textContent = 'Acessos'; $('viewAcessos').classList.remove('oculto'); loadUsers(); return; }
-        $('tituloPagina').textContent = moduleTitles[view] || 'Módulo em migração'; $('tituloMigracao').textContent = $('tituloPagina').textContent; $('viewEmMigracao').classList.remove('oculto');
-      }
-      
-      function startDashboard(data) { sessionData = data; $('greeting').textContent = 'Bem-vindo, ' + data.user.username + '.'; $('role').textContent = data.user.role; document.querySelectorAll('[data-module]').forEach((button) => { button.classList.toggle('oculto', !hasModule(button.dataset.module)); }); if (data.user.role !== 'Administrador') {
-  $('navUsuarios').classList.add('oculto');
-  $('navAcessos').classList.add('oculto');
-  $('navDashboards').classList.add('oculto');
-  $('navClientes').classList.add('oculto');
-} show('dashboard'); openView('inicio'); }
-      async function loadSession() { try { startDashboard(await request('/api/me')); } catch { const status = await request('/api/status'); $('setupLink').classList.toggle('oculto', status.hasUsers); show('login'); } }
-      async function loadUsers() { if (!sessionData || sessionData.user.role !== 'Administrador') return; try { const data = await request('/api/users'); cachedUsers = data.users; renderUsers(); renderUserSelector(); } catch (err) { error('erroUsuario', err.message); } }
-      function renderUsers() { const target = $('listaUsuarios'); if (!cachedUsers.length) { target.innerHTML = '<div class="vazio">Nenhum usuário cadastrado.</div>'; return; } target.innerHTML = '<table class="tabela"><thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Acessos configurados</th></tr></thead><tbody>' + cachedUsers.map((user) => '<tr><td><strong>' + html(user.username) + '</strong></td><td>' + html(user.email) + '</td><td>' + html(user.role) + '</td><td>' + Number(user.permission_count || 0) + '</td></tr>').join('') + '</tbody></table>'; }
-      function renderUserSelector() { const select = $('usuarioPermissoes'); const previous = select.value; const nonAdmins = cachedUsers.filter((user) => user.role !== 'Administrador'); select.innerHTML = '<option value="">Selecione um usuário</option>' + nonAdmins.map((user) => '<option value="' + html(user.id) + '">' + html(user.username) + ' — ' + html(user.role) + '</option>').join(''); if (nonAdmins.some((user) => user.id === previous)) select.value = previous; }
-      async function loadPermissions() { const userId = $('usuarioPermissoes').value; $('permissoesUsuario').innerHTML = ''; error('erroPermissoes'); if (!userId) return; try { const data = await request('/api/users/' + encodeURIComponent(userId) + '/permissions'); permissionModules = data.modules; $('permissoesUsuario').innerHTML = data.modules.map((module) => '<div class="permissao-item" data-permission="' + html(module.id) + '"><div class="permissao-titulo">' + html(module.name) + '</div><div class="checks"><label><input data-key="view" type="checkbox" ' + (module.can_view ? 'checked' : '') + '> Consultar</label><label><input data-key="create" type="checkbox" ' + (module.can_create ? 'checked' : '') + '> Incluir</label><label><input data-key="update" type="checkbox" ' + (module.can_update ? 'checked' : '') + '> Alterar</label><label><input data-key="delete" type="checkbox" ' + (module.can_delete ? 'checked' : '') + '> Excluir</label><label><input data-key="configure" type="checkbox" ' + (module.can_configure ? 'checked' : '') + '> Configurar</label></div></div>').join(''); } catch (err) { error('erroPermissoes', err.message); } }
-      async function savePermissions() { const userId = $('usuarioPermissoes').value; if (!userId) { error('erroPermissoes', 'Selecione um usuário.'); return; } const permissions = Array.from(document.querySelectorAll('[data-permission]')).map((item) => { const checked = (key) => item.querySelector('[data-key="' + key + '"]').checked; return { moduleId:item.dataset.permission, view:checked('view'), create:checked('create'), update:checked('update'), delete:checked('delete'), configure:checked('configure') }; }); try { await request('/api/users/' + encodeURIComponent(userId) + '/permissions', { method:'PUT', body:JSON.stringify({permissions}) }); error('erroPermissoes', 'Acessos salvos.'); $('erroPermissoes').style.color = '#075638'; await loadUsers(); } catch (err) { $('erroPermissoes').style.color = ''; error('erroPermissoes', err.message); } }
-      $('formLogin').addEventListener('submit', async (event) => { event.preventDefault(); error('loginError'); const button = $('loginButton'); button.disabled = true; button.classList.add('entrando'); button.textContent = 'Entrando...'; try { await request('/api/login', {method:'POST', body:JSON.stringify({username:$('username').value, password:$('password').value})}); await loadSession(); } catch (err) { error('loginError', err.message); } finally { button.disabled = false; button.classList.remove('entrando'); button.textContent = '↪ Entrar'; } });
-      $('setupLink').addEventListener('click', () => show('setup'));
-      $('forgotPassword').addEventListener('click', () => error('loginError', 'A recuperação de senha será migrada após a configuração do envio de e-mails.'));
-      $('backToLogin').addEventListener('click', () => show('login'));
-      $('formSetup').addEventListener('submit', async (event) => { event.preventDefault(); error('setupError'); const button = $('setupButton'); button.disabled = true; try { await request('/api/bootstrap', {method:'POST', body:JSON.stringify({username:$('setupUsername').value, email:$('setupEmail').value, password:$('setupPassword').value, setupToken:$('setupToken').value})}); await loadSession(); } catch (err) { error('setupError', err.message); } finally { button.disabled = false; } });
-      document.addEventListener('click', (event) => { const button = event.target.closest('[data-view]'); if (button && !button.classList.contains('oculto')) openView(button.dataset.view); });
-      $('novoUsuario').addEventListener('click', () => { $('formUsuario').reset(); error('erroUsuario'); $('formUsuario').classList.remove('oculto'); $('novoNome').focus(); });
-      $('cancelarUsuario').addEventListener('click', () => $('formUsuario').classList.add('oculto'));
-      $('formUsuario').addEventListener('submit', async (event) => { event.preventDefault(); error('erroUsuario'); try { await request('/api/users', {method:'POST', body:JSON.stringify({username:$('novoNome').value, email:$('novoEmail').value, password:$('novaSenha').value, role:$('novoPerfil').value})}); $('formUsuario').classList.add('oculto'); await loadUsers(); } catch (err) { error('erroUsuario', err.message); } });
-      $('usuarioPermissoes').addEventListener('change', loadPermissions);
-      $('salvarPermissoes').addEventListener('click', savePermissions);
-      $('logout').addEventListener('click', async () => { await request('/api/logout', {method:'POST'}); await loadSession(); });
-      loadSession();
-    </script>
+    button.disabled = true;
+    button.classList.add('entrando');
+    button.textContent = 'Entrando...';
+
+    try {
+      await request('/api/login', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: $('username').value,
+          password: $('password').value
+        })
+      });
+
+      await loadSession();
+    } catch (err) {
+      error('loginError', err.message);
+    } finally {
+      button.disabled = false;
+      button.classList.remove('entrando');
+      button.textContent = '↪ Entrar';
+    }
+  });
+
+  $('setupLink').addEventListener('click', () => {
+    show('setup');
+  });
+
+  $('forgotPassword').addEventListener('click', () => {
+    error(
+      'loginError',
+      'A recuperação de senha será migrada após a configuração do envio de e-mails.'
+    );
+  });
+
+  $('backToLogin').addEventListener('click', () => {
+    show('login');
+  });
+
+  $('formSetup').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    error('setupError');
+
+    const button = $('setupButton');
+
+    button.disabled = true;
+
+    try {
+      await request('/api/bootstrap', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: $('setupUsername').value,
+          email: $('setupEmail').value,
+          password: $('setupPassword').value,
+          setupToken: $('setupToken').value
+        })
+      });
+
+      await loadSession();
+    } catch (err) {
+      error('setupError', err.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-view]');
+
+    if (button && !button.classList.contains('oculto')) {
+      openView(button.dataset.view);
+    }
+  });
+
+  $('novoUsuario').addEventListener('click', () => {
+    $('formUsuario').reset();
+    error('erroUsuario');
+
+    $('formUsuario').classList.remove('oculto');
+    $('novoNome').focus();
+  });
+
+  $('cancelarUsuario').addEventListener('click', () => {
+    $('formUsuario').classList.add('oculto');
+  });
+
+  $('formUsuario').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    error('erroUsuario');
+
+    try {
+      await request('/api/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          username: $('novoNome').value,
+          email: $('novoEmail').value,
+          password: $('novaSenha').value,
+          role: $('novoPerfil').value
+        })
+      });
+
+      $('formUsuario').classList.add('oculto');
+
+      await loadUsers();
+    } catch (err) {
+      error('erroUsuario', err.message);
+    }
+  });
+
+  $('usuarioPermissoes').addEventListener(
+    'change',
+    loadPermissions
+  );
+
+  $('salvarPermissoes').addEventListener(
+    'click',
+    savePermissions
+  );
+
+  $('logout').addEventListener('click', async () => {
+    await request('/api/logout', {
+      method: 'POST'
+    });
+
+    await loadSession();
+  });
+
+  loadSession();
+</script>
   </body>
 </html>`;
