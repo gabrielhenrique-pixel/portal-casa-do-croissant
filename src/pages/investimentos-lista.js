@@ -7,96 +7,89 @@ export function investimentosListaPage() {
   <title>Investimentos | Casa do Croissant</title>
 
   <style>
-    :root {
-      --verde-escuro:#123d2d;
-      --verde:#1b744d;
-      --fundo:#f6f8f7;
-      --texto:#183128;
-      --azul:#17476d;
-      --linha:#dce8e1;
-    }
+   :root{
+  --navy:#102e49;
+  --blue:#1f4e78;
+  --bg:#edf4fa;
+  --text:#142b3d;
+  --line:#cfdce8;
+  --green:#0a6237;
+  --red:#b42318;
+}
 
-    * {
-      box-sizing:border-box;
-    }
+*{box-sizing:border-box}
 
-    body {
-      margin:0;
-      min-height:100vh;
-      font-family:Arial,sans-serif;
-      color:var(--texto);
-      background:var(--fundo);
-    }
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Arial,sans-serif;
+  color:var(--text);
+  background:var(--bg);
+}
 
-    main {
-      max-width:1320px;
-      margin:auto;
-      padding:38px;
-    }
+main{
+  max-width:1540px;
+  margin:auto;
+  padding:4px 0 18px;
+}
 
-    .topo {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:18px;
-      margin-bottom:26px;
-    }
+.topo{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:18px 30px;
+  border-radius:0 0 16px 16px;
+  background:#fff;
+  box-shadow:0 5px 18px #1231;
+}
 
-    .titulo {
-      display:flex;
-      align-items:center;
-      gap:16px;
-    }
+.titulo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 
-    .voltar {
-      display:grid;
-      width:48px;
-      height:48px;
-      place-items:center;
-      flex:0 0 48px;
-      border-radius:50%;
-      background:#0d4b2b;
-      color:#fff;
-      text-decoration:none;
-      font-size:26px;
-      font-weight:700;
-    }
+.voltar,
+.inicio{
+  display:grid;
+  place-items:center;
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  background:#fff;
+  color:var(--navy);
+  box-shadow:0 4px 12px #1232;
+  text-decoration:none;
+  font-size:23px;
+}
 
-    .voltar:hover {
-      background:#25724d;
-    }
+h1{
+  margin:0 0 0 8px;
+  font-size:29px;
+  color:var(--navy);
+  text-transform:uppercase;
+}
 
-    h1 {
-      margin:0;
-      font-size:27px;
-    }
+.novo{
+  display:inline-block;
+  padding:12px 16px;
+  border-radius:7px;
+  background:var(--navy);
+  color:#fff;
+  font-size:14px;
+  font-weight:700;
+  text-decoration:none;
+  white-space:nowrap;
+}
 
-    .subtitulo {
-      margin:5px 0 0;
-      color:#66746d;
-    }
+.novo:hover{background:var(--blue)}
 
-    .novo {
-      display:inline-block;
-      padding:12px 16px;
-      border-radius:7px;
-      background:var(--verde);
-      color:#fff;
-      font-size:14px;
-      font-weight:700;
-      text-decoration:none;
-      white-space:nowrap;
-    }
-
-    .novo:hover {
-      background:#125d3b;
-    }
-
-    .excluir {
+.excluir{
   padding:8px 11px;
   border:0;
   border-radius:6px;
-  background:#b42318;
+  background:var(--red);
   color:#fff;
   cursor:pointer;
   font:inherit;
@@ -104,127 +97,117 @@ export function investimentosListaPage() {
   font-weight:700;
 }
 
-.excluir:hover {
-  background:#8f1c13;
+.excluir:hover{background:#8f1c13}
+.excluir:disabled{opacity:.65;cursor:wait}
+
+.mensagem{
+  display:none;
+  margin:12px 8px;
+  padding:12px 14px;
+  border-radius:7px;
+  background:#fdecec;
+  color:var(--red);
+  font-size:14px;
 }
 
-.excluir:disabled {
-  opacity:.65;
-  cursor:wait;
+.mensagem.visivel{display:block}
+
+.tabela-area{
+  margin:12px 8px;
+  overflow-x:auto;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 3px 11px #1231;
 }
 
-    .mensagem {
-      display:none;
-      margin:0 0 16px;
-      padding:12px 14px;
-      border-radius:7px;
-      background:#fdecec;
-      color:#b42318;
-      font-size:14px;
-    }
+table{
+  width:100%;
+  min-width:1100px;
+  border-collapse:collapse;
+}
 
-    .mensagem.visivel {
-      display:block;
-    }
+th,
+td{
+  padding:11px 10px;
+  border-bottom:1px solid #dce5ed;
+  text-align:left;
+  font-size:13px;
+}
 
-    .tabela-area {
-      overflow-x:auto;
-      border:1px solid var(--linha);
-      border-radius:12px;
-      background:#fff;
-    }
+th{
+  background:var(--blue);
+  color:#fff;
+  font-size:12px;
+  white-space:nowrap;
+}
 
-    table {
-      width:100%;
-      min-width:1100px;
-      border-collapse:collapse;
-    }
+tbody tr:nth-child(even){background:#f8fbfe}
+tbody tr:hover{background:#e8f3fb}
 
-    th,
-    td {
-      padding:12px;
-      border-bottom:1px solid #e5ece8;
-      text-align:left;
-      font-size:14px;
-    }
+td.valor{
+  color:var(--navy);
+  font-weight:700;
+  white-space:nowrap;
+}
 
-    th {
-      background:#eef6f1;
-      color:#123d2d;
-    }
+.tipo-previsto{color:#936c00;font-weight:700}
+.tipo-real{color:var(--green);font-weight:700}
 
-    td.valor {
-      color:var(--azul);
-      font-weight:700;
-      white-space:nowrap;
-    }
+.vazio{
+  display:none;
+  padding:34px;
+  color:#64748b;
+  text-align:center;
+}
 
-    .tipo-previsto {
-      color:#936c00;
-      font-weight:700;
-    }
+.vazio.visivel{display:block}
 
-    .tipo-real {
-      color:#12623e;
-      font-weight:700;
-    }
+@media(max-width:700px){
+  main{padding-top:0}
 
-    .vazio {
-      display:none;
-      padding:34px;
-      color:#66746d;
-      text-align:center;
-    }
+  .topo{
+    padding:14px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
 
-    .vazio.visivel {
-      display:block;
-    }
+  h1{font-size:21px}
 
-    @media (max-width:700px) {
-      main {
-        padding:24px 16px;
-      }
+  .novo{
+    width:100%;
+    text-align:center;
+  }
 
-      .topo {
-        align-items:flex-start;
-        flex-direction:column;
-      }
-
-      h1 {
-        font-size:22px;
-      }
-
-      .novo {
-        width:100%;
-        text-align:center;
-      }
-    }
+  .tabela-area,
+  .mensagem{
+    margin-left:6px;
+    margin-right:6px;
+  }
+}
   </style>
 </head>
 
 <body>
   <main>
-    <div class="topo">
-      <div class="titulo">
-        <a
-          class="voltar"
-          href="/"
-          onclick="if (window.history.length > 1) { window.history.back(); return false; }"
-          aria-label="Voltar ao portal"
-        >↩</a>
+   <div class="topo">
+  <div class="titulo">
+    <a
+      class="voltar"
+      href="/"
+      onclick="if (window.history.length > 1) { window.history.back(); return false; }"
+      aria-label="Voltar"
+    >←</a>
 
-        <div>
-          <h1>Investimentos</h1>
-          <p class="subtitulo">
-            Histórico de investimentos previstos e realizados.
-          </p>
-        </div>
-      </div>
+    <a class="inicio" href="/" aria-label="Página inicial">⌂</a>
 
-      <a class="novo" href="/investimentos/novo">
-        + Novo investimento
-      </a>
-    </div>
+    <h1>Investimentos</h1>
+  </div>
+
+  <a class="novo" href="/investimentos/novo">
+    + Novo investimento
+  </a>
+</div>
 
     <div id="mensagem" class="mensagem"></div>
 
