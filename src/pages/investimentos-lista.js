@@ -163,6 +163,95 @@ td.valor{
 
 .vazio.visivel{display:block}
 
+th .cab{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:5px;
+}
+
+.filtro{
+  width:22px;
+  height:22px;
+  border:0;
+  border-radius:4px;
+  background:#ffffff22;
+  color:#fff;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.menu-filtro{
+  position:fixed;
+  z-index:20;
+  width:292px;
+  max-height:410px;
+  padding:12px;
+  border:1px solid #9eb3c7;
+  border-radius:8px;
+  background:#fff;
+  color:var(--text);
+  box-shadow:0 12px 26px #1235;
+}
+
+.menu-filtro input[type=search]{
+  width:100%;
+  margin:8px 0;
+  padding:8px;
+  border:1px solid #b9cce0;
+  border-radius:5px;
+}
+
+.opcoes-filtro{
+  max-height:235px;
+  overflow:auto;
+  border:1px solid #d6e1ea;
+}
+
+.opcoes-filtro label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:6px 8px;
+  font-size:12px;
+}
+
+.opcoes-filtro label[hidden]{
+  display:none!important;
+}
+
+.opcoes-filtro label:hover{
+  background:#edf5fc;
+}
+
+.acoes-filtro{
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:10px;
+}
+
+.limpar-filtro,
+.aplicar-filtro{
+  min-height:32px;
+  border-radius:5px;
+  padding:6px 9px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.limpar-filtro{
+  border:1px solid #aebfd0;
+  background:#fff;
+  color:var(--navy);
+}
+
+.aplicar-filtro{
+  border:0;
+  background:var(--navy);
+  color:#fff;
+}
+
 @media(max-width:700px){
   main{padding-top:0}
 
@@ -214,19 +303,19 @@ td.valor{
     <section class="tabela-area">
       <table>
         <thead>
-          <tr>
-            <th>Data inicial</th>
-            <th>Data final</th>
-            <th>Rede</th>
-            <th>Tipo</th>
-            <th>Tipo do valor</th>
-            <th>Valor previsto</th>
-            <th>Valor real</th>
-            <th>Responsável</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
+  <tr>
+    <th><span class="cab">Data inicial <button class="filtro" data-filtrar="data_inicio" type="button">▾</button></span></th>
+    <th><span class="cab">Data final <button class="filtro" data-filtrar="data_fim" type="button">▾</button></span></th>
+    <th><span class="cab">Rede <button class="filtro" data-filtrar="rede" type="button">▾</button></span></th>
+    <th><span class="cab">Tipo <button class="filtro" data-filtrar="tipo" type="button">▾</button></span></th>
+    <th><span class="cab">Tipo do valor <button class="filtro" data-filtrar="tipo_valor" type="button">▾</button></span></th>
+    <th><span class="cab">Valor previsto <button class="filtro" data-filtrar="valor_previsto" type="button">▾</button></span></th>
+    <th><span class="cab">Valor real <button class="filtro" data-filtrar="valor_real" type="button">▾</button></span></th>
+    <th><span class="cab">Responsável <button class="filtro" data-filtrar="responsavel" type="button">▾</button></span></th>
+    <th><span class="cab">Status <button class="filtro" data-filtrar="status" type="button">▾</button></span></th>
+    <th>Ações</th>
+  </tr>
+</thead>
 
         <tbody id="linhas"></tbody>
       </table>
@@ -243,6 +332,10 @@ td.valor{
         style:'currency',
         currency:'BRL'
       });
+
+      var todosInvestimentos = [];
+      var filtros = {};
+      var filtroAberto = null;
 
       function esc(valor) {
         var area = document.createElement('div');
@@ -274,7 +367,95 @@ td.valor{
         mensagem.classList.add('visivel');
       }
 
+      function valorFiltro(item, campo) {
+  if (campo === 'data_inicio') return dataBr(item.data_inicio);
+  if (campo === 'data_fim') return dataBr(item.data_fim);
+  if (campo === 'tipo_valor') {
+    return String(item.tipo_valor || '').toUpperCase() === 'REAL'
+      ? 'Real'
+      : 'Previsão';
+  }
+  if (campo === 'valor_previsto') return valorOuTraco(item.valor_previsto);
+  if (campo === 'valor_real') return valorOuTraco(item.valor_real);
+  return String(item[campo] || '—');
+}
+
+function abrirFiltro(campo, botao) {
+  if (filtroAberto) filtroAberto.remove();
+
+  var valores = Array.from(new Set(
+    todosInvestimentos.map(function(item) {
+      return valorFiltro(item, campo);
+    })
+  )).sort();
+
+  var atual = filtros[campo] || new Set(valores);
+  var menu = document.createElement('section');
+
+  menu.className = 'menu-filtro';
+  menu.innerHTML =
+    '<strong>Filtro: ' +esc(botao.parentElement.childNodes[0].textContent.trim()) +'</strong>' +
+    '<input type="search" placeholder="Pesquisar">' +
+    '<div class="opcoes-filtro">' +
+      valores.map(function(valor) {
+        return '<label data-opcao><input type="checkbox" value="' +
+          esc(encodeURIComponent(valor)) + '" ' +
+          (atual.has(valor) ? 'checked' : '') + '> ' +
+          esc(valor) + '</label>';
+      }).join('') +
+    '</div>' +
+    '<div class="acoes-filtro">' +
+      '<button class="limpar-filtro" type="button">Limpar</button>' +
+      '<button class="aplicar-filtro" type="button">Aplicar</button>' +
+    '</div>';
+
+  document.body.appendChild(menu);
+
+  var posicao = botao.getBoundingClientRect();
+  menu.style.top = Math.min(posicao.bottom + 5, innerHeight - 420) + 'px';
+  menu.style.left = Math.min(posicao.left, innerWidth - 305) + 'px';
+  filtroAberto = menu;
+
+  var busca = menu.querySelector('input[type=search]');
+
+  busca.addEventListener('input', function() {
+    var texto = busca.value.toLocaleLowerCase('pt-BR');
+
+    menu.querySelectorAll('[data-opcao]').forEach(function(opcao) {
+      opcao.hidden = !opcao.textContent
+        .toLocaleLowerCase('pt-BR')
+        .includes(texto);
+    });
+  });
+
+  menu.querySelector('.limpar-filtro').onclick = function() {
+    delete filtros[campo];
+    menu.remove();
+    filtroAberto = null;
+    renderizar(todosInvestimentos);
+  };
+
+  menu.querySelector('.aplicar-filtro').onclick = function() {
+    filtros[campo] = new Set(
+      Array.from(menu.querySelectorAll('[data-opcao] input:checked'))
+        .map(function(input) {
+          return decodeURIComponent(input.value);
+        })
+    );
+
+    menu.remove();
+    filtroAberto = null;
+    renderizar(todosInvestimentos);
+  };
+}
+
       function renderizar(investimentos) {
+      investimentos = investimentos.filter(function(item) {
+      return Object.keys(filtros).every(function(campo) {
+      return !filtros[campo] ||
+      filtros[campo].has(valorFiltro(item, campo));
+  });
+});
         var corpo = document.getElementById('linhas');
         var vazio = document.getElementById('vazio');
 
@@ -339,15 +520,30 @@ td.valor{
             );
           }
 
-          renderizar(
-            Array.isArray(dados.investimentos)
-              ? dados.investimentos
-              : []
-          );
+          todosInvestimentos = Array.isArray(dados.investimentos)
+  ? dados.investimentos
+  : [];
+
+renderizar(todosInvestimentos);
         } catch (erro) {
           mostrarErro(erro.message);
         }
       }
+
+      document.addEventListener('click', function(evento) {
+  var botaoFiltro = evento.target.closest('[data-filtrar]');
+
+  if (botaoFiltro) {
+    evento.stopPropagation();
+    abrirFiltro(botaoFiltro.dataset.filtrar, botaoFiltro);
+    return;
+  }
+
+  if (filtroAberto && !filtroAberto.contains(evento.target)) {
+    filtroAberto.remove();
+    filtroAberto = null;
+  }
+});
 
       document.getElementById('linhas').addEventListener(
   'click',
