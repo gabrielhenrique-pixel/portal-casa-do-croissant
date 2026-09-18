@@ -26,10 +26,13 @@ const PASSWORD_ITERATIONS = 100000;
 const MODULOS_ACESSO = [
   ['CLIENTES', 'Clientes', 20],
   ['INVESTIMENTOS', 'Investimentos', 25],
+
   ['DASHBOARDS', 'Dashboards', 30],
   ['DASHBOARD_RENTABILIDADE', 'Rentabilidade', 31],
   ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
-  ['DEVOLUCOES', 'Painel de devoluções', 33]
+  ['DEVOLUCOES', 'Painel de devoluções', 33],
+  ['MARGEM_REDE', 'Margem por rede', 34],
+  ['RENTABILIDADE_SKU', 'Rentabilidade SKU', 35]
 ];
 
 async function garantirModulosAcesso(env) {
@@ -423,9 +426,13 @@ if (
 }
 
 if (url.pathname === '/rentabilidade-sku' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'RENTABILIDADE_SKU'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!permitido) {
     return redirectToPortal();
   }
 
@@ -484,14 +491,29 @@ if (
 }     
 
 if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'RENTABILIDADE_SKU'
+  );
+
+  if (!permitido) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
   const session = await getSession(request, env);
+
   return listarRentabilidadeSkuSankhya(request, env, session);
 }
 
       if (url.pathname === '/margem-rede' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'MARGEM_REDE'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!permitido) {
     return redirectToPortal();
   }
 
@@ -502,7 +524,18 @@ if (
   url.pathname === '/api/rentabilidade/margem-rede' &&
   request.method === 'GET'
 ) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'MARGEM_REDE'
+  );
+
+  if (!permitido) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
   const session = await getSession(request, env);
+
   return listarMargemRedeSankhya(request, env, session);
 }
 
@@ -628,9 +661,9 @@ if (url.pathname === '/api/investimentos' && request.method === 'POST') {
 ) {
   const session = await getSession(request, env);
 
-  if (!session || session.role !== 'Administrador') {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
+  if (!session) {
+  return responderJson({ error: 'Acesso não autorizado.' }, 403);
+}
 
   try {
     const investimentos = await listarInvestimentosPendentes(env);
