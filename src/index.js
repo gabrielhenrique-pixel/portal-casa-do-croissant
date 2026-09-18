@@ -23,6 +23,24 @@ import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
 
+const MODULOS_ACESSO = [
+  ['CLIENTES', 'Clientes', 20],
+  ['DASHBOARDS', 'Dashboards', 30],
+  ['DASHBOARD_RENTABILIDADE', 'Rentabilidade', 31],
+  ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
+  ['DEVOLUCOES', 'Painel de devoluções', 33]
+];
+
+async function garantirModulosAcesso(env) {
+  await env.DB.batch(
+    MODULOS_ACESSO.map(function(modulo) {
+      return env.DB.prepare(
+        'INSERT OR IGNORE INTO modules (id, name, sort_order) VALUES (?, ?, ?)'
+      ).bind(modulo[0], modulo[1], modulo[2]);
+    })
+  );
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1114,6 +1132,7 @@ async function saveUserPermissions(request, env, userId) {
 }
 
 async function carregarAcessos(request, env) {
+  await garantirModulosAcesso(env);
   await requireAdministrator(request, env);
 
   const resultados = await Promise.all([
@@ -1143,6 +1162,7 @@ async function carregarAcessos(request, env) {
 }
 
 async function salvarAcessos(request, env) {
+  await garantirModulosAcesso(env);
   const administrator = await requireAdministrator(request, env);
   const data = await bodyAsJson(request);
 
@@ -1346,6 +1366,7 @@ async function removerAcessosDoUsuario(request, env, userId) {
 }
 
 async function getModulesForUser(env, user) {
+  await garantirModulosAcesso(env);
   if (user.role === 'Administrador') {
     const result = await env.DB.prepare(
       'SELECT id, name, sort_order FROM modules ORDER BY sort_order'
