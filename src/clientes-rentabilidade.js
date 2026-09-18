@@ -133,7 +133,7 @@ export async function sincronizarClientesRentabilidadeSankhya(env, linhas) {
             'cliente = excluded.cliente, ' +
             'rede = CASE WHEN rentabilidade_clientes.updated_by IS NULL OR rentabilidade_clientes.updated_by = \'Sankhya\' THEN excluded.rede ELSE rentabilidade_clientes.rede END, ' +
             'percentual_promotoria = CASE WHEN rentabilidade_clientes.updated_by IS NULL OR rentabilidade_clientes.updated_by = \'Sankhya\' THEN excluded.percentual_promotoria ELSE rentabilidade_clientes.percentual_promotoria END, ' +
-            'percentual_contrato = excluded.percentual_contrato, ' +
+            'percentual_contrato = CASE WHEN rentabilidade_clientes.updated_by IS NULL OR rentabilidade_clientes.updated_by = \'Sankhya\' THEN excluded.percentual_contrato ELSE rentabilidade_clientes.percentual_contrato END, ' +
             'percentual_comissao = excluded.percentual_comissao, ' +
             'updated_at = excluded.updated_at, ' +
             'updated_by = CASE ' +
