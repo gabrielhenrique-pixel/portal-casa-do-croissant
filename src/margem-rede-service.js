@@ -12,9 +12,9 @@ const REDES_MODELO = [
 ];
 
 export async function listarMargemRedeSankhya(request, env, session) {
-  if (!session || session.role !== 'Administrador') {
-    return responderJson({ error: 'Acesso não autorizado.' }, 403);
-  }
+  if (!session) {
+  return responderJson({ error: 'Acesso não autorizado.' }, 403);
+}
 
   if (!env.SANKHYA_CLIENT_ID ||
       !env.SANKHYA_CLIENT_SECRET ||
