@@ -25,6 +25,7 @@ const PASSWORD_ITERATIONS = 100000;
 
 const MODULOS_ACESSO = [
   ['CLIENTES', 'Clientes', 20],
+  ['INVESTIMENTOS', 'Investimentos', 25],
   ['DASHBOARDS', 'Dashboards', 30],
   ['DASHBOARD_RENTABILIDADE', 'Rentabilidade', 31],
   ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
@@ -72,9 +73,13 @@ export default {
       }
 
       if (url.pathname === '/investimentos' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'INVESTIMENTOS'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!acesso?.permissions.view) {
     return redirectToPortal();
   }
 
@@ -491,11 +496,15 @@ if (
 }
 
       if (url.pathname === '/api/investimentos' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const acesso = await obterAcessoModulo(
+  request,
+  env,
+  'INVESTIMENTOS'
+);
 
-  if (!session || session.role !== 'Administrador') {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
+if (!acesso?.permissions.view) {
+  return json({ error: 'Acesso não autorizado.' }, 403);
+}
 
   try {
     const investimentos = await listarTodosInvestimentos(env);
@@ -517,11 +526,17 @@ if (
 );
 
 if (investimentoMatch && request.method === 'DELETE') {
-  const session = await getSession(request, env);
+  const acesso = await obterAcessoModulo(
+  request,
+  env,
+  'INVESTIMENTOS'
+);
 
-  if (!session || session.role !== 'Administrador') {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
+if (!acesso?.permissions.delete) {
+  return json({ error: 'Acesso não autorizado.' }, 403);
+}
+
+const session = acesso.session;
 
   const resultado = await excluirInvestimento(
     env,
@@ -1401,6 +1416,33 @@ async function getModulesForUser(env, user) {
       configure: Boolean(module.can_configure)
     }
   }));
+}
+
+async function obterAcessoModulo(request, env, moduloId) {
+  const session = await getSession(request, env);
+
+  if (!session) return null;
+
+  if (session.role === 'Administrador') {
+    return {
+      session,
+      permissions: {
+        view: true,
+        create: true,
+        update: true,
+        delete: true,
+        configure: true
+      }
+    };
+  }
+
+  const modulo = (await getModulesForUser(env, session)).find(
+    (item) => item.id === moduloId
+  );
+
+  return modulo
+    ? { session, permissions: modulo.permissions }
+    : null;
 }
 
 async function createSessionResponse(env, userId, username, email, role) {
