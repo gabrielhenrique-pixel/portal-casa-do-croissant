@@ -766,12 +766,17 @@ function mostrarToast(texto) {
         });
 
         modulos = [];
-         usuarios = [];
-          usuariosModal = [];
+              usuarios = [];
+               usuariosModal = [];
 
-        $('msg').className = 'msg';
+           ['view', 'create', 'update', 'delete', 'configure']
+             .forEach((id) => {
+              $(id).checked = false;
+              });
+ 
+             $('msg').className = 'msg';
 
-        await carregar();
+          await carregar();
 
         mostrarToast('Acessos salvos.');
       } catch (erro) {
