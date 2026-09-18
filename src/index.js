@@ -794,6 +794,23 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
     }, 500);
   }
 }
+
+if (url.pathname === '/rentabilidade/clientes' && request.method === 'GET') {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'CLIENTES'
+  );
+
+  if (!permitido) {
+    return new Response('Acesso não autorizado.', { status: 403 });
+  }
+
+  return clientesRentabilidadePage();
+}
+
+if (
+  url.pathname === '/api/rentabilidade/clientes/sincronizar' &&
   request.method === 'POST'
 ) {
   const administrador = await requireAdministrator(request, env);
