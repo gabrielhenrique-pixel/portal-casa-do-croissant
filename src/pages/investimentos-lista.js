@@ -396,7 +396,8 @@ function abrirFiltro(campo, botao) {
   menu.innerHTML =
     '<strong>Filtro: ' +esc(botao.parentElement.childNodes[0].textContent.trim()) +'</strong>' +
     '<input type="search" placeholder="Pesquisar">' +
-    '<div class="opcoes-filtro">' +
+  '<label><input class="marcar-todos" type="checkbox"> Selecionar tudo</label>' +
+  '<div class="opcoes-filtro">' +
       valores.map(function(valor) {
         return '<label data-opcao><input type="checkbox" value="' +
           esc(encodeURIComponent(valor)) + '" ' +
@@ -427,6 +428,20 @@ function abrirFiltro(campo, botao) {
         .includes(texto);
     });
   });
+
+  var marcarTodos = menu.querySelector('.marcar-todos');
+
+marcarTodos.checked = valores.length > 0 &&
+  valores.every(function(valor) {
+    return atual.has(valor);
+  });
+
+marcarTodos.addEventListener('change', function(evento) {
+  menu.querySelectorAll('[data-opcao]:not([hidden]) input')
+    .forEach(function(input) {
+      input.checked = evento.target.checked;
+    });
+});
 
   menu.querySelector('.limpar-filtro').onclick = function() {
     delete filtros[campo];
