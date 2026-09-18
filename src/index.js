@@ -443,9 +443,13 @@ if (
   url.pathname === '/api/rentabilidade/meta-faturamento' &&
   request.method === 'GET'
 ) {
-  const session = await getSession(request, env);
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_RENTABILIDADE'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!permitido) {
     return json({ error: 'Acesso não autorizado.' }, 403);
   }
 
@@ -453,7 +457,6 @@ if (
     metaFaturamento: await carregarMetaFaturamento(env)
   });
 }
-
 if (
   url.pathname === '/api/rentabilidade/meta-faturamento' &&
   request.method === 'PUT'
@@ -524,13 +527,19 @@ if (
   url.pathname === '/api/rentabilidade/margem-rede' &&
   request.method === 'GET'
 ) {
-  const permitido = await podeConsultarModulo(
+  const podeVerDashboard = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_RENTABILIDADE'
+  );
+
+  const podeVerMargemRede = await podeConsultarModulo(
     request,
     env,
     'MARGEM_REDE'
   );
 
-  if (!permitido) {
+  if (!podeVerDashboard && !podeVerMargemRede) {
     return json({ error: 'Acesso não autorizado.' }, 403);
   }
 
