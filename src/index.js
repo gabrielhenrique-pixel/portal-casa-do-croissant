@@ -253,9 +253,13 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
 
  if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_RENTABILIDADE'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!permitido) {
     return redirectToPortal();
   }
 
@@ -263,15 +267,18 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
 
       if (url.pathname === '/dashboard-vendas' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_VENDAS'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!permitido) {
     return redirectToPortal();
   }
 
   return dashboardVendasPage();
 }
-
 if (
   url.pathname === '/api/vendas/monitoramento' &&
   request.method === 'GET'
