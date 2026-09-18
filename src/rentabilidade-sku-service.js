@@ -5,9 +5,9 @@ const IMPOSTOS_PADRAO = 0.12;
 const META_MARGEM = 0.20;
 
 export async function listarRentabilidadeSkuSankhya(request, env, session) {
-  if (!session || session.role !== 'Administrador') {
-    return responderJson({ error: 'Acesso não autorizado.' }, 403);
-  }
+  if (!session) {
+  return responderJson({ error: 'Acesso não autorizado.' }, 403);
+}
 
   if (!env.SANKHYA_CLIENT_ID ||
       !env.SANKHYA_CLIENT_SECRET ||
