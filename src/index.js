@@ -936,8 +936,12 @@ async function login(request, env) {
      FROM users WHERE username = ? COLLATE NOCASE`
   ).bind(username).first();
 
-  if (!user || !await verifyPassword(password, user)) {
-  }
+  if (!user || !(await verifyPassword(password, user))) {
+  return json(
+    { error: 'Usuário ou senha inválidos.' },
+    401
+  );
+}
 
   await writeAudit(env, user.username, 'LOGIN_REALIZADO', 'Login realizado com sucesso.');
   return createSessionResponse(env, user.id, user.username, user.email, user.role);
