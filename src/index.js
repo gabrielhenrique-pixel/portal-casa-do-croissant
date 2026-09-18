@@ -239,9 +239,13 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
 }
  if (url.pathname === '/dashboards' && request.method === 'GET') {
-  const session = await getSession(request, env);
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARDS'
+  );
 
-  if (!session || session.role !== 'Administrador') {
+  if (!permitido) {
     return redirectToPortal();
   }
 
@@ -1416,6 +1420,26 @@ async function getModulesForUser(env, user) {
       configure: Boolean(module.can_configure)
     }
   }));
+}
+
+async function podeConsultarModulo(request, env, moduleId) {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return false;
+  }
+
+  if (session.role === 'Administrador') {
+    return true;
+  }
+
+  const modules = await getModulesForUser(env, session);
+
+  return modules.some((module) =>
+    module.id === moduleId &&
+    module.permissions &&
+    module.permissions.view
+  );
 }
 
 async function obterAcessoModulo(request, env, moduloId) {
