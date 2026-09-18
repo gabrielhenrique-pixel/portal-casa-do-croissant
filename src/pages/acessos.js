@@ -6,48 +6,310 @@ export function acessosPage() {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Acessos | Casa do Croissant</title>
   <style>
-    :root{--v:#168447;--e:#0d4b2b;--f:#f6f8f7;--t:#183128;--b:#d6e4dd;--r:#b8322a}
-    *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;font-family:Arial,sans-serif;color:var(--t);background:var(--f)}
-    main{max-width:1300px;margin:auto;padding:34px 36px 48px}
-    .topo{display:flex;align-items:center;gap:16px;margin-bottom:26px}
-    .voltar{display:grid;width:48px;height:48px;place-items:center;border-radius:50%;background:var(--e);color:#fff;text-decoration:none;font-size:26px;font-weight:700}
-    h1{margin:0;font-size:27px}
-    .sub{margin:5px 0 0;color:#66746d}
-    .grade{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .painel{padding:20px;border:1px solid var(--b);border-radius:12px;background:#fff}
-    .cab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
-    .painel h2{margin:0;font-size:18px}
-    .campo{width:100%;height:42px;padding:0 12px;border:1px solid #b9cfc3;border-radius:7px;font:inherit}
-    .todos{display:flex;gap:7px;align-items:center;margin:12px 0;font-size:13px;font-weight:700}
-    .lista{max-height:390px;overflow:auto;border:1px solid #dce8e1;border-radius:8px}
-    .modulo,.usuario,.opcao{display:flex;gap:10px;align-items:center;padding:13px;border-bottom:1px solid #e3ece7;cursor:pointer}
-    .modulo:last-child,.opcao:last-child{border-bottom:0}
-    .modulo:hover,.usuario:hover{background:#f3faf6}
-    .usuario{border:1px solid #dce8e1;border-radius:8px;background:#fff}
-    .usuario.selecionado{border-color:var(--v);box-shadow:0 0 0 2px rgba(22,132,71,.15)}
-    small{display:block;margin-top:4px;color:#66746d}
-    .usuarios{display:grid;gap:9px;min-height:130px}
-    .acoes,.rodape{display:flex;gap:9px;flex-wrap:wrap}
-    .rodape{justify-content:flex-end;margin-top:20px}
-    .botao{padding:10px 14px;border:0;border-radius:7px;background:var(--v);color:#fff;font-weight:700;cursor:pointer}
-    .sec{border:1px solid #b9cfc3;background:#fff;color:#405149}
-    .perigo{background:#c1362d}
-    .botao:disabled{opacity:.55;cursor:not-allowed}
-    .tipos{display:flex;flex-wrap:wrap;gap:14px}
-    .tipos label{display:flex;gap:7px;align-items:center}
-    .msg{display:none;margin:16px 0;padding:12px 14px;border-radius:7px;background:#e2f3e8;color:#12623e}
-    .msg.erro{background:#fde5e2;color:var(--r)}
-    .msg.visivel{display:block}
-    .vazio{padding:28px;text-align:center;color:#66746d}
-    .fundo{position:fixed;inset:0;display:none;place-items:center;padding:20px;background:rgba(15,35,26,.55)}
-    .fundo.visivel{display:grid}
-    .modal{width:min(100%,540px);padding:24px;border-radius:12px;background:#fff}
-    .modal .cab{margin-bottom:16px}
-    .fechar{border:0;background:transparent;color:#66746d;font-size:27px;cursor:pointer}
-    .lista-modal{max-height:300px;overflow:auto;margin-top:12px;border:1px solid var(--b);border-radius:8px}
-    @media(max-width:800px){main{padding:24px 16px}.grade{grid-template-columns:1fr}.rodape{flex-direction:column-reverse}.rodape button{width:100%}}
-  </style>
+  :root {
+    --v: #168447;
+    --e: #0d4b2b;
+    --f: #f6f8f7;
+    --t: #183128;
+    --b: #d6e4dd;
+    --r: #b8322a;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    color: var(--t);
+    background: var(--f);
+  }
+
+  main {
+    max-width: 1300px;
+    margin: auto;
+    padding: 34px 36px 48px;
+  }
+
+  .topo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 26px;
+  }
+
+  .voltar {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--e);
+    color: #fff;
+    text-decoration: none;
+    font-size: 26px;
+    font-weight: 700;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 27px;
+  }
+
+  .sub {
+    margin: 5px 0 0;
+    color: #66746d;
+  }
+
+  .grade {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .painel {
+    padding: 20px;
+    border: 1px solid var(--b);
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .cab {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .painel h2 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .campo {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #b9cfc3;
+    border-radius: 7px;
+    font: inherit;
+  }
+
+  .todos {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    margin: 12px 0;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .lista {
+    max-height: 390px;
+    overflow: auto;
+    border: 1px solid #dce8e1;
+    border-radius: 8px;
+  }
+
+  .modulo,
+  .usuario,
+  .opcao {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 13px;
+    border-bottom: 1px solid #e3ece7;
+    cursor: pointer;
+  }
+
+  .modulo:last-child,
+  .opcao:last-child {
+    border-bottom: 0;
+  }
+
+  .modulo:hover,
+  .usuario:hover {
+    background: #f3faf6;
+  }
+
+  .usuario {
+    border: 1px solid #dce8e1;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .usuario.selecionado {
+    border-color: var(--v);
+    box-shadow: 0 0 0 2px rgba(22, 132, 71, 0.15);
+  }
+
+  small {
+    display: block;
+    margin-top: 4px;
+    color: #66746d;
+  }
+
+  .usuarios {
+    display: grid;
+    gap: 9px;
+    min-height: 130px;
+  }
+
+  .acoes,
+  .rodape {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .rodape {
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  .botao {
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--v);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .sec {
+    border: 1px solid #b9cfc3;
+    background: #fff;
+    color: #405149;
+  }
+
+  .perigo {
+    background: #c1362d;
+  }
+
+  .botao:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .tipos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .tipos label {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+  }
+
+  .msg {
+    display: none;
+    margin: 16px 0;
+    padding: 12px 14px;
+    border-radius: 7px;
+    background: #e2f3e8;
+    color: #12623e;
+  }
+
+  .msg.erro {
+    background: #fde5e2;
+    color: var(--r);
+  }
+
+  .msg.visivel {
+    display: block;
+  }
+
+  .vazio {
+    padding: 28px;
+    text-align: center;
+    color: #66746d;
+  }
+
+  .fundo {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 35, 26, 0.55);
+  }
+
+  .fundo.visivel {
+    display: grid;
+  }
+
+  .modal {
+    width: min(100%, 540px);
+    padding: 24px;
+    border-radius: 12px;
+    background: #fff;
+  }
+
+  .modal .cab {
+    margin-bottom: 16px;
+  }
+
+  .fechar {
+    border: 0;
+    background: transparent;
+    color: #66746d;
+    font-size: 27px;
+    cursor: pointer;
+  }
+
+  .lista-modal {
+    max-height: 300px;
+    overflow: auto;
+    margin-top: 12px;
+    border: 1px solid var(--b);
+    border-radius: 8px;
+  }
+
+  .grupo-modulos{
+  border-bottom:1px solid #e3ece7;
+}
+
+.titulo-grupo{
+  padding:13px;
+  font-size:13px;
+  font-weight:700;
+  background:#f3faf6;
+  color:#0d4b2b;
+}
+
+.submodulos{
+  padding-left:24px;
+  background:#fbfdfc;
+}
+
+.submodulos .modulo{
+  padding-left:13px;
+}
+
+  @media (max-width: 800px) {
+    main {
+      padding: 24px 16px;
+    }
+
+    .grade {
+      grid-template-columns: 1fr;
+    }
+
+    .rodape {
+      flex-direction: column-reverse;
+    }
+
+    .rodape button {
+      width: 100%;
+    }
+  }
+</style>
 </head>
 <body>
   <main>
@@ -125,6 +387,12 @@ export function acessosPage() {
     let usuarios = [];
     let usuariosModal = [];
 
+    const PAINEIS_DASHBOARD = [
+  'DASHBOARD_RENTABILIDADE',
+  'DASHBOARD_VENDAS',
+  'DEVOLUCOES'
+];
+
     function esc(valor) {
       const no = document.createElement('span');
       no.textContent = valor || '';
@@ -179,28 +447,60 @@ export function acessosPage() {
     }
 
     function renderModulos() {
-      const termo = $('buscaModulo').value.toLocaleLowerCase('pt-BR');
+  const termo = $('buscaModulo').value.toLocaleLowerCase('pt-BR');
 
-      const lista = dados.modules.filter((modulo) =>
-        String(modulo.name || '')
-          .toLocaleLowerCase('pt-BR')
-          .includes(termo)
-      );
+  const corresponde = (modulo) =>
+    String(modulo.name || '')
+      .toLocaleLowerCase('pt-BR')
+      .includes(termo);
 
-      $('modulos').innerHTML = lista.length
-        ? lista.map((modulo) =>
-          '<label class="modulo">' +
-            '<input type="checkbox" data-modulo="' + esc(modulo.id) + '" ' +
-            (modulos.includes(modulo.id) ? 'checked' : '') + '>' +
-            '<span>' + esc(modulo.name) + '</span>' +
-          '</label>'
-        ).join('')
-        : '<div class="vazio">Nenhum módulo encontrado.</div>';
+  const painel = (modulo) =>
+    PAINEIS_DASHBOARD.includes(modulo.id);
 
-      $('todosModulos').checked =
-        lista.length > 0 &&
-        lista.every((modulo) => modulos.includes(modulo.id));
-    }
+  const linha = (modulo) =>
+    '<label class="modulo">' +
+      '<input type="checkbox" data-modulo="' + esc(modulo.id) + '" ' +
+      (modulos.includes(modulo.id) ? 'checked' : '') + '>' +
+      '<span>' + esc(modulo.name) + '</span>' +
+    '</label>';
+
+  const paineis = dados.modules.filter(painel);
+  const principais = dados.modules.filter((modulo) => !painel(modulo));
+
+  const blocos = principais
+    .filter((modulo) => {
+      if (modulo.id !== 'DASHBOARDS') return corresponde(modulo);
+
+      return corresponde(modulo) ||
+        paineis.some(corresponde);
+    })
+    .map((modulo) => {
+      if (modulo.id !== 'DASHBOARDS') return linha(modulo);
+
+      const filhos = paineis.filter(corresponde);
+
+      return '<div class="grupo-modulos">' +
+        '<div class="titulo-grupo">Dashboards</div>' +
+        '<div class="submodulos">' +
+          (filhos.length
+            ? filhos.map(linha).join('')
+            : '<div class="vazio">Nenhum dashboard encontrado.</div>') +
+        '</div>' +
+      '</div>';
+    });
+
+  $('modulos').innerHTML = blocos.length
+    ? blocos.join('')
+    : '<div class="vazio">Nenhum módulo encontrado.</div>';
+
+  const visiveis = dados.modules.filter((modulo) =>
+    modulo.id !== 'DASHBOARDS' && corresponde(modulo)
+  );
+
+  $('todosModulos').checked =
+    visiveis.length > 0 &&
+    visiveis.every((modulo) => modulos.includes(modulo.id));
+}
 
     function renderPermissoes() {
       ['view', 'create', 'update', 'delete', 'configure'].forEach((tipo) => {
