@@ -275,12 +275,34 @@ export function acessosPage() {
   border-bottom:1px solid #e3ece7;
 }
 
-.titulo-grupo{
-  padding:13px;
-  font-size:13px;
-  font-weight:700;
+.dashboard-pai{
+  display:flex;
+  align-items:center;
+  border-bottom:1px solid #e3ece7;
   background:#f3faf6;
+}
+
+.dashboard-pai .modulo{
+  flex:1;
+  border-bottom:0;
+  font-weight:700;
+}
+
+.alternar-dashboards{
+  width:38px;
+  height:38px;
+  margin-right:7px;
+  border:0;
+  border-radius:6px;
+  background:transparent;
   color:#0d4b2b;
+  font-size:18px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.alternar-dashboards:hover{
+  background:#dcefe3;
 }
 
 .submodulos{
@@ -406,6 +428,7 @@ export function acessosPage() {
     let modulos = [];
     let usuarios = [];
     let usuariosModal = [];
+    let dashboardsAberto = false;
 
     let temporizadorToast;
 
@@ -484,13 +507,13 @@ function mostrarToast(texto) {
     function renderModulos() {
   const termo = $('buscaModulo').value.toLocaleLowerCase('pt-BR');
 
+  const painel = (modulo) =>
+    PAINEIS_DASHBOARD.includes(modulo.id);
+
   const corresponde = (modulo) =>
     String(modulo.name || '')
       .toLocaleLowerCase('pt-BR')
       .includes(termo);
-
-  const painel = (modulo) =>
-    PAINEIS_DASHBOARD.includes(modulo.id);
 
   const linha = (modulo) =>
     '<label class="modulo">' +
@@ -499,37 +522,51 @@ function mostrarToast(texto) {
       '<span>' + esc(modulo.name) + '</span>' +
     '</label>';
 
-  const paineis = dados.modules.filter(painel);
-  const principais = dados.modules.filter((modulo) => !painel(modulo));
+  const filhosDashboard = dados.modules
+    .filter(painel)
+    .filter(corresponde);
 
-  const blocos = principais
-    .filter((modulo) => {
-      if (modulo.id !== 'DASHBOARDS') return corresponde(modulo);
+  const expandirDashboard =
+    dashboardsAberto ||
+    Boolean(termo && filhosDashboard.length);
 
-      return corresponde(modulo) ||
-        paineis.some(corresponde);
-    })
-    .map((modulo) => {
-      if (modulo.id !== 'DASHBOARDS') return linha(modulo);
+  const principais = dados.modules.filter((modulo) =>
+    !painel(modulo)
+  );
 
-      const filhos = paineis.filter(corresponde);
+  const blocos = principais.map((modulo) => {
+    if (modulo.id !== 'DASHBOARDS') {
+      return corresponde(modulo) ? linha(modulo) : '';
+    }
 
-      return '<div class="grupo-modulos">' +
-        '<div class="titulo-grupo">Dashboards</div>' +
-        '<div class="submodulos">' +
-          (filhos.length
-            ? filhos.map(linha).join('')
-            : '<div class="vazio">Nenhum dashboard encontrado.</div>') +
-        '</div>' +
-      '</div>';
-    });
+    if (!corresponde(modulo) && !filhosDashboard.length) {
+      return '';
+    }
+
+    return '<div class="grupo-modulos">' +
+      '<div class="dashboard-pai">' +
+        linha(modulo) +
+        '<button class="alternar-dashboards" ' +
+          'data-alternar-dashboards type="button" ' +
+          'aria-label="Abrir ou fechar dashboards">' +
+          (expandirDashboard ? '▾' : '▸') +
+        '</button>' +
+      '</div>' +
+      '<div class="submodulos" ' +
+        (expandirDashboard ? '' : 'hidden') + '>' +
+        (filhosDashboard.length
+          ? filhosDashboard.map(linha).join('')
+          : '<div class="vazio">Nenhum dashboard encontrado.</div>') +
+      '</div>' +
+    '</div>';
+  }).filter(Boolean);
 
   $('modulos').innerHTML = blocos.length
     ? blocos.join('')
     : '<div class="vazio">Nenhum módulo encontrado.</div>';
 
   const visiveis = dados.modules.filter((modulo) =>
-    modulo.id !== 'DASHBOARDS' && corresponde(modulo)
+    corresponde(modulo)
   );
 
   $('todosModulos').checked =
@@ -631,6 +668,16 @@ function mostrarToast(texto) {
     }
 
     $('buscaModulo').addEventListener('input', renderModulos);
+
+    $('modulos').addEventListener('click', (evento) => {
+  const botao = evento.target.closest('[data-alternar-dashboards]');
+
+  if (!botao) return;
+
+  evento.preventDefault();
+  dashboardsAberto = !dashboardsAberto;
+  renderModulos();
+});
 
     $('modulos').addEventListener('change', (evento) => {
       const campo = evento.target.closest('[data-modulo]');
