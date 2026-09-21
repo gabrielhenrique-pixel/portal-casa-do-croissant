@@ -197,10 +197,10 @@ export function dashboardVendasPage() {
     }
 
     .gauge-total {
-      display:grid;
-      place-items:center;
-      min-height:250px;
-    }
+    display:grid;
+    place-items:center;
+    min-height:290px;
+   }
 
     .gauge {
       position:relative;
@@ -237,18 +237,18 @@ export function dashboardVendasPage() {
     }
 
     .gauge strong {
-      position:absolute;
-      right:0;
-      bottom:0;
-      left:0;
-      font-size:34px;
-      text-align:center;
-    }
+    position:absolute;
+    right:0;
+    bottom:-28px;
+    left:0;
+    font-size:34px;
+    text-align:center;
+   }
 
-    .gauge span {
+      .gauge span {
       position:absolute;
       right:0;
-      bottom:-21px;
+      bottom:-49px;
       left:0;
       color:#58729a;
       font-size:15px;
