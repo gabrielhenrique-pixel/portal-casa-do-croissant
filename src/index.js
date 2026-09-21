@@ -23,6 +23,8 @@ import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
+const LOGIN_MAX_FALHAS = 5;
+const LOGIN_JANELA_SEGUNDOS = 15 * 60;
 
 const MODULOS_ACESSO = [
   ['CLIENTES', 'Clientes', 20],
@@ -726,11 +728,13 @@ if (url.pathname === '/api/investimentos' && request.method === 'POST') {
   url.pathname === '/api/investimentos/pendentes' &&
   request.method === 'GET'
 ) {
-  const session = await getSession(request, env);
-
-  if (!session) {
-  return responderJson({ error: 'Acesso não autorizado.' }, 403);
-}
+        
+  await requireModulePermission(
+  request,
+  env,
+  'INVESTIMENTOS_PENDENTES',
+  'view'
+);
 
   try {
     const investimentos = await listarInvestimentosPendentes(env);
@@ -978,25 +982,156 @@ async function bootstrap(request, env) {
   return createSessionResponse(env, id, username, email, 'Administrador');
 }
 
+async function garantirTabelaProtecaoLogin(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS login_attempts (
+      attempt_key TEXT PRIMARY KEY,
+      failed_attempts INTEGER NOT NULL,
+      first_failed_at INTEGER NOT NULL,
+      locked_until INTEGER NOT NULL DEFAULT 0
+    )`
+  ).run();
+}
+
+function chaveTentativaLogin(request, username) {
+  const ip = request.headers.get('CF-Connecting-IP') || 'ip-indisponivel';
+
+  return sha256(ip + '|' + username);
+}
+
+async function minutosBloqueioLogin(env, attemptKey) {
+  const now = Math.floor(Date.now() / 1000);
+
+  const tentativa = await env.DB.prepare(
+    `SELECT locked_until
+     FROM login_attempts
+     WHERE attempt_key = ?`
+  ).bind(attemptKey).first();
+
+  if (!tentativa || Number(tentativa.locked_until) <= now) {
+    return 0;
+  }
+
+  return Math.ceil(
+    (Number(tentativa.locked_until) - now) / 60
+  );
+}
+
+async function registrarFalhaLogin(env, attemptKey) {
+  const now = Math.floor(Date.now() / 1000);
+
+  const tentativa = await env.DB.prepare(
+    `SELECT failed_attempts, first_failed_at
+     FROM login_attempts
+     WHERE attempt_key = ?`
+  ).bind(attemptKey).first();
+
+  if (!tentativa) {
+    await env.DB.prepare(
+      `INSERT INTO login_attempts (
+        attempt_key,
+        failed_attempts,
+        first_failed_at,
+        locked_until
+      ) VALUES (?, ?, ?, ?)`
+    ).bind(attemptKey, 1, now, 0).run();
+
+    return;
+  }
+
+  const dentroDaJanela =
+    now - Number(tentativa.first_failed_at) <
+    LOGIN_JANELA_SEGUNDOS;
+
+  const totalFalhas = dentroDaJanela
+    ? Number(tentativa.failed_attempts) + 1
+    : 1;
+
+  const bloqueadoAte = totalFalhas >= LOGIN_MAX_FALHAS
+    ? now + LOGIN_JANELA_SEGUNDOS
+    : 0;
+
+  await env.DB.prepare(
+    `UPDATE login_attempts
+     SET failed_attempts = ?,
+         first_failed_at = ?,
+         locked_until = ?
+     WHERE attempt_key = ?`
+  ).bind(
+    totalFalhas,
+    dentroDaJanela ? Number(tentativa.first_failed_at) : now,
+    bloqueadoAte,
+    attemptKey
+  ).run();
+}
+
+async function limparFalhasLogin(env, attemptKey) {
+  await env.DB.prepare(
+    'DELETE FROM login_attempts WHERE attempt_key = ?'
+  ).bind(attemptKey).run();
+}
+
 async function login(request, env) {
   const data = await bodyAsJson(request);
   const username = normalizeUsername(data.username);
   const password = String(data.password || '');
 
+  await garantirTabelaProtecaoLogin(env);
+
+  const attemptKey = await chaveTentativaLogin(
+    request,
+    username
+  );
+
+  const minutosRestantes = await minutosBloqueioLogin(
+    env,
+    attemptKey
+  );
+
+  if (minutosRestantes > 0) {
+    return json(
+      {
+        error:
+          'Muitas tentativas de login. Aguarde ' +
+          minutosRestantes +
+          ' minuto(s) antes de tentar novamente.'
+      },
+      429
+    );
+  }
+
   const user = await env.DB.prepare(
-    `SELECT id, username, email, role, password_hash, password_salt, password_algorithm
-     FROM users WHERE username = ? COLLATE NOCASE`
+    `SELECT id, username, email, role, password_hash,
+            password_salt, password_algorithm
+     FROM users
+     WHERE username = ? COLLATE NOCASE`
   ).bind(username).first();
 
   if (!user || !(await verifyPassword(password, user))) {
-  return json(
-    { error: 'Usuário ou senha inválidos.' },
-    401
-  );
-}
+    await registrarFalhaLogin(env, attemptKey);
 
-  await writeAudit(env, user.username, 'LOGIN_REALIZADO', 'Login realizado com sucesso.');
-  return createSessionResponse(env, user.id, user.username, user.email, user.role);
+    return json(
+      { error: 'Usuário ou senha inválidos.' },
+      401
+    );
+  }
+
+  await limparFalhasLogin(env, attemptKey);
+
+  await writeAudit(
+    env,
+    user.username,
+    'LOGIN_REALIZADO',
+    'Login realizado com sucesso.'
+  );
+
+  return createSessionResponse(
+    env,
+    user.id,
+    user.username,
+    user.email,
+    user.role
+  );
 }
 
 async function logout(request, env) {
