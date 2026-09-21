@@ -2539,6 +2539,14 @@ const APP_HTML = `<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portal Casa do Croissant</title>
 
+  <script>
+  window.turnstileLoginPronto = function () {
+    window.dispatchEvent(
+      new Event('turnstile-login-pronto')
+    );
+  };
+</script>
+
   <script
   src="https://challenges.cloudflare.com/turnstile/v0/api.js"
   async
@@ -3222,6 +3230,7 @@ const APP_HTML = `<!doctype html>
   data-theme="light"
   data-appearance="interaction-only"
   data-action="login"
+  data-callback="turnstileLoginPronto"
 ></div>
 
 <button
@@ -3521,6 +3530,31 @@ const APP_HTML = `<!doctype html>
 
     <script>
   const $ = (id) => document.getElementById(id);
+
+  let loginAguardandoTurnstile = false;
+
+window.addEventListener(
+  'turnstile-login-pronto',
+  function () {
+    if (!loginAguardandoTurnstile) return;
+
+    const token = document.querySelector(
+      '[name="cf-turnstile-response"]'
+    )?.value || '';
+
+    if (!token) return;
+
+    loginAguardandoTurnstile = false;
+
+    const button = $('loginButton');
+
+    button.disabled = false;
+    button.classList.remove('entrando');
+    button.textContent = '↪ Entrar';
+
+    $('formLogin').requestSubmit();
+  }
+);
 
   const login = $('login');
   const setup = $('setup');
@@ -3940,7 +3974,25 @@ async function carregarPerfilNoMenu() {
 
     const button = $('loginButton');
 
-    button.disabled = true;
+const turnstileToken = document.querySelector(
+  '[name="cf-turnstile-response"]'
+)?.value || '';
+
+if (!turnstileToken) {
+  loginAguardandoTurnstile = true;
+
+  button.disabled = true;
+  button.textContent = 'Verificando segurança...';
+
+  error(
+    'loginError',
+    'Aguarde a verificação de segurança.'
+  );
+
+  return;
+}
+
+button.disabled = true;
     button.classList.add('entrando');
     button.textContent = 'Entrando...';
 
@@ -3948,13 +4000,10 @@ async function carregarPerfilNoMenu() {
       await request('/api/login', {
         method: 'POST',
         body: JSON.stringify({
-         username: $('username').value,
-         password: $('password').value,
-         turnstileToken:
-           document.querySelector(
-            '[name="cf-turnstile-response"]'
-           )?.value || ''
-         })
+  username: $('username').value,
+  password: $('password').value,
+  turnstileToken: turnstileToken
+})
       });
 
       await loadSession();
