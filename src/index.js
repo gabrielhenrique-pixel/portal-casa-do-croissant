@@ -2632,6 +2632,56 @@ const APP_HTML = `<!doctype html>
       color: #fff;
     }
 
+    .perfil-menu {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  margin:0 4px 22px;
+  color:#fff;
+  text-decoration:none;
+}
+
+.perfil-menu:hover {
+  opacity:.88;
+}
+
+.avatar-menu {
+  display:grid;
+  width:58px;
+  height:58px;
+  flex:0 0 58px;
+  place-items:center;
+  overflow:hidden;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:#edf3f9;
+  color:#789bd2;
+  font-size:30px;
+}
+
+.avatar-menu img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.perfil-menu strong,
+.perfil-menu small {
+  display:block;
+}
+
+.perfil-menu strong {
+  font-size:17px;
+  font-weight:500;
+}
+
+.perfil-menu small {
+  margin-top:4px;
+  color:#fff;
+  font-size:13px;
+  text-decoration:underline;
+}
+
     .marca-portal {
       padding: 4px 12px 28px;
       font-size: 20px;
@@ -3012,7 +3062,16 @@ const APP_HTML = `<!doctype html>
 
 <main id="dashboard" class="painel oculto">
   <aside class="menu">
-    <div class="marca-portal">
+  <a class="perfil-menu" href="/perfil" aria-label="Abrir perfil">
+    <span id="avatarMenu" class="avatar-menu">👤</span>
+
+    <span>
+      <strong id="nomePerfilMenu">Perfil</strong>
+      <small>Perfil</small>
+    </span>
+  </a>
+
+  <div class="marca-portal">
       Casa do Croissant
       <small>Portal interno</small>
     </div>
@@ -3284,6 +3343,42 @@ const APP_HTML = `<!doctype html>
     return node.innerHTML;
   }
 
+  function atualizarAvatarMenu(avatar, nome) {
+  var destino = $('avatarMenu');
+
+  if (!destino) {
+    return;
+  }
+
+  if (avatar) {
+    destino.innerHTML = '';
+
+    var imagem = document.createElement('img');
+    imagem.src = avatar;
+    imagem.alt = 'Foto de perfil de ' + nome;
+
+    destino.appendChild(imagem);
+    return;
+  }
+
+  destino.textContent = '👤';
+}
+
+async function carregarPerfilNoMenu() {
+  try {
+    var dados = await request('/api/profile');
+
+    $('nomePerfilMenu').textContent = dados.user.username;
+
+    atualizarAvatarMenu(
+      dados.avatar,
+      dados.user.username
+    );
+  } catch {
+    // O portal continua funcionando mesmo se a foto não carregar.
+  }
+}
+
   function hasModule(id) {
     return sessionData &&
       sessionData.modules.some((module) => module.id === id);
@@ -3389,6 +3484,7 @@ const APP_HTML = `<!doctype html>
       'Bem-vindo, ' + data.user.username + '.';
 
     $('role').textContent = data.user.role;
+    carregarPerfilNoMenu();
 
     document
       .querySelectorAll('[data-module]')
