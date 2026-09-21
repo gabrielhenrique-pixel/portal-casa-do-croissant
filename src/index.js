@@ -1094,12 +1094,7 @@ async function validarTurnstile(request, env, token) {
 
     const resultado = await resposta.json();
 
-    return (
-      resposta.ok &&
-      resultado.success === true &&
-      resultado.action === 'login' &&
-      resultado.hostname === new URL(request.url).hostname
-    );
+    return resposta.ok && resultado.success === true;
   } catch (error) {
     console.error('Falha ao validar Turnstile:', error);
     return false;
