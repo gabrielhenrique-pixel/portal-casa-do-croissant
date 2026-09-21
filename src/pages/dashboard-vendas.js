@@ -715,20 +715,21 @@ export function dashboardVendasPage() {
       }
 
       function corMeta(valor) {
-        if (valor == null) {
-          return '#60738e';
-        }
+  if (valor == null) {
+    return '#60738e';
+  }
 
-        if (valor < .5) {
-          return '#e93d49';
-        }
+  // vermelho: 0% a 39% | amarelo: 39% a 61% | verde: acima de 61%.
+  if (valor < .39) {
+    return '#eb5560';
+  }
 
-        if (valor < .8) {
-          return '#df9400';
-        }
+  if (valor < .61) {
+    return '#df9400';
+  }
 
-        return '#15954f';
-      }
+  return '#15954f';
+}
 
       function angulo(valor) {
         valor = Math.max(0, Math.min(numero(valor), 1));
