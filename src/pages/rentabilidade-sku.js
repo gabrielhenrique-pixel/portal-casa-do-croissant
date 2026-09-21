@@ -414,8 +414,7 @@ export function rentabilidadeSkuPage() {
     <span>Data final</span>
     <input id="fim" name="fim" type="date" required>
   </label>
-
-  <button id="botaoAtualizar" type="submit">↻ ATUALIZAR DADOS</button>
+  
 </form>
 
     <p class="estado" id="estado" aria-live="polite">Carregando dados...</p>
@@ -461,7 +460,6 @@ export function rentabilidadeSkuPage() {
       var form = document.getElementById('formFiltros');
       var inicio = document.getElementById('inicio');
       var fim = document.getElementById('fim');
-      var botaoAtualizar = document.getElementById('botaoAtualizar');
       var estado = document.getElementById('estado');
       var linhasTabela = document.getElementById('linhasTabela');
       var quantidadeColunas = 25;
@@ -959,7 +957,6 @@ function prepararFiltrosColunas() {
           return;
         }
 
-        botaoAtualizar.disabled = true;
         mostrarEstado('Carregando dados de rentabilidade...');
 
         try {
@@ -989,14 +986,11 @@ function prepararFiltrosColunas() {
           renderizarTabela([]);
           mostrarEstado(erro.message || 'Não foi possível carregar os dados.', true);
         } finally {
-          botaoAtualizar.disabled = false;
         }
       }
 
-      form.addEventListener('submit', function(evento) {
-        evento.preventDefault();
-        carregarDados();
-      });
+      inicio.addEventListener('change', carregarDados);
+      fim.addEventListener('change', carregarDados);
 
       prepararFiltrosColunas();
       definirPeriodoInicial();
