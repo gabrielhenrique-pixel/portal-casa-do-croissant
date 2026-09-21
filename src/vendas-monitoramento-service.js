@@ -196,7 +196,9 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     0
   );
 
-  const totalMeta = metaEmpresa;
+  const totalMeta = vendedorSelecionado
+  ? metasPorVendedor.get(vendedorSelecionado) || 0
+  : metaEmpresa;
 
   return {
     inicio,
