@@ -259,7 +259,7 @@ export function dashboardVendasPage() {
       display:grid;
       grid-template-columns:repeat(2,1fr);
       gap:1px;
-      margin:5px 36px 0;
+      margin:22px 36px 0;
       background:#d7e1ed;
     }
 
