@@ -767,34 +767,6 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
   }
 }
 
-      if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
-  const acesso = await obterAcessoModulo(
-    request,
-    env,
-    'CLIENTES'
-  );
-
-  if (!acesso?.permissions.view) {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
-
-  try {
-    const clientes = await carregarClientesRentabilidade(env);
-
-    return json({
-      total: clientes.length,
-      redes: REDES_RENTABILIDADE,
-      clientes
-    });
-  } catch (error) {
-    console.error('Erro ao carregar clientes:', error);
-
-    return json({
-      error: error.message || 'Erro desconhecido ao carregar clientes.'
-    }, 500);
-  }
-}
-
 if (url.pathname === '/rentabilidade/clientes' && request.method === 'GET') {
   const permitido = await podeConsultarModulo(
     request,
