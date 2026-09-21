@@ -368,19 +368,6 @@ export function margemRedePage() {
   font-size:14px;
 }
 
-#atualizar {
-  min-height:39px;
-  padding:10px 18px;
-  background:#102e49;
-  color:#fff;
-  font-size:13px;
-  font-weight:700;
-}
-
-#atualizar:hover:not(:disabled) {
-  background:#1b4b7b;
-}
-
     @media (max-width:720px) {
       main { padding:12px 10px 24px; }
       .faixa-titulo { padding:16px; }
@@ -415,7 +402,6 @@ export function margemRedePage() {
     <input id="fim" type="date" required>
   </label>
 
-  <button id="atualizar" type="submit">↻ ATUALIZAR DADOS</button>
 </form>
     <p class="estado" id="estado" aria-live="polite">Carregando dados...</p>
     <div class="alertas" id="alertas" role="status"></div>
@@ -451,7 +437,6 @@ export function margemRedePage() {
       var estado = document.getElementById('estado');
       var alertas = document.getElementById('alertas');
       var linhasTabela = document.getElementById('linhasTabela');
-      var atualizar = document.getElementById('atualizar');
 
       function dataParaInput(data) {
         return [
@@ -653,8 +638,6 @@ function mostrarAlertas(dados) {
           return;
         }
 
-        atualizar.disabled = true;
-
         mostrarEstado('Carregando Margem_Rede...', false);
         alertas.className = 'alertas';
 
@@ -686,8 +669,7 @@ function mostrarAlertas(dados) {
             true
           );
                 } finally {
-          atualizar.disabled = false;
-        }
+              } 
       }
 
       form.addEventListener('submit', function(evento) {
