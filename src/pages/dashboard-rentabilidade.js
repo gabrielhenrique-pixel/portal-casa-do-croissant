@@ -1107,6 +1107,7 @@ function render(d) {
     $('estado').textContent = erro.message;
     $('estado').className = 'estado erro';
 }
+}
 
       function editar() {
         $('campoMeta').value = meta;
