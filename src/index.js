@@ -32,7 +32,11 @@ const MODULOS_ACESSO = [
   ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
   ['DEVOLUCOES', 'Painel de devoluções', 33],
   ['MARGEM_REDE', 'Margem por rede', 34],
-  ['RENTABILIDADE_SKU', 'Rentabilidade SKU', 35]
+  ['RENTABILIDADE_SKU', 'Rentabilidade SKU', 35],
+  ['USUARIOS', 'Usuários cadastrados', 10],
+  ['ACESSOS', 'Acessos', 11],
+  ['HISTORICO', 'Histórico de ações', 12],
+  ['INVESTIMENTOS_PENDENTES', 'Investimentos pendentes', 26]
 ];
 
 async function garantirModulosAcesso(env) {
@@ -131,9 +135,15 @@ export default {
             if (url.pathname === '/usuarios' && request.method === 'GET') {
         const session = await getSession(request, env);
 
-        if (!session || session.role !== 'Administrador') {
-          return redirectToPortal();
-        }
+        const permitido = await podeConsultarModulo(
+  request,
+  env,
+  'USUARIOS'
+);
+
+if (!permitido) {
+  return redirectToPortal();
+}
 
         return usuariosPage();
       }
@@ -141,9 +151,15 @@ export default {
       if (url.pathname === '/registro-usuario' && request.method === 'GET') {
         const session = await getSession(request, env);
 
-        if (!session || session.role !== 'Administrador') {
-          return redirectToPortal();
-        }
+        const acesso = await obterAcessoModulo(
+  request,
+  env,
+  'USUARIOS'
+);
+
+if (!acesso?.permissions.create) {
+  return redirectToPortal();
+}
 
         return registroUsuarioPage();
       }
@@ -180,9 +196,15 @@ export default {
       if (url.pathname === '/acessos' && request.method === 'GET') {
   const session = await getSession(request, env);
 
-  if (!session || session.role !== 'Administrador') {
-    return redirectToPortal();
-  }
+  const permitido = await podeConsultarModulo(
+  request,
+  env,
+  'ACESSOS'
+);
+
+if (!permitido) {
+  return redirectToPortal();
+}
 
   return acessosPage();
 }
@@ -208,12 +230,15 @@ if (acessoUsuarioMatch && request.method === 'DELETE') {
       if (url.pathname === '/historico-acoes' && request.method === 'GET') {
   const session = await getSession(request, env);
 
-  if (!session || session.role !== 'Administrador') {
-    return new Response(null, {
-      status: 302,
-      headers: { location: '/' }
-    });
-  }
+  const permitido = await podeConsultarModulo(
+  request,
+  env,
+  'HISTORICO'
+);
+
+if (!permitido) {
+  return redirectToPortal();
+}
 
   return historicoAcoesPage();
 }
@@ -286,11 +311,15 @@ if (
   url.pathname === '/api/vendas/monitoramento' &&
   request.method === 'GET'
 ) {
-  const session = await getSession(request, env);
+  const acesso = await obterAcessoModulo(
+  request,
+  env,
+  'DASHBOARD_VENDAS'
+);
 
-  if (!session || session.role !== 'Administrador') {
-    return json({ error: 'Acesso não autorizado.' }, 403);
-  }
+if (!acesso?.permissions.view) {
+  return json({ error: 'Acesso não autorizado.' }, 403);
+}
 
   try {
     const resultado = await listarMonitoramentoVendasSankhya(
@@ -984,8 +1013,31 @@ async function requireAdministrator(request, env) {
   return session;
 }
 
+async function requireModulePermission(
+  request,
+  env,
+  moduleId,
+  permission
+) {
+  const acesso = await obterAcessoModulo(request, env, moduleId);
+
+  if (!acesso?.permissions?.[permission]) {
+    throw new Response(
+      JSON.stringify({ error: 'Acesso não autorizado.' }),
+      { status: 403 }
+    );
+  }
+
+  return acesso.session;
+}
+
 async function listUsers(request, env) {
-  await requireAdministrator(request, env);
+  await requireModulePermission(
+    request,
+    env,
+    'USUARIOS',
+    'view'
+  );
   const result = await env.DB.prepare(
     `SELECT users.id, users.username, users.email, users.role, users.created_at,
        COUNT(user_module_permissions.module_id) AS permission_count
@@ -998,7 +1050,12 @@ async function listUsers(request, env) {
 }
 
 async function createUser(request, env) {
-  const administrator = await requireAdministrator(request, env);
+  const administrator = await requireModulePermission(
+    request,
+    env,
+    'USUARIOS',
+    'create'
+  );
   const data = await bodyAsJson(request);
   const username = normalizeUsername(data.username);
   const email = normalizeEmail(data.email);
@@ -1034,7 +1091,12 @@ async function createUser(request, env) {
 }
 
 async function userPermissions(request, env, userId) {
-  await requireAdministrator(request, env);
+  await requireModulePermission(
+    request,
+    env,
+    'ACESSOS',
+    'configure'
+  );
   const user = await env.DB.prepare('SELECT id, username, role FROM users WHERE id = ?').bind(userId).first();
   if (!user) return json({ error: 'Usuário não encontrado.' }, 404);
   const result = await env.DB.prepare(
@@ -1054,7 +1116,12 @@ async function userPermissions(request, env, userId) {
 }
 
 async function updateUser(request, env, userId) {
-  const administrator = await requireAdministrator(request, env);
+  const administrator = await requireModulePermission(
+    request,
+    env,
+    'USUARIOS',
+    'update'
+  );
 
   const targetUser = await env.DB.prepare(
     'SELECT id, username, email, role FROM users WHERE id = ?'
@@ -1123,7 +1190,12 @@ async function updateUser(request, env, userId) {
 }
 
 async function deleteUser(request, env, userId) {
-  const administrator = await requireAdministrator(request, env);
+  const administrator = await requireModulePermission(
+    request,
+    env,
+    'USUARIOS',
+    'delete'
+  );
 
   const targetUser = await env.DB.prepare(
     'SELECT id, username, role FROM users WHERE id = ?'
@@ -1199,7 +1271,12 @@ async function saveUserPermissions(request, env, userId) {
 
 async function carregarAcessos(request, env) {
   await garantirModulosAcesso(env);
-  await requireAdministrator(request, env);
+  await requireModulePermission(
+    request,
+    env,
+    'ACESSOS',
+    'view'
+  );
 
   const resultados = await Promise.all([
     env.DB.prepare(
@@ -1229,7 +1306,12 @@ async function carregarAcessos(request, env) {
 
 async function salvarAcessos(request, env) {
   await garantirModulosAcesso(env);
-  const administrator = await requireAdministrator(request, env);
+  const administrator = await requireModulePermission(
+  request,
+  env,
+  'ACESSOS',
+  'configure'
+);
   const data = await bodyAsJson(request);
 
   const userIds = Array.isArray(data.userIds)
@@ -1345,7 +1427,12 @@ async function salvarAcessos(request, env) {
 }
 
 async function removerAcessosDosUsuarios(request, env) {
-  const administrator = await requireAdministrator(request, env);
+  const administrator = await requireModulePermission(
+  request,
+  env,
+  'ACESSOS',
+  'configure'
+);
   const data = await bodyAsJson(request);
 
   const userIds = Array.isArray(data.userIds)
@@ -1396,7 +1483,12 @@ async function removerAcessosDosUsuarios(request, env) {
 }
 
 async function removerAcessosDoUsuario(request, env, userId) {
-  const administrator = await requireAdministrator(request, env);
+  const administrator = await requireModulePermission(
+  request,
+  env,
+  'ACESSOS',
+  'configure'
+);
 
   const usuario = await env.DB.prepare(
     'SELECT id, username, role FROM users WHERE id = ?'
