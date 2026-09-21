@@ -1,4 +1,5 @@
 import { paginaInicialPage } from './pages/pagina-inicial.js';
+import { perfilPage } from './pages/perfil.js';
 import { investimentosPage } from './pages/investimentos.js';
 import { investimentosListaPage } from './pages/investimentos-lista.js';
 import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
@@ -95,6 +96,16 @@ if (
   request.method === 'PUT'
 ) {
   return alterarSenhaDoPerfil(request, env);
+}
+
+      if (url.pathname === '/perfil' && request.method === 'GET') {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return redirectToPortal();
+  }
+
+  return perfilPage();
 }
 
       if (url.pathname === '/investimentos' && request.method === 'GET') {
