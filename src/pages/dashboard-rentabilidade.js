@@ -134,10 +134,11 @@ export function dashboardRentabilidadePage() {
     }
 
     .cards {
-      display:grid;
-      grid-template-columns:repeat(6,minmax(122px,1fr));
-      gap:7px;
-    }
+     display:grid;
+     grid-template-columns:repeat(6,minmax(122px,1fr));
+     gap:7px;
+     margin-top:14px;
+   }
 
     .card {
       display:grid;
