@@ -1115,9 +1115,9 @@ const turnstileValido = await validarTurnstile(
 
 if (!turnstileValido) {
   return json(
-    { error: 'Confirme a verificação de segurança e tente novamente.' },
-    403
-  );
+  { code: 'TURNSTILE_INVALIDO' },
+  403
+);
 }
 
 await garantirTabelaProtecaoLogin(env);
@@ -3589,10 +3589,14 @@ window.addEventListener(
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(
-        data.error || 'Não foi possível concluir esta ação.'
-      );
-    }
+  const erro = new Error(
+    data.error || 'Não foi possível concluir esta ação.'
+  );
+
+  erro.code = data.code || '';
+
+  throw erro;
+}
 
     return data;
   }
@@ -3985,6 +3989,8 @@ button.disabled = true;
     button.classList.add('entrando');
     button.textContent = 'Entrando...';
 
+let aguardandoNovoToken = false;
+
     try {
       await request('/api/login', {
         method: 'POST',
@@ -3997,14 +4003,29 @@ button.disabled = true;
 
       await loadSession();
     } catch (err) {
-      error('loginError', err.message);
+  if (err.code === 'TURNSTILE_INVALIDO') {
+    loginAguardandoTurnstile = true;
+    aguardandoNovoToken = true;
+
+    if (window.turnstile) {
+      window.turnstile.reset();
+    }
+
+    return;
+  }
+
+  error('loginError', err.message);
       if (window.turnstile) {
         window.turnstile.reset();
       }
     } finally {
-      button.disabled = false;
-      button.classList.remove('entrando');
-      button.textContent = '↪ Entrar';
+      if (aguardandoNovoToken) {
+  return;
+}
+
+button.disabled = false;
+button.classList.remove('entrando');
+button.textContent = '↪ Entrar';
     }
   });
 
