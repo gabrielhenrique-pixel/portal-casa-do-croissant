@@ -3220,6 +3220,7 @@ const APP_HTML = `<!doctype html>
   class="cf-turnstile"
   data-sitekey="0x4AAAAAAE_LBGpATur3btRW"
   data-theme="light"
+  data-appearance="interaction-only"
   data-action="login"
 ></div>
 
