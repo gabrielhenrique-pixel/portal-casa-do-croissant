@@ -3228,7 +3228,6 @@ const APP_HTML = `<!doctype html>
   class="cf-turnstile"
   data-sitekey="0x4AAAAAAE_LBGpATur3btRW"
   data-theme="light"
-  data-appearance="interaction-only"
   data-action="login"
   data-callback="turnstileLoginPronto"
 ></div>
@@ -3545,12 +3544,6 @@ window.addEventListener(
     if (!token) return;
 
     loginAguardandoTurnstile = false;
-
-    const button = $('loginButton');
-
-    button.disabled = false;
-    button.classList.remove('entrando');
-    button.textContent = '↪ Entrar';
 
     $('formLogin').requestSubmit();
   }
@@ -3982,12 +3975,8 @@ if (!turnstileToken) {
   loginAguardandoTurnstile = true;
 
   button.disabled = true;
-  button.textContent = 'Verificando segurança...';
-
-  error(
-    'loginError',
-    'Aguarde a verificação de segurança.'
-  );
+  button.classList.add('entrando');
+  button.textContent = 'Entrando...';
 
   return;
 }
