@@ -87,6 +87,33 @@ export function perfilPage() {
       text-align:center;
     }
 
+    .avatar-wrap {
+  position:relative;
+}
+
+.remover-foto {
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  display:grid;
+  width:31px;
+  height:31px;
+  place-items:center;
+  border:2px solid #fff;
+  border-radius:50%;
+  background:#b42318;
+  color:#fff;
+  font-size:22px;
+  font-weight:700;
+  line-height:1;
+  cursor:pointer;
+  box-shadow:0 3px 8px #0003;
+}
+
+.remover-foto:hover {
+  background:#8f1c14;
+}
+
     .avatar {
       display:grid;
       width:150px;
@@ -224,6 +251,40 @@ export function perfilPage() {
       display:none;
     }
 
+    .modal-senha {
+  position:fixed;
+  z-index:20;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:#102e4970;
+}
+
+.modal-senha[hidden] {
+  display:none;
+}
+
+.caixa-senha {
+  position:relative;
+  width:min(100%,480px);
+  padding:28px;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 18px 50px #0005;
+}
+
+.fechar-senha {
+  position:absolute;
+  top:12px;
+  right:14px;
+  border:0;
+  background:transparent;
+  color:#476658;
+  font-size:27px;
+  cursor:pointer;
+}
+
     @media (max-width:650px) {
       main {
         width:min(100% - 24px,900px);
@@ -252,13 +313,25 @@ export function perfilPage() {
 
       <div>
         <h1>Perfil</h1>
-        <p class="subtitulo">Gerencie sua foto e senha de acesso.</p>
+        <p class="subtitulo">Gerencie seu perfil.</p>
       </div>
     </header>
 
     <section class="perfil-card">
       <aside class="foto-area">
-        <div id="avatar" class="avatar" aria-label="Foto de perfil">👤</div>
+        <div class="avatar-wrap">
+  <div id="avatar" class="avatar" aria-label="Foto de perfil">👤</div>
+
+  <button
+    id="removerFoto"
+    class="remover-foto"
+    type="button"
+    aria-label="Remover foto de perfil"
+    hidden
+  >
+    ×
+  </button>
+</div>
 
         <input
           id="arquivoFoto"
@@ -280,47 +353,75 @@ export function perfilPage() {
 
         <div class="linha"></div>
 
-        <h2>Alterar senha</h2>
-        <p class="descricao">
-          Informe sua senha atual e escolha uma nova senha com ao menos 8 caracteres.
-        </p>
+        <h2>Segurança</h2>
 
-        <form id="formSenha">
-          <label for="senhaAtual">Senha atual</label>
-          <input
-            id="senhaAtual"
-            type="password"
-            autocomplete="current-password"
-            required
-          >
+<p class="descricao">
+  Altere sua senha quando necessário.
+</p>
 
-          <label for="novaSenha">Nova senha</label>
-          <input
-            id="novaSenha"
-            type="password"
-            autocomplete="new-password"
-            minlength="8"
-            required
-          >
-
-          <label for="confirmarSenha">Confirmar nova senha</label>
-          <input
-            id="confirmarSenha"
-            type="password"
-            autocomplete="new-password"
-            minlength="8"
-            required
-          >
-
-          <button class="salvar" type="submit">Salvar nova senha</button>
-        </form>
+<button id="abrirSenha" class="salvar" type="button">
+  Alterar senha
+</button>
 
         <p id="mensagem" class="mensagem" role="alert"></p>
       </section>
     </section>
   </main>
 
-  <script>
+<div id="modalSenha" class="modal-senha" hidden>
+  <section class="caixa-senha" role="dialog" aria-modal="true">
+    <button
+      id="fecharSenha"
+      class="fechar-senha"
+      type="button"
+      aria-label="Fechar"
+    >
+      ×
+    </button>
+
+    <h2>Alterar senha</h2>
+
+    <p class="descricao">
+      Informe sua senha atual e escolha uma nova senha.
+    </p>
+
+    <form id="formSenha">
+      <label for="senhaAtual">Senha atual</label>
+      <input
+        id="senhaAtual"
+        type="password"
+        autocomplete="current-password"
+        required
+      >
+
+      <label for="novaSenha">Nova senha</label>
+      <input
+        id="novaSenha"
+        type="password"
+        autocomplete="new-password"
+        minlength="8"
+        required
+      >
+
+      <label for="confirmarSenha">Confirmar nova senha</label>
+      <input
+        id="confirmarSenha"
+        type="password"
+        autocomplete="new-password"
+        minlength="8"
+        required
+      >
+
+      <button class="salvar" type="submit">
+        Salvar nova senha
+      </button>
+    </form>
+
+    <p id="mensagemSenha" class="mensagem" role="alert"></p>
+  </section>
+</div>
+
+<script>
     (function() {
       var avatar = document.getElementById('avatar');
       var arquivoFoto = document.getElementById('arquivoFoto');
@@ -353,17 +454,21 @@ export function perfilPage() {
       }
 
       function mostrarAvatar(imagem, nome) {
-        if (imagem) {
-          avatar.innerHTML = '';
-          var foto = document.createElement('img');
-          foto.src = imagem;
-          foto.alt = 'Foto de perfil de ' + nome;
-          avatar.appendChild(foto);
-          return;
-        }
+  document.getElementById('removerFoto').hidden = !imagem;
 
-        avatar.textContent = '👤';
-      }
+  if (imagem) {
+    avatar.innerHTML = '';
+
+    var foto = document.createElement('img');
+    foto.src = imagem;
+    foto.alt = 'Foto de perfil de ' + nome;
+
+    avatar.appendChild(foto);
+    return;
+  }
+
+  avatar.textContent = '👤';
+}
 
       function lerImagem(arquivo) {
         return new Promise(function(resolve, reject) {
@@ -427,6 +532,36 @@ export function perfilPage() {
           arquivoFoto.click();
         });
 
+        document
+  .getElementById('removerFoto')
+  .addEventListener('click', async function() {
+    var confirmar = window.confirm(
+      'Deseja realmente remover sua foto de perfil?'
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+      mostrarMensagem('Removendo foto...');
+
+      await requisicao('/api/profile/avatar', {
+        method:'PUT',
+        body:JSON.stringify({ avatar:null })
+      });
+
+      mostrarAvatar(
+        null,
+        document.getElementById('nome').textContent
+      );
+
+      mostrarMensagem('Foto removida com sucesso.', 'sucesso');
+    } catch (erro) {
+      mostrarMensagem(erro.message, 'erro');
+    }
+  });
+
       arquivoFoto.addEventListener('change', async function() {
         try {
           mostrarMensagem('Salvando foto...');
@@ -451,30 +586,57 @@ export function perfilPage() {
         }
       });
 
-      document
-        .getElementById('formSenha')
-        .addEventListener('submit', async function(evento) {
-          evento.preventDefault();
+      var modalSenha = document.getElementById('modalSenha');
+var formSenha = document.getElementById('formSenha');
+var mensagemSenha = document.getElementById('mensagemSenha');
 
-          try {
-            mostrarMensagem('Salvando nova senha...');
+function fecharModalSenha() {
+  modalSenha.hidden = true;
+  formSenha.reset();
+  mensagemSenha.textContent = '';
+  mensagemSenha.className = 'mensagem';
+}
 
-            await requisicao('/api/profile/password', {
-              method:'PUT',
-              body:JSON.stringify({
-                senhaAtual:document.getElementById('senhaAtual').value,
-                novaSenha:document.getElementById('novaSenha').value,
-                confirmarSenha:document.getElementById('confirmarSenha').value
-              })
-            });
+document
+  .getElementById('abrirSenha')
+  .addEventListener('click', function() {
+    modalSenha.hidden = false;
+    document.getElementById('senhaAtual').focus();
+  });
 
-            evento.target.reset();
-            mostrarMensagem('Senha alterada com sucesso.', 'sucesso');
-          } catch (erro) {
-            mostrarMensagem(erro.message, 'erro');
-          }
-        });
+document
+  .getElementById('fecharSenha')
+  .addEventListener('click', fecharModalSenha);
 
+modalSenha.addEventListener('click', function(evento) {
+  if (evento.target === modalSenha) {
+    fecharModalSenha();
+  }
+});
+
+formSenha.addEventListener('submit', async function(evento) {
+  evento.preventDefault();
+
+  try {
+    mensagemSenha.textContent = 'Salvando nova senha...';
+    mensagemSenha.className = 'mensagem';
+
+    await requisicao('/api/profile/password', {
+      method:'PUT',
+      body:JSON.stringify({
+        senhaAtual:document.getElementById('senhaAtual').value,
+        novaSenha:document.getElementById('novaSenha').value,
+        confirmarSenha:document.getElementById('confirmarSenha').value
+      })
+    });
+
+    fecharModalSenha();
+    mostrarMensagem('Senha alterada com sucesso.', 'sucesso');
+  } catch (erro) {
+    mensagemSenha.textContent = erro.message;
+    mensagemSenha.className = 'mensagem erro';
+  }
+});
       carregarPerfil().catch(function(erro) {
         mostrarMensagem(erro.message, 'erro');
       });
