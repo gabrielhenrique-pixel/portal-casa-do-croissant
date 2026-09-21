@@ -79,6 +79,24 @@ export default {
         return currentUser(request, env);
       }
 
+      if (url.pathname === '/api/profile' && request.method === 'GET') {
+  return carregarPerfil(request, env);
+}
+
+if (
+  url.pathname === '/api/profile/avatar' &&
+  request.method === 'PUT'
+) {
+  return salvarAvatarPerfil(request, env);
+}
+
+if (
+  url.pathname === '/api/profile/password' &&
+  request.method === 'PUT'
+) {
+  return alterarSenhaDoPerfil(request, env);
+}
+
       if (url.pathname === '/investimentos' && request.method === 'GET') {
   const acesso = await obterAcessoModulo(
     request,
@@ -1002,6 +1020,164 @@ async function currentUser(request, env) {
     },
     modules
   });
+}
+
+async function garantirTabelaPerfil(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS user_profiles (
+      user_id TEXT PRIMARY KEY,
+      avatar_data TEXT,
+      updated_at TEXT NOT NULL
+    )`
+  ).run();
+}
+
+async function carregarPerfil(request, env) {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return json({ error: 'Sessão não encontrada.' }, 401);
+  }
+
+  await garantirTabelaPerfil(env);
+
+  const perfil = await env.DB.prepare(
+    `SELECT avatar_data
+     FROM user_profiles
+     WHERE user_id = ?`
+  ).bind(session.user_id).first();
+
+  return json({
+    user: {
+      id: session.user_id,
+      username: session.username,
+      email: session.email,
+      role: session.role
+    },
+    avatar: perfil?.avatar_data || null
+  });
+}
+
+async function salvarAvatarPerfil(request, env) {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return json({ error: 'Sessão não encontrada.' }, 401);
+  }
+
+  const dados = await bodyAsJson(request);
+  const avatar = dados.avatar === null
+    ? null
+    : String(dados.avatar || '');
+
+  const imagemValida =
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i;
+
+  if (avatar && !imagemValida.test(avatar)) {
+    return json(
+      { error: 'Envie uma imagem JPG, PNG ou WebP válida.' },
+      400
+    );
+  }
+
+  if (avatar.length > 650000) {
+    return json(
+      { error: 'A foto é muito grande. Escolha uma imagem menor.' },
+      400
+    );
+  }
+
+  await garantirTabelaPerfil(env);
+
+  await env.DB.prepare(
+    `INSERT INTO user_profiles (
+      user_id,
+      avatar_data,
+      updated_at
+    )
+    VALUES (?, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET
+      avatar_data = excluded.avatar_data,
+      updated_at = excluded.updated_at`
+  ).bind(
+    session.user_id,
+    avatar || null,
+    new Date().toISOString()
+  ).run();
+
+  await writeAudit(
+    env,
+    session.username,
+    'FOTO_PERFIL_ATUALIZADA',
+    avatar ? 'Foto de perfil atualizada.' : 'Foto de perfil removida.'
+  );
+
+  return json({ avatar: avatar || null });
+}
+
+async function alterarSenhaDoPerfil(request, env) {
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return json({ error: 'Sessão não encontrada.' }, 401);
+  }
+
+  const dados = await bodyAsJson(request);
+  const senhaAtual = String(dados.senhaAtual || '');
+  const novaSenha = String(dados.novaSenha || '');
+  const confirmarSenha = String(dados.confirmarSenha || '');
+
+  const usuario = await env.DB.prepare(
+    `SELECT password_hash, password_salt, password_algorithm
+     FROM users
+     WHERE id = ?`
+  ).bind(session.user_id).first();
+
+  if (!usuario || !(await verifyPassword(senhaAtual, usuario))) {
+    return json({ error: 'A senha atual está incorreta.' }, 400);
+  }
+
+  if (novaSenha.length < 8) {
+    return json(
+      { error: 'A nova senha precisa ter pelo menos 8 caracteres.' },
+      400
+    );
+  }
+
+  if (novaSenha !== confirmarSenha) {
+    return json(
+      { error: 'A confirmação da nova senha não confere.' },
+      400
+    );
+  }
+
+  const salt = randomToken(16);
+  const passwordHash = await hashPassword(novaSenha, salt);
+
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE users
+       SET password_hash = ?,
+           password_salt = ?,
+           password_algorithm = 'pbkdf2-sha256'
+       WHERE id = ?`
+    ).bind(passwordHash, salt, session.user_id),
+
+    env.DB.prepare(
+      `DELETE FROM sessions
+       WHERE user_id = ?
+         AND id <> ?`
+    ).bind(session.user_id, session.id)
+  ]);
+
+  await writeAudit(
+    env,
+    session.username,
+    'SENHA_ALTERADA',
+    'O próprio usuário alterou sua senha.'
+  );
+
+  return json({ ok: true });
 }
 
 async function requireAdministrator(request, env) {
