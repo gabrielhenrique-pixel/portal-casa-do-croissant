@@ -1071,12 +1071,61 @@ async function limparFalhasLogin(env, attemptKey) {
   ).bind(attemptKey).run();
 }
 
+async function validarTurnstile(request, env, token) {
+  if (!env.TURNSTILE_SECRET_KEY || !token || token.length > 2048) {
+    return false;
+  }
+
+  try {
+    const resposta = await fetch(
+      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          secret: env.TURNSTILE_SECRET_KEY,
+          response: token,
+          remoteip: request.headers.get('CF-Connecting-IP') || ''
+        })
+      }
+    );
+
+    const resultado = await resposta.json();
+
+    return (
+      resposta.ok &&
+      resultado.success === true &&
+      resultado.action === 'login' &&
+      resultado.hostname === new URL(request.url).hostname
+    );
+  } catch (error) {
+    console.error('Falha ao validar Turnstile:', error);
+    return false;
+  }
+}
+
 async function login(request, env) {
   const data = await bodyAsJson(request);
   const username = normalizeUsername(data.username);
   const password = String(data.password || '');
+const turnstileToken = String(data.turnstileToken || '');
 
-  await garantirTabelaProtecaoLogin(env);
+const turnstileValido = await validarTurnstile(
+  request,
+  env,
+  turnstileToken
+);
+
+if (!turnstileValido) {
+  return json(
+    { error: 'Confirme a verificação de segurança e tente novamente.' },
+    403
+  );
+}
+
+await garantirTabelaProtecaoLogin(env);
 
   const attemptKey = await chaveTentativaLogin(
     request,
@@ -2495,6 +2544,12 @@ const APP_HTML = `<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Portal Casa do Croissant</title>
 
+  <script
+  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+  async
+  defer
+></script>
+
   <style>
     :root {
       color-scheme: light;
@@ -3129,10 +3184,57 @@ const APP_HTML = `<!doctype html>
     <section id="login" class="tela-login">
       <form id="formLogin" class="cartao-login">
         <h1>Acesso Portal</h1>
-        <img class="logo-login" src="https://drive.google.com/thumbnail?id=1Y3rY3y3t4C636I2snLRVWHcNv4JZEaQt&sz=w1000" alt="Casa do Croissant">
-        <div class="campo-login"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"></path></svg></span><input id="username" placeholder="Usuário" autocomplete="username" required></div>
-        <div class="campo-login"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v10h14V10a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4V6zm3 9.73V18h-2v-2.27A2 2 0 1 1 13 15.73z"></path></svg></span><input id="password" type="password" placeholder="Senha" autocomplete="current-password" required></div>
-        <button id="loginButton" class="botao-entrar" type="submit">↪ Entrar</button>
+        <img
+  class="logo-login"
+  src="https://drive.google.com/thumbnail?id=1Y3rY3y3t4C636I2snLRVWHcNv4JZEaQt&sz=w1000"
+  alt="Casa do Croissant"
+>
+
+<div class="campo-login">
+  <span>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"></path>
+    </svg>
+  </span>
+
+  <input
+    id="username"
+    placeholder="Usuário"
+    autocomplete="username"
+    required
+  >
+</div>
+
+<div class="campo-login">
+  <span>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M17 8h-1V6a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v10h14V10a2 2 0 0 0-2-2zm-7-2a2 2 0 0 1 4 0v2h-4V6zm3 9.73V18h-2v-2.27A2 2 0 1 1 13 15.73z"></path>
+    </svg>
+  </span>
+
+  <input
+    id="password"
+    type="password"
+    placeholder="Senha"
+    autocomplete="current-password"
+    required
+  >
+</div>
+
+<div
+  class="cf-turnstile"
+  data-sitekey="0x4AAAAAAE_LBGpATur3btRW"
+  data-theme="light"
+  data-action="login"
+></div>
+
+<button
+  id="loginButton"
+  class="botao-entrar"
+  type="submit"
+>
+  ↪ Entrar
+</button>
         <button id="forgotPassword" type="button" class="link-recuperar">Esqueci minha senha</button>
         <button id="setupLink" type="button" class="link oculto">Configurar primeiro acesso</button>
         <div id="loginError" class="mensagem" role="alert"></div>
@@ -3850,14 +3952,21 @@ async function carregarPerfilNoMenu() {
       await request('/api/login', {
         method: 'POST',
         body: JSON.stringify({
-          username: $('username').value,
-          password: $('password').value
-        })
+         username: $('username').value,
+         password: $('password').value,
+         turnstileToken:
+           document.querySelector(
+            '[name="cf-turnstile-response"]'
+           )?.value || ''
+         })
       });
 
       await loadSession();
     } catch (err) {
       error('loginError', err.message);
+      if (window.turnstile) {
+        window.turnstile.reset();
+      }
     } finally {
       button.disabled = false;
       button.classList.remove('entrando');
