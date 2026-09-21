@@ -912,6 +912,12 @@ export function dashboardRentabilidadePage() {
         var h = '';
 
         redes.forEach(function(r) {
+            if (
+      n(r.faturamentoBruto) === 0 &&
+      n(r.devolucoes) === 0
+    ) {
+      return;
+    }
           h += '<tr>' +
             '<td>' + esc(r.rede) + '</td>' +
             '<td>' + fmt(r.faturamentoBruto) + '</td>' +
