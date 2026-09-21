@@ -1091,7 +1091,7 @@ async function salvarAvatarPerfil(request, env) {
     );
   }
 
-  if (avatar.length > 650000) {
+  if (avatar && avatar.length > 650000) {
     return json(
       { error: 'A foto é muito grande. Escolha uma imagem menor.' },
       400
