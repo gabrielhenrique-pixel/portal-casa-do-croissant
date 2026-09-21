@@ -122,24 +122,6 @@ export function dashboardRentabilidadePage() {
       cursor:pointer;
     }
 
-    #atualizar {
-      min-height:39px;
-      padding:10px 18px;
-      background:var(--navy);
-      color:#fff;
-      font-size:13px;
-      font-weight:700;
-    }
-
-    #atualizar:hover {
-      background:#1b4b7b;
-    }
-
-    #atualizar:disabled {
-      opacity:.7;
-      cursor:wait;
-    }
-
     .estado {
       min-height:0px;
       margin:0px;
@@ -671,7 +653,6 @@ export function dashboardRentabilidadePage() {
         <input id="fim" type="date" required>
       </label>
 
-      <button id="atualizar" type="submit">↻ ATUALIZAR DADOS</button>
     </form>
 
     <p id="estado" class="estado">Carregando dados...</p>
@@ -1048,7 +1029,6 @@ function render(d) {
       async function carregar() {
   var inicio = $('inicio').value;
   var fim = $('fim').value;
-  var botao = $('atualizar');
 
   if (!inicio || !fim) {
     return;
@@ -1071,8 +1051,7 @@ function render(d) {
 
   var inicioMesAtual = dataIso(primeiroDiaMes);
   var fimMesAtual = dataIso(hoje);
-
-  botao.disabled = true;
+  
   $('estado').textContent = 'Calculando rentabilidade...';
 
   try {
@@ -1127,9 +1106,6 @@ function render(d) {
   } catch (erro) {
     $('estado').textContent = erro.message;
     $('estado').className = 'estado erro';
-  } finally {
-    botao.disabled = false;
-  }
 }
 
       function editar() {
@@ -1187,10 +1163,8 @@ function render(d) {
 
       $('fim').value = iso(hoje);
 
-      $('filtros').addEventListener('submit', function(evento) {
-        evento.preventDefault();
-        carregar();
-      });
+      $('inicio').addEventListener('change', carregar);
+$('fim').addEventListener('change', carregar);
 
       $('editarMeta').addEventListener('click', editar);
       $('salvarMeta').addEventListener('click', salvar);
