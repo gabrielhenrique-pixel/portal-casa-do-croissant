@@ -7,189 +7,227 @@ export function investimentosPendentesPage() {
   <title>Investimentos pendentes | Casa do Croissant</title>
 
   <style>
-    :root {
-      --verde-escuro:#123d2d;
-      --verde:#1b744d;
-      --fundo:#f6f8f7;
-      --texto:#183128;
-      --vermelho:#b42318;
-    }
+  :root {
+    --navy:#102e49;
+    --blue:#1f4e78;
+    --bg:#f5f7f6;
+    --ink:#142b3d;
+    --border:#d5e0e8;
+    --muted:#63716e;
+    --red:#b42318;
+  }
 
-    * {
-      box-sizing:border-box;
-    }
+  * { box-sizing:border-box; }
 
-    body {
-      margin:0;
-      min-height:100vh;
-      font-family:Arial,sans-serif;
-      color:var(--texto);
-      background:var(--fundo);
-    }
+  body {
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,sans-serif;
+  }
 
-    main {
-      max-width:1300px;
-      margin:auto;
-      padding:38px;
-    }
+  main {
+    max-width:1440px;
+    margin:auto;
+    padding:8px 8px 38px;
+  }
+
+  .topo {
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:18px 34px;
+    border-radius:18px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 8px 22px #1730521c;
+  }
+
+  .navegacao-topo {
+    display:flex;
+    flex-shrink:0;
+    gap:8px;
+  }
+
+  .nav-icone {
+    display:grid;
+    width:48px;
+    height:48px;
+    place-items:center;
+    border-radius:50%;
+    background:#fff;
+    color:var(--navy);
+    font-size:25px;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 5px 15px #1730521c;
+    transition:transform .15s,background .15s;
+  }
+
+  .nav-icone:hover {
+    background:#edf3f9;
+    transform:translateY(-2px);
+  }
+
+  .marca h1 {
+    margin:0;
+    color:var(--navy);
+    font-size:30px;
+  }
+
+  .subtitulo {
+    margin:5px 0 0;
+    color:var(--muted);
+    font-size:16px;
+  }
+
+  .mensagem {
+    display:none;
+    margin:16px 0 0;
+    padding:12px 14px;
+    border-radius:8px;
+    font-size:14px;
+  }
+
+  .mensagem.erro {
+    display:block;
+    border:1px solid #f3c9c5;
+    background:#fdecec;
+    color:var(--red);
+  }
+
+  .tabela-area {
+    margin-top:16px;
+    overflow-x:auto;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:#fff;
+    box-shadow:0 6px 18px #17305214;
+  }
+
+  table {
+    width:100%;
+    min-width:1060px;
+    border-collapse:collapse;
+  }
+
+  th,
+  td {
+    padding:13px 12px;
+    border-bottom:1px solid #e2e9ee;
+    text-align:left;
+    font-size:13px;
+  }
+
+  th {
+    background:var(--navy);
+    color:#fff;
+    font-size:11px;
+    text-transform:uppercase;
+  }
+
+  tbody tr:hover { background:#f5f9fc; }
+
+  td.valor {
+    color:#17476d;
+    font-weight:700;
+    white-space:nowrap;
+  }
+
+  .acao {
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .acao input {
+    width:120px;
+    height:38px;
+    padding:0 10px;
+    border:1px solid #c6d4e4;
+    border-radius:7px;
+    color:var(--ink);
+    font:inherit;
+    outline:none;
+  }
+
+  .acao input:focus {
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px #1f4e7820;
+  }
+
+  .confirmar {
+    padding:10px 12px;
+    border:0;
+    border-radius:7px;
+    background:var(--navy);
+    color:#fff;
+    cursor:pointer;
+    font:inherit;
+    font-size:13px;
+    font-weight:700;
+  }
+
+  .confirmar:hover { background:var(--blue); }
+
+  .confirmar:disabled {
+    opacity:.65;
+    cursor:wait;
+  }
+
+  .vazio {
+    display:none;
+    padding:34px;
+    color:var(--muted);
+    text-align:center;
+  }
+
+  .vazio.visivel { display:block; }
+
+  @media (max-width:700px) {
+    main { padding:4px 6px 28px; }
 
     .topo {
-      display:flex;
-      align-items:center;
-      gap:16px;
-      margin-bottom:26px;
+      gap:12px;
+      padding:16px;
     }
 
-    .voltar {
-      display:grid;
-      width:48px;
-      height:48px;
-      place-items:center;
-      flex:0 0 48px;
-      border-radius:50%;
-      background:#0d4b2b;
-      color:#fff;
-      text-decoration:none;
-      font-size:26px;
-      font-weight:700;
+    .nav-icone {
+      width:42px;
+      height:42px;
+      font-size:22px;
     }
 
-    .voltar:hover {
-      background:#25724d;
-    }
+    .marca h1 { font-size:23px; }
 
-    h1 {
-      margin:0;
-      font-size:27px;
-    }
+    .subtitulo { font-size:14px; }
 
-    .subtitulo {
-      margin:5px 0 0;
-      color:#66746d;
-    }
-
-    .mensagem {
-      display:none;
-      margin:0 0 16px;
-      padding:12px 14px;
-      border-radius:7px;
-      font-size:14px;
-    }
-
-    .mensagem.erro {
-      display:block;
-      background:#fdecec;
-      color:var(--vermelho);
-    }
-
-    .tabela-area {
-      overflow-x:auto;
-      border:1px solid #dce8e1;
-      border-radius:12px;
-      background:#fff;
-    }
-
-    table {
-      width:100%;
-      min-width:1060px;
-      border-collapse:collapse;
-    }
-
-    th,
-    td {
-      padding:12px;
-      border-bottom:1px solid #e5ece8;
-      text-align:left;
-      font-size:14px;
-    }
-
-    th {
-      background:#eef6f1;
-      color:#123d2d;
-    }
-
-    td.valor {
-      color:#17476d;
-      font-weight:700;
-      white-space:nowrap;
-    }
-
-    .acao {
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    .acao input {
-      width:120px;
-      padding:8px;
-      border:1px solid #9ebbae;
-      border-radius:6px;
-      color:#183128;
-      font:inherit;
-    }
-
-    .confirmar {
-      padding:9px 12px;
-      border:0;
-      border-radius:6px;
-      background:var(--verde);
-      color:#fff;
-      cursor:pointer;
-      font:inherit;
-      font-size:13px;
-      font-weight:700;
-    }
-
-    .confirmar:hover {
-      background:#125d3b;
-    }
-
-    .confirmar:disabled {
-      opacity:.65;
-      cursor:wait;
-    }
-
-    .vazio {
-      display:none;
-      padding:34px;
-      color:#66746d;
-      text-align:center;
-    }
-
-    .vazio.visivel {
-      display:block;
-    }
-
-    @media (max-width:700px) {
-      main {
-        padding:24px 16px;
-      }
-
-      h1 {
-        font-size:22px;
-      }
-    }
-  </style>
+    .tabela-area { border-radius:14px; }
+  }
+</style>
 </head>
 
 <body>
   <main>
     <div class="topo">
-      <a
-        class="voltar"
-        href="/"
-        onclick="if (window.history.length > 1) { window.history.back(); return false; }"
-        aria-label="Voltar ao portal"
-      >↩</a>
+  <div class="navegacao-topo">
+    <a
+      class="nav-icone"
+      href="/"
+      onclick="if (window.history.length > 1) { window.history.back(); return false; }"
+      aria-label="Voltar"
+    >←</a>
 
-      <div>
-        <h1>Investimentos pendentes</h1>
-        <p class="subtitulo">
-          Previsões que aguardam a confirmação do valor real.
-        </p>
-      </div>
-    </div>
+    <a class="nav-icone" href="/" aria-label="Página inicial">⌂</a>
+  </div>
+
+  <div class="marca">
+    <h1>Investimentos pendentes</h1>
+    <p class="subtitulo">
+      Previsões que aguardam a confirmação do valor real.
+    </p>
+  </div>
+</div>
 
     <div id="mensagem" class="mensagem"></div>
 
