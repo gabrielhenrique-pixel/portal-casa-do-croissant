@@ -336,19 +336,24 @@ export function usuariosPage() {
   <body>
     <main>
       <header class="topo">
-        <a
-          class="voltar"
-          href="/"
-          aria-label="Voltar à Página inicial"
-        >↩</a>
+  <div class="navegacao-topo">
+    <a
+      class="nav-icone"
+      href="/"
+      onclick="if (window.history.length > 1) { window.history.back(); return false; }"
+      aria-label="Voltar"
+    >←</a>
 
-        <div>
-          <h1>Usuários cadastrados</h1>
-          <p class="subtitulo">
-            Edite perfil, nome de usuário ou e-mail. Senhas não são exibidas.
-          </p>
-        </div>
-      </header>
+    <a class="nav-icone" href="/" aria-label="Página inicial">⌂</a>
+  </div>
+
+  <div class="marca">
+    <h1>Usuários cadastrados</h1>
+    <p class="subtitulo">
+      Edite perfil, nome de usuário ou e-mail. Senhas não são exibidas.
+    </p>
+  </div>
+</header>
 
       <div class="acoes">
         <a
