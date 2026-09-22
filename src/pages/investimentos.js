@@ -21,20 +21,248 @@ export function investimentosPage(username, redesPermitidas = REDES) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Investimentos | Casa do Croissant</title>
     <style>
-      :root { --verde-escuro:#123d2d; --verde:#1b744d; --fundo:#f6f8f7; --texto:#183128; --borda:#c9d8d0; }
-      * { box-sizing:border-box; } body { margin:0; min-height:100vh; display:flex; font-family:Arial,sans-serif; color:var(--texto); background:var(--fundo); }
-      aside { width:250px; min-height:100vh; flex-shrink:0; padding:28px 16px; background:var(--verde-escuro); color:#fff; }
-      .marca { padding:4px 12px 28px; font-size:20px; font-weight:700; }.marca small { display:block; margin-top:6px; color:#b7d7c6; font-size:12px; font-weight:400; }
-      .nav { display:block; width:100%; margin:4px 0; padding:13px 12px; border:0; border-radius:8px; background:transparent; color:#d7e9df; text-align:left; text-decoration:none; font-size:14px; cursor:pointer; }.nav:hover,.nav.ativo { background:#256e50; color:#fff; }.nav.sair { margin-top:24px; border-top:1px solid rgba(255,255,255,.18); border-radius:0; padding-top:19px; }
-      main { flex:1; padding:38px; }.topo { display:flex; align-items:center; gap:16px; margin-bottom:26px; }.voltar { display:grid; width:48px; height:48px; place-items:center; flex:0 0 48px; border-radius:50%; background:#0d4b2b; color:#fff; text-decoration:none; font-size:26px; font-weight:700; }.voltar:hover { background:#25724d; } h1 { margin:0; font-size:27px; }.subtitulo { margin:5px 0 0; color:#66746d; }
-      .cartao { max-width:950px; padding:26px; border:1px solid #dce8e1; border-radius:12px; background:#fff; }.grade { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }.campo { display:flex; flex-direction:column; gap:7px; min-width:0; } label { font-size:13px; font-weight:700; }.obrigatorio { color:#bd3d31; } input,select { width:100%; height:42px; padding:0 12px; border:1px solid var(--borda); border-radius:7px; background:#fff; font:inherit; outline:none; } input:focus,select:focus { border-color:var(--verde); box-shadow:0 0 0 3px rgba(27,116,77,.12); }.valor { display:flex; align-items:center; height:42px; overflow:hidden; border:1px solid var(--borda); border-radius:7px; }.valor span { padding-left:12px; color:#66746d; font-weight:700; }.valor input { border:0; box-shadow:none; }
-      .rodape { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:28px; padding-top:20px; border-top:1px solid #e4ece7; color:#66746d; font-size:13px; }.salvar { padding:11px 18px; border:0; border-radius:7px; background:var(--verde); color:#fff; font-weight:700; cursor:pointer; }.salvar:hover { background:#35ad69; }.mensagem { display:none; max-width:950px; margin-top:16px; padding:12px 14px; border-radius:7px; background:#e8f1eb; color:#12623e; font-size:14px; }.mensagem.visivel { display:block; }
-      @media (max-width:800px) { body { display:block; } aside { width:100%; min-height:auto; padding:16px; }.marca { padding-bottom:12px; }.menu { display:flex; overflow:auto; gap:4px; }.nav { width:auto; margin:0; white-space:nowrap; }.nav.sair { margin-top:0; border-top:0; padding-top:13px; } main { padding:24px 16px; }.grade { grid-template-columns:1fr; }.rodape { align-items:stretch; flex-direction:column; }.salvar { width:100%; } }
-    </style>
+  :root {
+    --navy:#102e49;
+    --blue:#1f4e78;
+    --bg:#f5f7f6;
+    --ink:#142b3d;
+    --border:#d5e0e8;
+    --muted:#63716e;
+  }
+
+  * { box-sizing:border-box; }
+
+  body {
+    margin:0;
+    min-height:100vh;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,sans-serif;
+  }
+
+  main {
+    max-width:1440px;
+    margin:auto;
+    padding:8px 8px 38px;
+  }
+
+  .topo {
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:18px 34px;
+    border-radius:18px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 8px 22px #1730521c;
+  }
+
+  .navegacao-topo {
+    display:flex;
+    flex-shrink:0;
+    gap:8px;
+  }
+
+  .nav-icone {
+    display:grid;
+    width:48px;
+    height:48px;
+    place-items:center;
+    border-radius:50%;
+    background:#fff;
+    color:var(--navy);
+    font-size:25px;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 5px 15px #1730521c;
+    transition:transform .15s,background .15s;
+  }
+
+  .nav-icone:hover {
+    background:#edf3f9;
+    transform:translateY(-2px);
+  }
+
+  .marca h1 {
+    margin:0;
+    color:var(--navy);
+    font-size:30px;
+  }
+
+  .subtitulo {
+    margin:5px 0 0;
+    color:var(--muted);
+    font-size:16px;
+  }
+
+  .cartao {
+    max-width:1120px;
+    margin-top:16px;
+    padding:28px 34px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:rgba(255,255,255,.94);
+    box-shadow:0 6px 18px #17305214;
+  }
+
+  .grade {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:20px;
+  }
+
+  .campo {
+    display:flex;
+    min-width:0;
+    flex-direction:column;
+    gap:7px;
+  }
+
+  label {
+    color:#17375f;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+  }
+
+  .obrigatorio { color:#c83737; }
+
+  input,
+  select {
+    width:100%;
+    height:42px;
+    padding:0 12px;
+    border:1px solid #c6d4e4;
+    border-radius:8px;
+    outline:none;
+    background:#fff;
+    color:var(--ink);
+    font:inherit;
+  }
+
+  input:focus,
+  select:focus {
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px #1f4e7820;
+  }
+
+  .valor {
+    display:flex;
+    align-items:center;
+    height:42px;
+    overflow:hidden;
+    border:1px solid #c6d4e4;
+    border-radius:8px;
+    background:#fff;
+  }
+
+  .valor span {
+    padding-left:12px;
+    color:#365a7d;
+    font-weight:700;
+  }
+
+  .valor input {
+    border:0;
+    box-shadow:none;
+  }
+
+  .rodape {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    margin-top:28px;
+    padding-top:20px;
+    border-top:1px solid #e0e7ec;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .salvar {
+    padding:12px 20px;
+    border:0;
+    border-radius:8px;
+    background:var(--navy);
+    color:#fff;
+    font:inherit;
+    font-weight:700;
+    cursor:pointer;
+  }
+
+  .salvar:hover { background:#1f4e78; }
+
+  .salvar:disabled {
+    cursor:wait;
+    opacity:.7;
+  }
+
+  .mensagem {
+    display:none;
+    max-width:1120px;
+    margin-top:14px;
+    padding:12px 14px;
+    border:1px solid #cde1d4;
+    border-radius:8px;
+    background:#edf8f1;
+    color:#17643f;
+    font-size:14px;
+  }
+
+  .mensagem.visivel { display:block; }
+
+  @media (max-width:700px) {
+    main { padding:4px 6px 28px; }
+
+    .topo {
+      gap:12px;
+      padding:16px;
+    }
+
+    .nav-icone {
+      width:42px;
+      height:42px;
+      font-size:22px;
+    }
+
+    .marca h1 { font-size:23px; }
+
+    .subtitulo { font-size:14px; }
+
+    .cartao {
+      padding:20px 16px;
+      border-radius:14px;
+    }
+
+    .grade { grid-template-columns:1fr; }
+
+    .rodape {
+      align-items:stretch;
+      flex-direction:column;
+    }
+
+    .salvar { width:100%; }
+  }
+</style>
   </head>
   <body>
     <main>
-      <div class="topo"><a class="voltar" href="/" onclick="if (window.history.length > 1) { window.history.back(); return false; }" aria-label="Voltar ao portal">↩</a><div><h1>Registro de investimento</h1><p class="subtitulo">Registre os investimentos comerciais realizados para cada rede.</p></div></div>
+      <div class="topo">
+  <div class="navegacao-topo">
+    <a
+      class="nav-icone"
+      href="/"
+      onclick="if (window.history.length > 1) { window.history.back(); return false; }"
+      aria-label="Voltar"
+    >←</a>
+
+    <a class="nav-icone" href="/" aria-label="Página inicial">⌂</a>
+  </div>
+
+  <div class="marca">
+    <h1>Registro de investimento</h1>
+    <p class="subtitulo">Registre os investimentos comerciais realizados para cada rede.</p>
+  </div>
+</div>
       <section class="cartao">
         <form id="formulario">
           <div class="grade">
