@@ -28,39 +28,58 @@ export function acessosPage() {
   }
 
   main {
-    max-width: 1300px;
-    margin: auto;
-    padding: 34px 36px 48px;
+  max-width:1440px;
+  margin:auto;
+  padding:8px 8px 38px;
+}
+
+   .topo {
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin-bottom:16px;
+    padding:18px 34px;
+    border-radius:18px;
+    background:rgba(255,255,255,.92);
+    box-shadow:0 8px 22px #1730521c;
   }
 
-  .topo {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 26px;
+  .navegacao-topo {
+    display:flex;
+    flex-shrink:0;
+    gap:8px;
   }
 
-  .voltar {
-    display: grid;
-    width: 48px;
-    height: 48px;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--e);
-    color: #fff;
-    text-decoration: none;
-    font-size: 26px;
-    font-weight: 700;
+  .nav-icone {
+    display:grid;
+    width:48px;
+    height:48px;
+    place-items:center;
+    border-radius:50%;
+    background:#fff;
+    color:#102e49;
+    font-size:25px;
+    font-weight:700;
+    text-decoration:none;
+    box-shadow:0 5px 15px #1730521c;
+    transition:transform .15s,background .15s;
   }
 
-  h1 {
-    margin: 0;
-    font-size: 27px;
+  .nav-icone:hover {
+    background:#edf3f9;
+    transform:translateY(-2px);
+  }
+
+  .marca h1 {
+    margin:0;
+    color:#102e49;
+    font-size:30px;
   }
 
   .sub {
-    margin: 5px 0 0;
-    color: #66746d;
+    margin:5px 0 0;
+    color:#63716e;
+    font-size:16px;
   }
 
   .grade {
@@ -334,33 +353,49 @@ export function acessosPage() {
 }
 
   @media (max-width: 800px) {
-    main {
-      padding: 24px 16px;
-    }
+  main {
+    padding:4px 6px 28px;
+  }
 
-    .grade {
-      grid-template-columns: 1fr;
-    }
+  .topo {
+    gap:12px;
+    padding:16px;
+  }
 
-    .rodape {
-      flex-direction: column-reverse;
-    }
+  .nav-icone {
+    width:42px;
+    height:42px;
+    font-size:22px;
+  }
 
-    .rodape button {
-      width: 100%;
-    }
+  .marca h1 {
+    font-size:23px;
+  }
+
+  .sub {
+    font-size:14px;
   }
 </style>
 </head>
 <body>
   <main>
     <header class="topo">
-      <a class="voltar" href="/" aria-label="Voltar à Página inicial">↩</a>
-      <div>
-        <h1>Acessos</h1>
-        <p class="sub">Selecione módulos, usuários e os tipos de acesso que serão aplicados.</p>
-      </div>
-    </header>
+  <div class="navegacao-topo">
+    <a
+      class="nav-icone"
+      href="/"
+      onclick="if (window.history.length > 1) { window.history.back(); return false; }"
+      aria-label="Voltar"
+    >←</a>
+
+    <a class="nav-icone" href="/" aria-label="Página inicial">⌂</a>
+  </div>
+
+  <div class="marca">
+    <h1>Acessos</h1>
+    <p class="sub">Selecione módulos, usuários e os tipos de acesso que serão aplicados.</p>
+  </div>
+</header>
 
     <div id="msg" class="msg" role="status"></div>
     <div id="toast" class="toast" role="status"></div>
