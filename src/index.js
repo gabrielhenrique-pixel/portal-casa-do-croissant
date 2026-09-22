@@ -1,5 +1,6 @@
 import { paginaInicialPage } from './pages/pagina-inicial.js';
 import { perfilPage } from './pages/perfil.js';
+import { recuperarSenhaPage } from './pages/recuperar-senha.js';
 import { investimentosPage } from './pages/investimentos.js';
 import { investimentosListaPage } from './pages/investimentos-lista.js';
 import { investimentosPendentesPage } from './pages/investimentos-pendentes.js';
@@ -65,6 +66,27 @@ export default {
         const row = await env.DB.prepare('SELECT COUNT(*) AS total FROM users').first();
         return json({ hasUsers: Number(row?.total || 0) > 0 });
       }
+
+      if (
+  url.pathname === '/api/password-reset/request' &&
+  request.method === 'POST'
+) {
+  return solicitarRecuperacaoSenha(request, env);
+}
+
+if (
+  url.pathname === '/api/password-reset/confirm' &&
+  request.method === 'POST'
+) {
+  return confirmarRecuperacaoSenha(request, env);
+}
+
+if (
+  url.pathname === '/recuperar-senha' &&
+  request.method === 'GET'
+) {
+  return recuperarSenhaPage();
+}
 
       if (url.pathname === '/api/bootstrap' && request.method === 'POST') {
         return bootstrap(request, env);
@@ -942,6 +964,301 @@ if (clienteRentabilidadeMatch && request.method === 'PUT') {
     }
   }
 };
+
+async function garantirTabelaRecuperacaoSenha(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token_hash TEXT NOT NULL UNIQUE,
+      expires_at TEXT NOT NULL,
+      used_at TEXT,
+      created_at TEXT NOT NULL
+    )`
+  ).run();
+
+  await env.DB.prepare(
+    `CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user
+     ON password_reset_tokens (user_id, created_at)`
+  ).run();
+}
+
+async function enviarEmailRecuperacaoSenha(env, email, link) {
+  if (!env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY não configurada.');
+  }
+
+  const resposta = await fetch(
+    'https://api.resend.com/emails',
+    {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + env.RESEND_API_KEY,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        from:
+          'Portal Casa do Croissant ' +
+          '<nao-responda@portal.acasadocroissant.com.br>',
+        to: [email],
+        subject: 'Recuperação de senha do Portal Casa do Croissant',
+        html:
+          '<!doctype html>' +
+          '<html lang="pt-BR">' +
+          '<body style="font-family:Arial,sans-serif;color:#123d2d">' +
+          '<h2>Recuperação de senha</h2>' +
+          '<p>Recebemos uma solicitação para criar uma nova senha.</p>' +
+          '<p>Este link expira em 30 minutos e só pode ser usado uma vez.</p>' +
+          '<p><a href="' + link + '"' +
+          ' style="display:inline-block;padding:12px 18px;' +
+          'background:#1b744d;color:#fff;border-radius:7px;' +
+          'text-decoration:none;font-weight:bold">' +
+          'Criar nova senha</a></p>' +
+          '<p>Se você não solicitou a troca, ignore este e-mail.</p>' +
+          '</body></html>',
+        text:
+          'Recuperação de senha do Portal Casa do Croissant.\n\n' +
+          'Use este link em até 30 minutos:\n' +
+          link +
+          '\n\nSe você não solicitou a troca, ignore este e-mail.'
+      })
+    }
+  );
+
+  if (!resposta.ok) {
+    throw new Error(
+      'Resend recusou o envio: ' +
+      await resposta.text()
+    );
+  }
+}
+
+async function solicitarRecuperacaoSenha(request, env) {
+  const dados = await bodyAsJson(request);
+  const email = normalizeEmail(dados.email);
+
+  const respostaPadrao = {
+    ok: true,
+    message:
+      'Se o e-mail estiver cadastrado, o link de recuperação foi enviado.'
+  };
+
+  if (!email || email.length > 254) {
+    return json(respostaPadrao);
+  }
+
+  await garantirTabelaRecuperacaoSenha(env);
+
+  const usuario = await env.DB.prepare(
+    `SELECT id, username, email
+     FROM users
+     WHERE email = ? COLLATE NOCASE`
+  ).bind(email).first();
+
+  if (!usuario) {
+    return json(respostaPadrao);
+  }
+
+  const agora = new Date();
+  const umMinutoAtras = new Date(
+    agora.getTime() - 60 * 1000
+  ).toISOString();
+
+  const ultimaSolicitacao = await env.DB.prepare(
+    `SELECT id
+     FROM password_reset_tokens
+     WHERE user_id = ?
+       AND created_at > ?
+     ORDER BY created_at DESC
+     LIMIT 1`
+  ).bind(
+    usuario.id,
+    umMinutoAtras
+  ).first();
+
+  if (ultimaSolicitacao) {
+    return json(respostaPadrao);
+  }
+
+  const token = randomToken(32);
+  const tokenHash = await sha256(token);
+  const tokenId = crypto.randomUUID();
+  const criadoEm = agora.toISOString();
+  const expiraEm = new Date(
+    agora.getTime() + 30 * 60 * 1000
+  ).toISOString();
+
+  await env.DB.prepare(
+    `INSERT INTO password_reset_tokens (
+      id,
+      user_id,
+      token_hash,
+      expires_at,
+      used_at,
+      created_at
+    ) VALUES (?, ?, ?, ?, NULL, ?)`
+  ).bind(
+    tokenId,
+    usuario.id,
+    tokenHash,
+    expiraEm,
+    criadoEm
+  ).run();
+
+  const link =
+    'https://portal.acasadocroissant.com.br/' +
+    'recuperar-senha?token=' +
+    encodeURIComponent(token);
+
+  try {
+    await enviarEmailRecuperacaoSenha(
+      env,
+      usuario.email,
+      link
+    );
+
+    await env.DB.prepare(
+      `UPDATE password_reset_tokens
+       SET used_at = ?
+       WHERE user_id = ?
+         AND id != ?
+         AND used_at IS NULL`
+    ).bind(
+      criadoEm,
+      usuario.id,
+      tokenId
+    ).run();
+
+    await writeAudit(
+      env,
+      usuario.username,
+      'RECUPERACAO_SENHA_SOLICITADA',
+      'Link de recuperação de senha enviado por e-mail.'
+    );
+  } catch (error) {
+    console.error(
+      'Erro ao enviar recuperação de senha:',
+      error
+    );
+
+    await env.DB.prepare(
+      'DELETE FROM password_reset_tokens WHERE id = ?'
+    ).bind(tokenId).run();
+  }
+
+  return json(respostaPadrao);
+}
+
+async function confirmarRecuperacaoSenha(request, env) {
+  const dados = await bodyAsJson(request);
+
+  const token = String(dados.token || '');
+  const novaSenha = String(dados.novaSenha || '');
+  const confirmarSenha = String(
+    dados.confirmarSenha || ''
+  );
+
+  if (novaSenha.length < 8) {
+    return json(
+      {
+        error:
+          'A nova senha precisa ter pelo menos 8 caracteres.'
+      },
+      400
+    );
+  }
+
+  if (novaSenha !== confirmarSenha) {
+    return json(
+      { error: 'As senhas não conferem.' },
+      400
+    );
+  }
+
+  if (!token || token.length > 128) {
+    return json(
+      {
+        error:
+          'Este link é inválido, expirou ou já foi utilizado.'
+      },
+      400
+    );
+  }
+
+  await garantirTabelaRecuperacaoSenha(env);
+
+  const tokenHash = await sha256(token);
+  const agora = new Date().toISOString();
+
+  const recuperacao = await env.DB.prepare(
+    `SELECT
+       password_reset_tokens.id AS reset_id,
+       users.id AS user_id,
+       users.username
+     FROM password_reset_tokens
+     JOIN users
+       ON users.id = password_reset_tokens.user_id
+     WHERE password_reset_tokens.token_hash = ?
+       AND password_reset_tokens.used_at IS NULL
+       AND password_reset_tokens.expires_at > ?`
+  ).bind(
+    tokenHash,
+    agora
+  ).first();
+
+  if (!recuperacao) {
+    return json(
+      {
+        error:
+          'Este link é inválido, expirou ou já foi utilizado.'
+      },
+      400
+    );
+  }
+
+  const salt = randomToken(16);
+  const passwordHash = await hashPassword(
+    novaSenha,
+    salt
+  );
+
+  await env.DB.batch([
+    env.DB.prepare(
+      `UPDATE users
+       SET password_hash = ?,
+           password_salt = ?,
+           password_algorithm = 'pbkdf2-sha256'
+       WHERE id = ?`
+    ).bind(
+      passwordHash,
+      salt,
+      recuperacao.user_id
+    ),
+
+    env.DB.prepare(
+      `UPDATE password_reset_tokens
+       SET used_at = ?
+       WHERE user_id = ?
+         AND used_at IS NULL`
+    ).bind(
+      agora,
+      recuperacao.user_id
+    ),
+
+    env.DB.prepare(
+      'DELETE FROM sessions WHERE user_id = ?'
+    ).bind(recuperacao.user_id)
+  ]);
+
+  await writeAudit(
+    env,
+    recuperacao.username,
+    'SENHA_REDEFINIDA_POR_EMAIL',
+    'Senha redefinida pelo link de recuperação.'
+  );
+
+  return json({ ok: true });
+}
 
 async function bootstrap(request, env) {
   if (!env.SETUP_TOKEN) {
