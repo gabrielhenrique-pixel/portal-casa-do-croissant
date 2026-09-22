@@ -4034,11 +4034,8 @@ button.textContent = '↪ Entrar';
   });
 
   $('forgotPassword').addEventListener('click', () => {
-    error(
-      'loginError',
-      'A recuperação de senha será migrada após a configuração do envio de e-mails.'
-    );
-  });
+  window.location.href = '/recuperar-senha';
+});
 
   $('backToLogin').addEventListener('click', () => {
     show('login');
