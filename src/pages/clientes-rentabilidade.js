@@ -341,37 +341,72 @@ export function clientesRentabilidadePage() {
   }
 
   async function carregar() {
-    try {
-      $('estado').textContent = 'Carregando cadastro...';
+  try {
+    $('estado').textContent = 'Carregando cadastro...';
 
-      var resposta = await fetch('/api/rentabilidade/clientes', {
+    var resposta = await fetch('/api/rentabilidade/clientes', {
+      credentials: 'same-origin'
+    });
+
+    var dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(dados.error || 'Não foi possível carregar os clientes.');
+    }
+
+    if (dados.canSync) {
+      $('estado').textContent = 'Sincronizando clientes com o Sankhya...';
+
+      var respostaSync = await fetch(
+        '/api/rentabilidade/clientes/sincronizar',
+        {
+          method: 'POST',
+          credentials: 'same-origin'
+        }
+      );
+
+      var dadosSync = await respostaSync.json();
+
+      if (!respostaSync.ok) {
+        throw new Error(
+          dadosSync.error || 'Não foi possível sincronizar os clientes.'
+        );
+      }
+
+      resposta = await fetch('/api/rentabilidade/clientes', {
         credentials: 'same-origin'
       });
 
-      var dados = await resposta.json();
+      dados = await resposta.json();
 
       if (!resposta.ok) {
         throw new Error(dados.error || 'Não foi possível carregar os clientes.');
       }
 
-      clientes = dados.clientes || [];
-      redes = dados.redes || [];
-
-      $('campoRede').innerHTML =
-        '<option value="">Não alterar</option>' +
-        redes.map(function (rede) {
-          return '<option value="' + esc(rede) + '">' + esc(rede) + '</option>';
-        }).join('');
-
+      $('estado').textContent =
+        dadosSync.totalSincronizado +
+        ' clientes sincronizados com o Sankhya.';
+    } else {
       $('estado').textContent = 'Cadastro atualizado.';
-      $('estado').className = 'estado';
-
-      render();
-    } catch (erro) {
-      $('estado').textContent = erro.message;
-      $('estado').className = 'estado erro';
     }
+
+    clientes = dados.clientes || [];
+    redes = dados.redes || [];
+
+    $('campoRede').innerHTML =
+      '<option value="">Não alterar</option>' +
+      redes.map(function (rede) {
+        return '<option value="' + esc(rede) + '">' + esc(rede) + '</option>';
+      }).join('');
+
+    $('estado').className = 'estado';
+
+    render();
+  } catch (erro) {
+    $('estado').textContent = erro.message;
+    $('estado').className = 'estado erro';
   }
+}
 
   async function sincronizar() {
     var botao = $('sincronizar');
