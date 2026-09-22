@@ -686,13 +686,12 @@ export function dashboardRentabilidadePage() {
   <article class="card">
     <span class="icone verde">
       <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="31" cy="14" r="8"></circle>
-        <path d="M31 9v10"></path>
-        <path d="M34 11c-1-1-5-1-5 1 0 3 5 1 5 4 0 2-4 2-6 1"></path>
-        <path d="M6 31l10 3 7-5"></path>
-        <path d="M6 31v8l11 2 10-7"></path>
-        <path d="M17 41l9-7 8 1"></path>
-      </svg>
+  <circle cx="31" cy="13" r="7"></circle>
+  <path d="M31 8v10"></path>
+  <path d="M34 10c-1-1-5-1-5 1 0 3 5 1 5 4 0 2-4 2-6 1"></path>
+  <path d="M6 30l8 3 7-5c2-1 4 1 2 3l-6 5"></path>
+  <path d="M6 30v8l11 2 10-7 10 1"></path>
+</svg>
     </span>
 
     <div>
@@ -718,13 +717,12 @@ export function dashboardRentabilidadePage() {
   <article class="card">
     <span class="icone laranja">
       <svg viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M23 7a17 17 0 1 0 17 17H23z"></path>
-        <path d="M27 7v13h13"></path>
-        <path d="M34 31l7 7"></path>
-        <circle cx="28" cy="35" r="2"></circle>
-        <circle cx="38" cy="42" r="2"></circle>
-        <path d="M30 40l6-3"></path>
-      </svg>
+  <path d="M23 7a17 17 0 1 0 17 17H23z"></path>
+  <path d="M27 7v13h13"></path>
+  <circle cx="30" cy="33" r="2.5"></circle>
+  <circle cx="39" cy="40" r="2.5"></circle>
+  <path d="M32 41l5-9"></path>
+</svg>
     </span>
 
     <div>
@@ -754,15 +752,15 @@ export function dashboardRentabilidadePage() {
   <article class="card">
     <span class="icone amarelo">
       <svg viewBox="0 0 48 48" aria-hidden="true">
-        <circle cx="24" cy="25" r="16"></circle>
-        <circle cx="24" cy="25" r="10"></circle>
-        <circle cx="24" cy="25" r="3"></circle>
-        <path d="M29 20l11-11"></path>
-        <path d="M34 9h6v6"></path>
-        <circle cx="17" cy="35" r="2"></circle>
-        <circle cx="31" cy="35" r="2"></circle>
-        <path d="M19 37l10-4"></path>
-      </svg>
+  <circle cx="20" cy="27" r="14"></circle>
+  <circle cx="20" cy="27" r="9"></circle>
+  <circle cx="20" cy="27" r="3"></circle>
+  <path d="M25 22L41 6"></path>
+  <path d="M34 6h7v7"></path>
+  <circle cx="30" cy="37" r="2.2"></circle>
+  <circle cx="39" cy="37" r="2.2"></circle>
+  <path d="M32 42l5-10"></path>
+</svg>
     </span>
 
     <div>
