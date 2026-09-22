@@ -828,10 +828,12 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
     const clientes = await carregarClientesRentabilidade(env);
 
     return json({
-      total: clientes.length,
-      redes: REDES_RENTABILIDADE,
-      clientes
-    });
+  total: clientes.length,
+  redes: REDES_RENTABILIDADE,
+  clientes,
+  canSync: Boolean(acesso?.permissions?.update)
+});
+    
   } catch (error) {
     console.error('Erro ao carregar clientes:', error);
 
@@ -859,7 +861,13 @@ if (
   url.pathname === '/api/rentabilidade/clientes/sincronizar' &&
   request.method === 'POST'
 ) {
-  const administrador = await requireAdministrator(request, env);
+  const usuario = await requireModulePermission(
+    request,
+    env,
+    'CLIENTES',
+    'update'
+  );
+
   const token = await obterTokenSankhya(env);
 
   const linhas = await executarConsultaSankhya(
@@ -881,9 +889,9 @@ if (
   );
 
   await writeAudit(
-    env,
-    administrador.username,
-    'RENTABILIDADE_CLIENTES_SINCRONIZADOS',
+  env,
+  usuario.username,
+  'RENTABILIDADE_CLIENTES_SINCRONIZADOS',
     resultado.totalSincronizado +
       ' clientes ativos sincronizados pelo Sankhya.'
   );
