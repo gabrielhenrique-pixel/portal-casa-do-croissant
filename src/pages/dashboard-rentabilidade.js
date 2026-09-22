@@ -153,21 +153,29 @@ export function dashboardRentabilidadePage() {
     }
 
     .icone {
-      display:grid;
-      place-items:center;
-      width:38px;
-      height:38px;
-      border-radius:50%;
-      color:#123d55;
-      font-size:22px;
-      font-weight:700;
-    }
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  color:#123d55;
+}
 
-    .azul { background:#8bd2ec; }
-    .verde { background:#91e58e; }
-    .laranja { background:#f3b28b; }
-    .limao { background:#b7e988; }
-    .amarelo { background:#fff059; }
+.icone svg {
+  width:27px;
+  height:27px;
+  stroke:currentColor;
+  stroke-width:2.1;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.azul { background:#e2f3ff; }
+.verde { background:#e2f9dd; }
+.laranja { background:#ffe7d7; }
+.limao { background:#dcf8d6; }
+.amarelo { background:#fff3b6; }
 
     .rotulo {
       display:block;
@@ -659,54 +667,110 @@ export function dashboardRentabilidadePage() {
     <p id="estado" class="estado">Carregando dados...</p>
 
     <section class="cards">
-      <article class="card">
-        <span class="icone azul">▥</span>
-        <div>
-          <span class="rotulo">Faturamento bruto</span>
-          <strong id="faturamento" class="valor">—</strong>
-        </div>
-      </article>
+  <article class="card">
+    <span class="icone azul">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M7 40h34"></path>
+        <rect x="9" y="28" width="7" height="12"></rect>
+        <rect x="21" y="20" width="7" height="20"></rect>
+        <rect x="33" y="12" width="7" height="28"></rect>
+      </svg>
+    </span>
 
-      <article class="card">
-        <span class="icone verde">$</span>
-        <div>
-          <span class="rotulo">Receita líquida</span>
-          <strong id="receita" class="valor">—</strong>
-        </div>
-      </article>
+    <div>
+      <span class="rotulo">Faturamento bruto</span>
+      <strong id="faturamento" class="valor">—</strong>
+    </div>
+  </article>
 
-      <article class="card">
-        <span class="icone azul">⌁</span>
-        <div>
-          <span class="rotulo">Resultado</span>
-          <strong id="resultado" class="valor">—</strong>
-        </div>
-      </article>
+  <article class="card">
+    <span class="icone verde">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="31" cy="14" r="8"></circle>
+        <path d="M31 9v10"></path>
+        <path d="M34 11c-1-1-5-1-5 1 0 3 5 1 5 4 0 2-4 2-6 1"></path>
+        <path d="M6 31l10 3 7-5"></path>
+        <path d="M6 31v8l11 2 10-7"></path>
+        <path d="M17 41l9-7 8 1"></path>
+      </svg>
+    </span>
 
-      <article class="card">
-        <span class="icone laranja">%</span>
-        <div>
-          <span class="rotulo">Margem</span>
-          <strong id="margem" class="valor">—</strong>
-        </div>
-      </article>
+    <div>
+      <span class="rotulo">Receita líquida</span>
+      <strong id="receita" class="valor">—</strong>
+    </div>
+  </article>
 
-      <article class="card">
-        <span class="icone limao">♟</span>
-        <div>
-          <span class="rotulo">Clientes positivados</span>
-          <strong id="clientes" class="valor">—</strong>
-        </div>
-      </article>
+  <article class="card">
+    <span class="icone azul">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M7 33l11-11 8 8 15-17"></path>
+        <path d="M32 13h9v9"></path>
+      </svg>
+    </span>
 
-      <article class="card">
-        <span class="icone amarelo">◎</span>
-        <div>
-          <span class="rotulo">Meta margem</span>
-          <strong class="valor">20,0%</strong>
-        </div>
-      </article>
-    </section>
+    <div>
+      <span class="rotulo">Resultado</span>
+      <strong id="resultado" class="valor">—</strong>
+    </div>
+  </article>
+
+  <article class="card">
+    <span class="icone laranja">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M23 7a17 17 0 1 0 17 17H23z"></path>
+        <path d="M27 7v13h13"></path>
+        <path d="M34 31l7 7"></path>
+        <circle cx="28" cy="35" r="2"></circle>
+        <circle cx="38" cy="42" r="2"></circle>
+        <path d="M30 40l6-3"></path>
+      </svg>
+    </span>
+
+    <div>
+      <span class="rotulo">Margem</span>
+      <strong id="margem" class="valor">—</strong>
+    </div>
+  </article>
+
+  <article class="card">
+    <span class="icone limao">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="17" cy="16" r="6"></circle>
+        <circle cx="30" cy="17" r="5"></circle>
+        <path d="M6 37c1-8 6-12 11-12s10 4 11 12"></path>
+        <path d="M25 29c2-3 5-4 8-4 5 0 8 4 9 8"></path>
+        <circle cx="35" cy="35" r="7"></circle>
+        <path d="M32 35l2 2 4-5"></path>
+      </svg>
+    </span>
+
+    <div>
+      <span class="rotulo">Clientes positivados</span>
+      <strong id="clientes" class="valor">—</strong>
+    </div>
+  </article>
+
+  <article class="card">
+    <span class="icone amarelo">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="25" r="16"></circle>
+        <circle cx="24" cy="25" r="10"></circle>
+        <circle cx="24" cy="25" r="3"></circle>
+        <path d="M29 20l11-11"></path>
+        <path d="M34 9h6v6"></path>
+        <circle cx="17" cy="35" r="2"></circle>
+        <circle cx="31" cy="35" r="2"></circle>
+        <path d="M19 37l10-4"></path>
+      </svg>
+    </span>
+
+    <div>
+      <span class="rotulo">Meta margem</span>
+      <strong class="valor">20,0%</strong>
+    </div>
+  </article>
+</section>
 
     <section class="grade">
       <section class="tabela-area">
