@@ -686,11 +686,9 @@ export function dashboardRentabilidadePage() {
   <article class="card">
     <span class="icone verde">
       <svg viewBox="0 0 48 48" aria-hidden="true">
-  <circle cx="31" cy="13" r="7"></circle>
-  <path d="M31 8v10"></path>
-  <path d="M34 10c-1-1-5-1-5 1 0 3 5 1 5 4 0 2-4 2-6 1"></path>
   <path d="M6 30l8 3 7-5c2-1 4 1 2 3l-6 5"></path>
   <path d="M6 30v8l11 2 10-7 10 1"></path>
+  <path d="M17 40l9-7"></path>
 </svg>
     </span>
 
@@ -757,9 +755,6 @@ export function dashboardRentabilidadePage() {
   <circle cx="20" cy="27" r="3"></circle>
   <path d="M25 22L41 6"></path>
   <path d="M34 6h7v7"></path>
-  <circle cx="30" cy="37" r="2.2"></circle>
-  <circle cx="39" cy="37" r="2.2"></circle>
-  <path d="M32 42l5-10"></path>
 </svg>
     </span>
 
