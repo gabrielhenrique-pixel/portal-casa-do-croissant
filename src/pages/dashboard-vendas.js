@@ -708,7 +708,7 @@ export function dashboardVendasPage() {
             <tr>
               <th aria-label="Posição e nome"></th>
               <th>Total vendido</th>
-              <th>Meta atingida</th>
+              <th>Meta</th>
             </tr>
           </thead>
           <tbody id="linhas"></tbody>
