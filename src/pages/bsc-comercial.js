@@ -126,6 +126,10 @@ export function bscComercialPage() {
     }
 
     .estado.erro { color:#b42318; }
+     #tituloAnterior,
+     #totalAnterior {
+      text-align:center;
+     }
 
     .painel {
       overflow:hidden;
@@ -404,8 +408,7 @@ export function bscComercialPage() {
         $('variacaoTotalAcumulado').className =
          classeVariacao(dados.variacaoTotalAcumulado);
 
-        $('estado').textContent =
-          produtos.length + ' produtos encontrados no Sankhya.';
+        $('estado').textContent = '';
         $('estado').className = 'estado';
       }
 
