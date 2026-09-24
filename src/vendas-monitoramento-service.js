@@ -155,21 +155,53 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     ])
   );
 
-  const vendedores = linhasVendedores.map((linha) => {
-    const codigoVendedor = String(linha[0] || '');
-    const meta = metasPorVendedor.get(codigoVendedor) || 0;
-    const faturamento = numero(linha[2]);
+    const vendedores = linhasVendedores
+    .map((linha) => {
+      const codigoVendedor = String(linha[0] || '');
+      const meta = metasPorVendedor.get(codigoVendedor) || 0;
+      const faturamento = numero(linha[2]);
 
-    return {
-      codigoVendedor,
-      vendedor: String(linha[1] || 'Sem vendedor').trim(),
-      faturamento,
-      meta,
-      percentualMeta: meta > 0
-        ? faturamento / meta
-        : null
-    };
-  });
+      return {
+        codigoVendedor,
+        vendedor: String(linha[1] || 'Sem vendedor').trim(),
+        faturamento,
+        meta,
+        percentualMeta: meta > 0
+          ? faturamento / meta
+          : null
+      };
+    })
+    .sort((primeiro, segundo) => {
+      const primeiroTemMeta = primeiro.percentualMeta !== null;
+      const segundoTemMeta = segundo.percentualMeta !== null;
+
+      if (!primeiroTemMeta && !segundoTemMeta) {
+        return primeiro.vendedor.localeCompare(
+          segundo.vendedor,
+          'pt-BR'
+        );
+      }
+
+      if (!primeiroTemMeta) {
+        return 1;
+      }
+
+      if (!segundoTemMeta) {
+        return -1;
+      }
+
+      const diferenca =
+        segundo.percentualMeta - primeiro.percentualMeta;
+
+      if (diferenca !== 0) {
+        return diferenca;
+      }
+
+      return primeiro.vendedor.localeCompare(
+        segundo.vendedor,
+        'pt-BR'
+      );
+    });
 
   const produtos = linhasProdutos.map((linha) => {
   const grupo = String(linha[0] || '').trim();
