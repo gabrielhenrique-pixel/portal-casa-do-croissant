@@ -965,7 +965,10 @@ export function dashboardVendasPage() {
       function render(dados) {
         dadosAtuais = dados;
 
-        var vendedores = dados.vendedores || [];
+                var vendedores = dados.vendedores || [];
+        var vendedorSelecionado = String(
+          dados.vendedorSelecionado || ''
+        );
         var opcoesVendedores = dados.opcoesVendedores || vendedores;
         var produtos = dados.produtos || [];
         var grupos = montarGrupos(produtos);
@@ -1001,8 +1004,13 @@ export function dashboardVendasPage() {
                     escapar(vendedor.vendedor) +
                   '</strong>' +
                 '</td>' +
-                '<td>' +
-                  moeda.format(numero(vendedor.faturamento)) +
+                                '<td>' +
+                  (
+                    vendedorSelecionado &&
+                    String(vendedor.codigoVendedor) !== vendedorSelecionado
+                      ? '—'
+                      : moeda.format(numero(vendedor.faturamento))
+                  ) +
                 '</td>' +
                 '<td>' +
                   '<span class="ranking-meta ' +
