@@ -3505,7 +3505,31 @@ const APP_HTML = `<!doctype html>
         padding: 26px;
       }
     }
-  </style>
+  .nav-btn--com-contador {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.contador-pendentes {
+  display:inline-flex;
+  min-width:20px;
+  height:20px;
+  align-items:center;
+  justify-content:center;
+  padding:0 6px;
+  border-radius:999px;
+  background:#f6be4b;
+  color:#123d2d;
+  font-size:12px;
+  font-weight:700;
+}
+
+.contador-pendentes[hidden] {
+  display:none;
+}
+</style>
 </head>
   <body class="inicializando">
   <div id="inicializacao" role="status">Carregando portal...</div>
@@ -3680,13 +3704,15 @@ const APP_HTML = `<!doctype html>
       </button>
 
       <button
-        class="nav-btn"
-        type="button"
-        data-view="pendentes"
-        data-module="INVESTIMENTOS_PENDENTES"
-      >
-        Investimentos pendentes
-      </button>
+       id="navInvestimentosPendentes"
+       class="nav-btn nav-btn--com-contador"
+       type="button"
+       data-view="pendentes"
+       data-module="INVESTIMENTOS_PENDENTES"
+      > 
+      <span>Investimentos pendentes</span>
+      <span id="contadorPendentes" class="contador-pendentes" hidden>0</span>
+     </button>
 
       <button
         id="navUsuarios"
@@ -4085,8 +4111,36 @@ async function carregarPerfilNoMenu() {
       });
 
     show('dashboard');
+    atualizarContadorPendentes();
     openView('inicio');
   }
+
+  async function atualizarContadorPendentes() {
+  const contador = $('contadorPendentes');
+
+  if (
+    !contador ||
+    !hasModule('INVESTIMENTOS_PENDENTES')
+  ) {
+    return;
+  }
+
+  try {
+    const dados = await request('/api/investimentos/pendentes');
+    const quantidade = Array.isArray(dados.investimentos)
+      ? dados.investimentos.length
+      : 0;
+
+    contador.textContent = quantidade > 99
+      ? '99+'
+      : String(quantidade);
+
+    contador.hidden = quantidade === 0;
+  } catch (erro) {
+    contador.hidden = true;
+  }
+}
+
 
   async function loadSession() {
     try {
