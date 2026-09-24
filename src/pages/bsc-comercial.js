@@ -257,6 +257,9 @@ export function bscComercialPage() {
               <th id="tituloAnterior">Período anterior</th>
               <th id="tituloAtual">Período selecionado</th>
               <th>Variação</th>
+              <th id="tituloAcumuladoAnterior">Acumulado anterior</th>
+              <th id="tituloAcumuladoAtual">Acumulado atual</th>
+              <th>Variação acumulada</th>
             </tr>
           </thead>
 
@@ -268,6 +271,9 @@ export function bscComercialPage() {
               <td id="totalAnterior">—</td>
               <td id="totalAtual">—</td>
               <td id="variacaoTotal">—</td>
+              <td id="totalAcumuladoAnterior">—</td>
+              <td id="totalAcumuladoAtual">—</td>
+              <td id="variacaoTotalAcumulado">—</td>
             </tr>
           </tfoot>
         </table>
@@ -350,6 +356,18 @@ export function bscComercialPage() {
         $('tituloAtual').textContent =
           'Volume ' + textoPeriodo(dados.inicio, dados.fim);
 
+          $('tituloAcumuladoAnterior').textContent =
+           'Acumulado ' +
+           dados.fimAnterior.slice(0, 4) +
+           ' até ' +
+           formatarData(dados.fimAnterior);
+
+          $('tituloAcumuladoAtual').textContent =
+           'Acumulado ' +
+            dados.fim.slice(0, 4) +
+           ' até ' +
+           formatarData(dados.fim);
+
         $('linhas').innerHTML = produtos.map(function(produto) {
           return (
             '<tr>' +
@@ -360,6 +378,11 @@ export function bscComercialPage() {
               '<td class="' + classeVariacao(produto.variacao) + '">' +
                 percentual(produto.variacao) +
               '</td>' +
+              '<td>' + quantidade(produto.acumuladoAnterior) + '</td>' +
+              '<td>' + quantidade(produto.acumuladoAtual) + '</td>' +
+              '<td class="' + classeVariacao(produto.variacaoAcumulado) + '">' +
+               percentual(produto.variacaoAcumulado) +
+              '</td>' +
             '</tr>'
           );
         }).join('');
@@ -369,6 +392,17 @@ export function bscComercialPage() {
 
         $('variacaoTotal').textContent = percentual(dados.variacaoTotal);
         $('variacaoTotal').className = classeVariacao(dados.variacaoTotal);
+        $('totalAcumuladoAnterior').textContent =
+         quantidade(dados.totalAcumuladoAnterior);
+
+        $('totalAcumuladoAtual').textContent =
+         quantidade(dados.totalAcumuladoAtual);
+
+        $('variacaoTotalAcumulado').textContent =
+         percentual(dados.variacaoTotalAcumulado);
+
+        $('variacaoTotalAcumulado').className =
+         classeVariacao(dados.variacaoTotalAcumulado);
 
         $('estado').textContent =
           produtos.length + ' produtos encontrados no Sankhya.';
