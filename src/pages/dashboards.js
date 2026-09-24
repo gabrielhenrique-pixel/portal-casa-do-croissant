@@ -22,6 +22,7 @@ export function dashboardsPage() {
     .rentabilidade { background:linear-gradient(135deg,#0b4d35,#27a66c); }
     .vendas { background:linear-gradient(135deg,#113f70,#2384c4); }
     .devolucoes { background:linear-gradient(135deg,#952d2b,#dd6048); }
+    .bsc { background:linear-gradient(135deg,#0d5e3d,#22a366); }
     @media (max-width:820px) { .grade { grid-template-columns:1fr; }.card { min-height:220px; } }
     @media (max-width:520px) { main { width:min(100% - 28px,1180px); padding-top:22px; }.topo { margin-bottom:24px; } h1 { font-size:27px; } }
   </style>
@@ -45,6 +46,10 @@ export function dashboardsPage() {
         <span class="icone">↶</span>
         <strong>Painel de devoluções</strong>
       </a>
+      <a class="card bsc" href="/dashboard-bsc">
+  <span class="icone">▦</span>
+  <strong>BSC Comercial</strong>
+</a>
     </section>
   </main>
 </body>
