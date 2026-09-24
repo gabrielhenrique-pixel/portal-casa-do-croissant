@@ -72,9 +72,8 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
-    "  AND CAB.STATUSNOTA = 'L'",
+        "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER = 1101',
-    filtroVendedor,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
@@ -223,18 +222,26 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     meta: metasPorVendedor.get(codigoVendedor) || 0
   };
 });
-  const totalFaturamento = vendedores.reduce(
-    (total, vendedor) => total + vendedor.faturamento,
-    0
+    const vendedorDoFiltro = vendedores.find(
+    (vendedor) =>
+      String(vendedor.codigoVendedor) === vendedorSelecionado
   );
+
+  const totalFaturamento = vendedorSelecionado
+    ? numero(vendedorDoFiltro?.faturamento)
+    : vendedores.reduce(
+        (total, vendedor) => total + vendedor.faturamento,
+        0
+      );
 
   const totalMeta = vendedorSelecionado
   ? metasPorVendedor.get(vendedorSelecionado) || 0
   : metaEmpresa;
 
-  return {
+    return {
     inicio,
     fim,
+    vendedorSelecionado,
     vendedores,
     opcoesVendedores,
     produtos,
