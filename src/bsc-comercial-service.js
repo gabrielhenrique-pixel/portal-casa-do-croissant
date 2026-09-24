@@ -33,45 +33,71 @@ export async function listarBscVolumeProduto(request, env) {
   const inicioAnterior = mesmoPeriodoAnoAnterior(inicio);
   const fimAnterior = mesmoPeriodoAnoAnterior(fim);
 
+  const inicioAcumuladoAtual = fim.slice(0, 4) + '-01-01';
+  const inicioAcumuladoAnterior =
+    fimAnterior.slice(0, 4) + '-01-01';
+
   const token = await obterTokenSankhya(env);
 
   const sql = [
     'SELECT',
     '  ITE.CODPROD AS CODIGO_PRODUTO,',
     "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
+
     '  SUM(CASE',
     "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
     "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
     '    THEN NVL(ITE.QTDNEG, 0)',
     '    ELSE 0',
     '  END) AS QUANTIDADE_ANTERIOR,',
+
     '  SUM(CASE',
     "    WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
     "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     '    THEN NVL(ITE.QTDNEG, 0)',
     '    ELSE 0',
-    '  END) AS QUANTIDADE_ATUAL',
+    '  END) AS QUANTIDADE_ATUAL,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN NVL(ITE.QTDNEG, 0)',
+    '    ELSE 0',
+    '  END) AS ACUMULADO_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN NVL(ITE.QTDNEG, 0)',
+    '    ELSE 0',
+    '  END) AS ACUMULADO_ATUAL',
+
     'FROM TGFCAB CAB',
     'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
     'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
-    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER = 1101',
+
     'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
+
     'HAVING SUM(CASE',
-    "  WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+    "  WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
     "   AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
     '  THEN NVL(ITE.QTDNEG, 0)',
     '  ELSE 0',
     'END) <> 0',
+
     'OR SUM(CASE',
-    "  WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
     "   AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     '  THEN NVL(ITE.QTDNEG, 0)',
     '  ELSE 0',
     'END) <> 0',
+
     'ORDER BY PRODUTO'
   ].join('\n');
 
@@ -80,15 +106,27 @@ export async function listarBscVolumeProduto(request, env) {
   const produtos = linhas.map(function(linha) {
     const quantidadeAnterior = numero(linha[2]);
     const quantidadeAtual = numero(linha[3]);
+    const acumuladoAnterior = numero(linha[4]);
+    const acumuladoAtual = numero(linha[5]);
 
     return {
       codigoProduto: String(linha[0] || '').trim(),
       produto: String(linha[1] || 'Sem produto').trim(),
+
       quantidadeAnterior: quantidadeAnterior,
       quantidadeAtual: quantidadeAtual,
+
+      acumuladoAnterior: acumuladoAnterior,
+      acumuladoAtual: acumuladoAtual,
+
       variacao:
         quantidadeAnterior > 0
           ? (quantidadeAtual - quantidadeAnterior) / quantidadeAnterior
+          : null,
+
+      variacaoAcumulado:
+        acumuladoAnterior > 0
+          ? (acumuladoAtual - acumuladoAnterior) / acumuladoAnterior
           : null
     };
   });
@@ -101,17 +139,39 @@ export async function listarBscVolumeProduto(request, env) {
     return total + produto.quantidadeAtual;
   }, 0);
 
+  const totalAcumuladoAnterior = produtos.reduce(function(total, produto) {
+    return total + produto.acumuladoAnterior;
+  }, 0);
+
+  const totalAcumuladoAtual = produtos.reduce(function(total, produto) {
+    return total + produto.acumuladoAtual;
+  }, 0);
+
   return {
     inicio: inicio,
     fim: fim,
     inicioAnterior: inicioAnterior,
     fimAnterior: fimAnterior,
+
+    inicioAcumuladoAnterior: inicioAcumuladoAnterior,
+    inicioAcumuladoAtual: inicioAcumuladoAtual,
+
     produtos: produtos,
+
     totalAnterior: totalAnterior,
     totalAtual: totalAtual,
+    totalAcumuladoAnterior: totalAcumuladoAnterior,
+    totalAcumuladoAtual: totalAcumuladoAtual,
+
     variacaoTotal:
       totalAnterior > 0
         ? (totalAtual - totalAnterior) / totalAnterior
+        : null,
+
+    variacaoTotalAcumulado:
+      totalAcumuladoAnterior > 0
+        ? (totalAcumuladoAtual - totalAcumuladoAnterior) /
+          totalAcumuladoAnterior
         : null
   };
 }
