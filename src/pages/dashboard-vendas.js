@@ -196,6 +196,121 @@ export function dashboardVendasPage() {
       font-style:italic;
     }
 
+        .painel-ranking {
+      padding:14px 10px 12px;
+    }
+
+    .painel-ranking h2 {
+      margin:0 8px 10px;
+      font-size:20px;
+    }
+
+    .ranking-tabela {
+      border-collapse:separate;
+      border-spacing:0 6px;
+    }
+
+    .ranking-tabela td {
+      padding:6px 10px;
+      border:0;
+      background:#f3f7fc;
+      color:#132d57;
+      font-size:12px;
+      font-weight:700;
+    }
+
+    .ranking-tabela td:first-child {
+      width:48%;
+      border-radius:9px 0 0 9px;
+      text-align:left;
+    }
+
+    .ranking-tabela td:nth-child(2) {
+      width:31%;
+      white-space:nowrap;
+      text-align:right;
+    }
+
+    .ranking-tabela td:last-child {
+      width:21%;
+      border-radius:0 9px 9px 0;
+      text-align:right;
+    }
+
+    .ranking-vendedor {
+      display:flex;
+      align-items:center;
+      gap:9px;
+    }
+
+    .ranking-posicao {
+      display:inline-flex;
+      width:28px;
+      height:20px;
+      flex:0 0 28px;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      background:#e8eef6;
+      color:#60718b;
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .ranking-meta {
+      display:inline-flex;
+      min-width:54px;
+      height:22px;
+      align-items:center;
+      justify-content:center;
+      padding:0 8px;
+      border-radius:999px;
+      font-size:11px;
+      font-weight:700;
+    }
+
+    .ranking-meta--verde {
+      background:#ddf8e7;
+      color:#07984a;
+    }
+
+    .ranking-meta--amarela {
+      background:#fff2d2;
+      color:#e88a00;
+    }
+
+    .ranking-meta--vermelha {
+      background:#ffe0e4;
+      color:#e64050;
+    }
+
+    .ranking-meta--sem {
+      background:#e8eef5;
+      color:#60718b;
+      font-weight:400;
+    }
+
+    .ranking-primeiro td {
+      background:#fffaf0;
+      border-top:1px solid #ffd273;
+      border-bottom:1px solid #ffd273;
+      font-size:14px;
+    }
+
+    .ranking-primeiro td:first-child {
+      border-left:1px solid #ffd273;
+    }
+
+    .ranking-primeiro td:last-child {
+      border-right:1px solid #ffd273;
+    }
+
+    .ranking-primeiro .ranking-posicao {
+      background:transparent;
+      color:#d78a00;
+      font-size:12px;
+    }
+
     .gauge-total {
     display:grid;
     place-items:center;
@@ -551,18 +666,10 @@ export function dashboardVendasPage() {
     <p id="estado" class="estado">Carregando dados...</p>
 
     <section class="grade-principal">
-      <article class="painel">
+            <article class="painel painel-ranking">
         <h2>Vendedores</h2>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Vendedor</th>
-              <th>Total vendas</th>
-              <th>Meta atingida</th>
-            </tr>
-          </thead>
-
+        <table class="ranking-tabela" aria-label="Ranking de vendedores por meta atingida">
           <tbody id="linhas"></tbody>
         </table>
       </article>
@@ -824,31 +931,51 @@ export function dashboardVendasPage() {
 
         preencherFiltro(opcoesVendedores);
 
-        $('linhas').innerHTML =
-          vendedores.map(function (vendedor) {
-            var metaAtingida = vendedor.percentualMeta == null
-              ? '<span class="sem-meta">Sem meta</span>'
+                $('linhas').innerHTML =
+          vendedores.map(function (vendedor, indice) {
+            var semMeta = vendedor.percentualMeta == null;
+            var metaAtingida = semMeta
+              ? 'Sem meta'
               : percentual.format(vendedor.percentualMeta);
 
+            var classeMeta = 'ranking-meta--sem';
+
+            if (!semMeta && vendedor.percentualMeta < .39) {
+              classeMeta = 'ranking-meta--vermelha';
+            } else if (!semMeta && vendedor.percentualMeta < .61) {
+              classeMeta = 'ranking-meta--amarela';
+            } else if (!semMeta) {
+              classeMeta = 'ranking-meta--verde';
+            }
+
             return (
-              '<tr>' +
-                '<td><strong>' +
-                  escapar(vendedor.vendedor) +
-                '</strong></td>' +
+              '<tr class="ranking-linha' +
+                (indice === 0 ? ' ranking-primeiro' : '') +
+                '">' +
+                '<td class="ranking-vendedor">' +
+                  '<span class="ranking-posicao">' +
+                    (indice + 1) +
+                    'º</span>' +
+                  '<strong>' +
+                    escapar(vendedor.vendedor) +
+                  '</strong>' +
+                '</td>' +
                 '<td>' +
                   moeda.format(numero(vendedor.faturamento)) +
                 '</td>' +
-                '<td style="color:' +
-                  corMeta(vendedor.percentualMeta) +
-                  '">' +
-                  metaAtingida +
+                '<td>' +
+                  '<span class="ranking-meta ' +
+                    classeMeta +
+                    '">' +
+                    metaAtingida +
+                  '</span>' +
                 '</td>' +
               '</tr>'
             );
           }).join('') ||
           '<tr><td colspan="3" class="sem-meta">' +
             'Nenhuma venda encontrada no período.' +
-          '</td></tr>';
+          '</td>';
 
         $('faturamentoTotal').textContent = moeda.format(
           numero(dados.totalFaturamento)
