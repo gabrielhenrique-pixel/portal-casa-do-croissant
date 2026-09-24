@@ -706,7 +706,7 @@ export function dashboardVendasPage() {
                 <table class="ranking-tabela" aria-label="Ranking de vendedores por meta atingida">
           <thead>
             <tr>
-              <th>Vendedor</th>
+              <th aria-label="Posição e nome"></th>
               <th>Total vendido</th>
               <th>Meta atingida</th>
             </tr>
