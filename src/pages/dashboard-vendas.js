@@ -262,9 +262,11 @@ export function dashboardVendasPage() {
       vertical-align:middle;
     }
 
-    .ranking-vendedor strong {
-      vertical-align:middle;
-    }
+        .ranking-vendedor strong {
+         vertical-align:middle;
+         font-weight:400;
+        }
+    
     .ranking-posicao {
       display:inline-flex;
       width:28px;
