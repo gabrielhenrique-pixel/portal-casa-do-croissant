@@ -205,9 +205,25 @@ export function dashboardVendasPage() {
       font-size:20px;
     }
 
-    .ranking-tabela {
+        .ranking-tabela {
       border-collapse:separate;
       border-spacing:0 6px;
+    }
+
+    .ranking-tabela th {
+      padding:0 10px 4px;
+      border:0;
+      background:transparent;
+      color:#6c7d95;
+      font-size:10px;
+      font-weight:700;
+      text-align:left;
+      text-transform:uppercase;
+    }
+
+    .ranking-tabela th:nth-child(2),
+    .ranking-tabela th:nth-child(3) {
+      text-align:right;
     }
 
     .ranking-tabela td {
@@ -237,12 +253,18 @@ export function dashboardVendasPage() {
       text-align:right;
     }
 
-    .ranking-vendedor {
-      display:flex;
-      align-items:center;
-      gap:9px;
+        .ranking-vendedor {
+      white-space:nowrap;
     }
 
+    .ranking-vendedor .ranking-posicao {
+      margin-right:9px;
+      vertical-align:middle;
+    }
+
+    .ranking-vendedor strong {
+      vertical-align:middle;
+    }
     .ranking-posicao {
       display:inline-flex;
       width:28px;
@@ -290,11 +312,12 @@ export function dashboardVendasPage() {
       font-weight:400;
     }
 
-    .ranking-primeiro td {
+        .ranking-primeiro td {
+      padding:10px 11px;
       background:#fffaf0;
       border-top:1px solid #ffd273;
       border-bottom:1px solid #ffd273;
-      font-size:14px;
+      font-size:15px;
     }
 
     .ranking-primeiro td:first-child {
@@ -305,9 +328,18 @@ export function dashboardVendasPage() {
       border-right:1px solid #ffd273;
     }
 
-    .ranking-primeiro .ranking-posicao {
+        .ranking-primeiro .ranking-posicao {
+      width:32px;
+      height:24px;
+      margin-right:10px;
       background:transparent;
       color:#d78a00;
+      font-size:13px;
+    }
+
+    .ranking-primeiro .ranking-meta {
+      min-width:60px;
+      height:26px;
       font-size:12px;
     }
 
@@ -669,7 +701,14 @@ export function dashboardVendasPage() {
             <article class="painel painel-ranking">
         <h2>Vendedores</h2>
 
-        <table class="ranking-tabela" aria-label="Ranking de vendedores por meta atingida">
+                <table class="ranking-tabela" aria-label="Ranking de vendedores por meta atingida">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Total vendido</th>
+              <th>Meta atingida</th>
+            </tr>
+          </thead>
           <tbody id="linhas"></tbody>
         </table>
       </article>
