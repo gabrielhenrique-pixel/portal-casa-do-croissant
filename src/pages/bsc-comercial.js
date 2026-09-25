@@ -553,10 +553,7 @@ var registros = abaAtual === 'financeiro-vendedor'
       var registrosVisiveis = registros.filter(function(registro) {
   if (!modoVendedor) return true;
 
-  return (
-    Number(registro.quantidadeAnterior || 0) !== 0 ||
-    Number(registro.quantidadeAtual || 0) !== 0
-  );
+  return Number(devolucao.devolucaoAtual || 0) !== 0;
 });
 
 var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
