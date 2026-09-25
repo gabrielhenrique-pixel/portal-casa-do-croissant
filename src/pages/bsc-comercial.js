@@ -563,6 +563,15 @@ var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
   ? dadosDevolucoes.devolucoes
   : [];
 
+  var devolucoesVisiveis = devolucoes.filter(function(devolucao) {
+  if (!modoVendedor) return true;
+
+  return (
+    Number(devolucao.devolucaoAnterior || 0) !== 0 ||
+    Number(devolucao.devolucaoAtual || 0) !== 0
+  );
+});
+
 var registrosPorChave = {};
 
 registros.forEach(function(registro) {
@@ -684,7 +693,7 @@ function percentualDevolucao(devolucao, volume) {
   return devolucao / volume;
 }
 
-$('linhasDevolucoes').innerHTML = devolucoes.map(function(devolucao) {
+$('linhasDevolucoes').innerHTML = devolucoesVisiveis.map(function(devolucao) {
   var chave = modoAgrupado
   ? devolucao[campoAgrupamento]
   : devolucao.codigoProduto;
