@@ -1230,6 +1230,174 @@ async function consultarBscFinanceiroVendedor(
   };
 }
 
+export async function listarBscVendedorPorProduto(request, env) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error:'A data inicial não pode ser maior que a data final.',
+      status:400
+    };
+  }
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    '  ITE.CODPROD AS CODIGO_PRODUTO,',
+    "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
+    '  CAB.CODVEND AS CODIGO_VENDEDOR,',
+    "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR,",
+    '  SUM(NVL(ITE.QTDNEG, 0)) AS UNIDADES,',
+
+    '  SUM(',
+    '    CASE',
+    '      WHEN NVL(VOA.QUANTIDADE, 0) > 0 THEN',
+    '        CASE',
+    "          WHEN VOA.DIVIDEMULTIPLICA = 'D'",
+    '            THEN NVL(ITE.QTDNEG, 0) / VOA.QUANTIDADE',
+    "          WHEN VOA.DIVIDEMULTIPLICA = 'M'",
+    '            THEN NVL(ITE.QTDNEG, 0) * VOA.QUANTIDADE',
+    '          ELSE NVL(ITE.QTDNEG, 0)',
+    '        END',
+    '      ELSE NVL(ITE.QTDNEG, 0)',
+    '    END',
+    '  ) AS CAIXAS',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+    'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND',
+    'LEFT JOIN TGFVOA VOA',
+    '  ON VOA.CODPROD = ITE.CODPROD',
+    '  AND VOA.CODVOL = ITE.CODVOL',
+    '  AND (',
+    "    (ITE.CONTROLE IS NULL AND VOA.CONTROLE = ' ')",
+    '    OR (ITE.CONTROLE IS NOT NULL AND ITE.CONTROLE = VOA.CONTROLE)',
+    '  )',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.TIPMOV = 'V'",
+    "  AND CAB.STATUSNOTA = 'L'",
+    '  AND CAB.CODTIPOPER = 1101',
+
+    'GROUP BY',
+    '  ITE.CODPROD,',
+    '  PRO.DESCRPROD,',
+    '  CAB.CODVEND,',
+    '  VEN.APELIDO'
+  ].join('\n');
+
+  const linhas = await executarConsultaSankhya(token, sql);
+
+  const produtosPorCodigo = new Map();
+  const vendedoresPorCodigo = new Map();
+
+  linhas.forEach(function(linha) {
+    const codigoProduto = String(linha[0] || '').trim();
+    const produto = String(linha[1] || 'SEM PRODUTO').trim();
+    const codigoVendedor = String(linha[2] || '').trim();
+    const vendedor = String(linha[3] || 'SEM VENDEDOR').trim();
+
+    const unidades = numero(linha[4]);
+    const caixas = numero(linha[5]);
+
+    if (!produtosPorCodigo.has(codigoProduto)) {
+      produtosPorCodigo.set(codigoProduto, {
+        codigoProduto: codigoProduto,
+        produto: produto,
+        unidadesPorVendedor: {},
+        caixasPorVendedor: {}
+      });
+    }
+
+    if (!vendedoresPorCodigo.has(codigoVendedor)) {
+      vendedoresPorCodigo.set(codigoVendedor, {
+        codigoVendedor: codigoVendedor,
+        vendedor: vendedor
+      });
+    }
+
+    const produtoAtual = produtosPorCodigo.get(codigoProduto);
+
+    produtoAtual.unidadesPorVendedor[codigoVendedor] =
+      numero(produtoAtual.unidadesPorVendedor[codigoVendedor]) +
+      unidades;
+
+    produtoAtual.caixasPorVendedor[codigoVendedor] =
+      numero(produtoAtual.caixasPorVendedor[codigoVendedor]) +
+      caixas;
+  });
+
+  const vendedores = Array.from(vendedoresPorCodigo.values())
+    .sort(function(a, b) {
+      if (a.vendedor.toUpperCase() === 'EMPRESA') return -1;
+      if (b.vendedor.toUpperCase() === 'EMPRESA') return 1;
+
+      return a.vendedor.localeCompare(b.vendedor, 'pt-BR');
+    });
+
+  const produtos = Array.from(produtosPorCodigo.values())
+    .sort(function(a, b) {
+      return a.produto.localeCompare(b.produto, 'pt-BR');
+    });
+
+  const totaisUnidadesPorVendedor = {};
+  const totaisCaixasPorVendedor = {};
+
+  vendedores.forEach(function(vendedor) {
+    totaisUnidadesPorVendedor[vendedor.codigoVendedor] = 0;
+    totaisCaixasPorVendedor[vendedor.codigoVendedor] = 0;
+  });
+
+  produtos.forEach(function(produto) {
+    vendedores.forEach(function(vendedor) {
+      const codigo = vendedor.codigoVendedor;
+
+      totaisUnidadesPorVendedor[codigo] +=
+        numero(produto.unidadesPorVendedor[codigo]);
+
+      totaisCaixasPorVendedor[codigo] +=
+        numero(produto.caixasPorVendedor[codigo]);
+    });
+  });
+
+  const totalUnidades = Object.values(
+    totaisUnidadesPorVendedor
+  ).reduce(function(total, valor) {
+    return total + numero(valor);
+  }, 0);
+
+  const totalCaixas = Object.values(
+    totaisCaixasPorVendedor
+  ).reduce(function(total, valor) {
+    return total + numero(valor);
+  }, 0);
+
+  return {
+    inicio: inicio,
+    fim: fim,
+    vendedores: vendedores,
+    produtos: produtos,
+    totaisUnidadesPorVendedor: totaisUnidadesPorVendedor,
+    totaisCaixasPorVendedor: totaisCaixasPorVendedor,
+    totalUnidades: totalUnidades,
+    totalCaixas: totalCaixas
+  };
+}
+
 async function obterTokenSankhya(env) {
   const resposta = await fetch('https://api.sankhya.com.br/authenticate', {
     method: 'POST',
