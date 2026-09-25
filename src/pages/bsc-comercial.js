@@ -381,8 +381,10 @@ tfoot td:first-child {
 
     <section id="painelPrincipal" class="painel">
   <div id="tituloPainel" class="titulo-painel">
+    BSC COMERCIAL - VOLUME POR PRODUTO
+  </div>
 
-      <div class="tabela-area">
+  <div class="tabela-area">
         <table>
           <thead>
             <tr>
