@@ -176,6 +176,132 @@ export async function listarBscVolumeProduto(request, env) {
   };
 }
 
+export async function listarBscDevolucoesVolume(request, env) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error: 'A data inicial não pode ser maior que a data final.',
+      status: 400
+    };
+  }
+
+  if (
+    !env.SANKHYA_CLIENT_ID ||
+    !env.SANKHYA_CLIENT_SECRET ||
+    !env.SANKHYA_X_TOKEN
+  ) {
+    return {
+      error: 'A integração com o Sankhya ainda não foi configurada.',
+      status: 503
+    };
+  }
+
+  const inicioAnterior = mesmoPeriodoAnoAnterior(inicio);
+  const fimAnterior = mesmoPeriodoAnoAnterior(fim);
+
+  const inicioAcumuladoAtual = fim.slice(0, 4) + '-01-01';
+  const inicioAcumuladoAnterior =
+    fimAnterior.slice(0, 4) + '-01-01';
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    '  ITE.CODPROD AS CODIGO_PRODUTO,',
+    "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ABS(NVL(ITE.QTDNEG, 0))',
+    '    ELSE 0',
+    '  END) AS DEVOLUCAO_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ABS(NVL(ITE.QTDNEG, 0))',
+    '    ELSE 0',
+    '  END) AS DEVOLUCAO_ATUAL,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ABS(NVL(ITE.QTDNEG, 0))',
+    '    ELSE 0',
+    '  END) AS DEVOLUCAO_ACUMULADA_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ABS(NVL(ITE.QTDNEG, 0))',
+    '    ELSE 0',
+    '  END) AS DEVOLUCAO_ACUMULADA_ATUAL',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '  AND CAB.CODTIPOPER = 1202',
+    "  AND CAB.TIPMOV = 'D'",
+    "  AND CAB.STATUSNOTA = 'L'",
+
+    'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
+    'ORDER BY PRODUTO'
+  ].join('\n');
+
+  const linhas = await executarConsultaSankhya(token, sql);
+
+  const devolucoes = linhas.map(function(linha) {
+    return {
+      codigoProduto: String(linha[0] || '').trim(),
+      produto: String(linha[1] || 'Sem produto').trim(),
+      devolucaoAnterior: numero(linha[2]),
+      devolucaoAtual: numero(linha[3]),
+      devolucaoAcumuladaAnterior: numero(linha[4]),
+      devolucaoAcumuladaAtual: numero(linha[5])
+    };
+  });
+
+  const totalAnterior = devolucoes.reduce(function(total, produto) {
+    return total + produto.devolucaoAnterior;
+  }, 0);
+
+  const totalAtual = devolucoes.reduce(function(total, produto) {
+    return total + produto.devolucaoAtual;
+  }, 0);
+
+  const totalAcumuladoAnterior = devolucoes.reduce(function(total, produto) {
+    return total + produto.devolucaoAcumuladaAnterior;
+  }, 0);
+
+  const totalAcumuladoAtual = devolucoes.reduce(function(total, produto) {
+    return total + produto.devolucaoAcumuladaAtual;
+  }, 0);
+
+  return {
+    devolucoes: devolucoes,
+    totalAnterior: totalAnterior,
+    totalAtual: totalAtual,
+    totalAcumuladoAnterior: totalAcumuladoAnterior,
+    totalAcumuladoAtual: totalAcumuladoAtual
+  };
+}
+
 async function obterTokenSankhya(env) {
   const resposta = await fetch('https://api.sankhya.com.br/authenticate', {
     method: 'POST',
