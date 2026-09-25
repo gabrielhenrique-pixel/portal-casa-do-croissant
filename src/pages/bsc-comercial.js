@@ -138,6 +138,15 @@ export function bscComercialPage() {
       box-shadow:0 8px 22px #1730521c;
     }
 
+    .painel-devolucoes {
+  margin-top:20px;
+}
+
+.tabela-devolucoes th:nth-child(2),
+.tabela-devolucoes td:nth-child(2) {
+  text-align:right;
+}
+
     .titulo-painel {
       padding:17px 24px;
       background:linear-gradient(135deg,#153b5d,#102e49);
@@ -282,6 +291,46 @@ export function bscComercialPage() {
           </tfoot>
         </table>
       </div>
+        </section>
+
+    <section class="painel painel-devolucoes">
+      <div class="titulo-painel">
+        DEVOLUÇÕES POR PRODUTO EM VOLUME
+      </div>
+
+      <div class="tabela-area">
+        <table class="tabela-devolucoes">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th id="tituloDevAnterior">Dev anterior</th>
+              <th id="tituloDevAtual">Dev atual</th>
+              <th>% Dev anterior</th>
+              <th>% Dev atual</th>
+              <th id="tituloDevAcumAnterior">Dev acum. anterior</th>
+              <th id="tituloDevAcumAtual">Dev acum. atual</th>
+              <th>% Acum. anterior</th>
+              <th>% Acum. atual</th>
+            </tr>
+          </thead>
+
+          <tbody id="linhasDevolucoes"></tbody>
+
+          <tfoot>
+            <tr>
+              <td>TOTAL</td>
+              <td id="totalDevAnterior">—</td>
+              <td id="totalDevAtual">—</td>
+              <td id="percentualDevAnterior">—</td>
+              <td id="percentualDevAtual">—</td>
+              <td id="totalDevAcumAnterior">—</td>
+              <td id="totalDevAcumAtual">—</td>
+              <td id="percentualDevAcumAnterior">—</td>
+              <td id="percentualDevAcumAtual">—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </section>
   </main>
 
@@ -351,8 +400,18 @@ export function bscComercialPage() {
         });
       }
 
-      function renderizar(dados) {
+      function renderizar(dados, dadosDevolucoes) {
         var produtos = Array.isArray(dados.produtos) ? dados.produtos : [];
+
+        var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
+  ? dadosDevolucoes.devolucoes
+  : [];
+
+var produtosPorCodigo = {};
+
+produtos.forEach(function(produto) {
+  produtosPorCodigo[produto.codigoProduto] = produto;
+});
 
         $('tituloAnterior').textContent =
           'Volume ' + textoPeriodo(dados.inicioAnterior, dados.fimAnterior);
@@ -408,6 +467,105 @@ export function bscComercialPage() {
         $('variacaoTotalAcumulado').className =
          classeVariacao(dados.variacaoTotalAcumulado);
 
+         $('tituloDevAnterior').textContent =
+  'Dev ' + dados.fimAnterior.slice(0, 4);
+
+$('tituloDevAtual').textContent =
+  'Dev ' + dados.fim.slice(0, 4);
+
+$('tituloDevAcumAnterior').textContent =
+  'Dev acum. ' + dados.fimAnterior.slice(0, 4);
+
+$('tituloDevAcumAtual').textContent =
+  'Dev acum. ' + dados.fim.slice(0, 4);
+
+function percentualDevolucao(devolucao, volume) {
+  if (!volume || volume <= 0) return null;
+  return devolucao / volume;
+}
+
+$('linhasDevolucoes').innerHTML = devolucoes.map(function(devolucao) {
+  var volume = produtosPorCodigo[devolucao.codigoProduto] || {};
+
+  var percentualAnterior = percentualDevolucao(
+    devolucao.devolucaoAnterior,
+    volume.quantidadeAnterior
+  );
+
+  var percentualAtual = percentualDevolucao(
+    devolucao.devolucaoAtual,
+    volume.quantidadeAtual
+  );
+
+  var percentualAcumAnterior = percentualDevolucao(
+    devolucao.devolucaoAcumuladaAnterior,
+    volume.acumuladoAnterior
+  );
+
+  var percentualAcumAtual = percentualDevolucao(
+    devolucao.devolucaoAcumuladaAtual,
+    volume.acumuladoAtual
+  );
+
+  return (
+    '<tr>' +
+      '<td>' + escapar(devolucao.produto) + '</td>' +
+      '<td>' + quantidade(devolucao.devolucaoAnterior) + '</td>' +
+      '<td>' + quantidade(devolucao.devolucaoAtual) + '</td>' +
+      '<td class="negativo">' + percentual(percentualAnterior) + '</td>' +
+      '<td class="negativo">' + percentual(percentualAtual) + '</td>' +
+      '<td>' + quantidade(devolucao.devolucaoAcumuladaAnterior) + '</td>' +
+      '<td>' + quantidade(devolucao.devolucaoAcumuladaAtual) + '</td>' +
+      '<td class="negativo">' +
+        percentual(percentualAcumAnterior) +
+      '</td>' +
+      '<td class="negativo">' +
+        percentual(percentualAcumAtual) +
+      '</td>' +
+    '</tr>'
+  );
+}).join('');
+
+$('totalDevAnterior').textContent =
+  quantidade(dadosDevolucoes.totalAnterior);
+
+$('totalDevAtual').textContent =
+  quantidade(dadosDevolucoes.totalAtual);
+
+$('totalDevAcumAnterior').textContent =
+  quantidade(dadosDevolucoes.totalAcumuladoAnterior);
+
+$('totalDevAcumAtual').textContent =
+  quantidade(dadosDevolucoes.totalAcumuladoAtual);
+
+$('percentualDevAnterior').textContent = percentual(
+  percentualDevolucao(
+    dadosDevolucoes.totalAnterior,
+    dados.totalAnterior
+  )
+);
+
+$('percentualDevAtual').textContent = percentual(
+  percentualDevolucao(
+    dadosDevolucoes.totalAtual,
+    dados.totalAtual
+  )
+);
+
+$('percentualDevAcumAnterior').textContent = percentual(
+  percentualDevolucao(
+    dadosDevolucoes.totalAcumuladoAnterior,
+    dados.totalAcumuladoAnterior
+  )
+);
+
+$('percentualDevAcumAtual').textContent = percentual(
+  percentualDevolucao(
+    dadosDevolucoes.totalAcumuladoAtual,
+    dados.totalAcumuladoAtual
+  )
+);
+
         $('estado').textContent = '';
         $('estado').className = 'estado';
       }
@@ -422,23 +580,40 @@ export function bscComercialPage() {
         $('estado').className = 'estado';
 
         try {
-          var resposta = await fetch(
-            '/api/bsc/volume-produto?inicio=' +
-              encodeURIComponent(inicio) +
-              '&fim=' +
-              encodeURIComponent(fim),
-            { cache:'no-store' }
-          );
+          var respostas = await Promise.all([
+  fetch(
+    '/api/bsc/volume-produto?inicio=' +
+      encodeURIComponent(inicio) +
+      '&fim=' +
+      encodeURIComponent(fim),
+    { cache:'no-store' }
+  ),
+  fetch(
+    '/api/bsc/devolucoes-volume?inicio=' +
+      encodeURIComponent(inicio) +
+      '&fim=' +
+      encodeURIComponent(fim),
+    { cache:'no-store' }
+  )
+]);
 
-          var dados = await resposta.json();
+var dados = await respostas[0].json();
+var dadosDevolucoes = await respostas[1].json();
 
-          if (!resposta.ok) {
-            throw Error(
-              dados.error || 'Não foi possível consultar o BSC.'
-            );
-          }
+if (!respostas[0].ok) {
+  throw Error(
+    dados.error || 'Não foi possível consultar o volume por produto.'
+  );
+}
 
-          renderizar(dados);
+if (!respostas[1].ok) {
+  throw Error(
+    dadosDevolucoes.error ||
+    'Não foi possível consultar as devoluções.'
+  );
+}
+
+renderizar(dados, dadosDevolucoes);
         } catch (erro) {
           $('estado').textContent = erro.message;
           $('estado').className = 'estado erro';
