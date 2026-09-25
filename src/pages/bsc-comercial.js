@@ -389,35 +389,19 @@ export function bscComercialPage() {
 
       var abaAtual = 'volume-produto';
 
-function dinheiro(valor) {
+function medida(valor) {
+  if (abaAtual === 'financeiro-produto') {
+    return new Intl.NumberFormat('pt-BR', {
+      style:'currency',
+      currency:'BRL'
+    }).format(Number(valor || 0));
+  }
+
   return new Intl.NumberFormat('pt-BR', {
-    style:'currency',
-    currency:'BRL'
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
   }).format(Number(valor || 0));
 }
-
-function quantidade(valor) {
-  return abaAtual === 'financeiro-produto'
-    ? dinheiro(valor)
-    : medida(valor);
-}
-
-      function medida(valor) {
-        return new Intl.NumberFormat('pt-BR', {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2
-        }).format(Number(valor || 0));
-      }
-
-      function percentual(valor) {
-        if (valor === null || valor === undefined) return '—';
-
-        return new Intl.NumberFormat('pt-BR', {
-          style:'percent',
-          minimumFractionDigits:1,
-          maximumFractionDigits:1
-        }).format(Number(valor));
-      }
 
       function classeVariacao(valor) {
         if (valor === null || valor === undefined) return 'neutro';
@@ -453,11 +437,17 @@ produtos.forEach(function(produto) {
   produtosPorCodigo[produto.codigoProduto] = produto;
 });
 
-        $('tituloAnterior').textContent =
-          'Volume ' + textoPeriodo(dados.inicioAnterior, dados.fimAnterior);
+        var nomeIndicador = abaAtual === 'financeiro-produto'
+  ? 'Faturamento'
+  : 'Volume';
 
-        $('tituloAtual').textContent =
-          'Volume ' + textoPeriodo(dados.inicio, dados.fim);
+$('tituloAnterior').textContent =
+  nomeIndicador + ' ' +
+  textoPeriodo(dados.inicioAnterior, dados.fimAnterior);
+
+$('tituloAtual').textContent =
+  nomeIndicador + ' ' +
+  textoPeriodo(dados.inicio, dados.fim);
 
           $('tituloAcumuladoAnterior').textContent =
            'Acumulado ' +
