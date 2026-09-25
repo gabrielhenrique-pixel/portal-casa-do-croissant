@@ -749,6 +749,242 @@ async function consultarBscFinanceiroCliente(
   };
 }
 
+export async function listarBscFinanceiroPraca(request, env) {
+  return consultarBscFinanceiroPraca(request, env, false);
+}
+
+export async function listarBscDevolucoesFinanceiroPraca(
+  request,
+  env
+) {
+  return consultarBscFinanceiroPraca(request, env, true);
+}
+
+async function consultarBscFinanceiroPraca(
+  request,
+  env,
+  ehDevolucao
+) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error: 'A data inicial não pode ser maior que a data final.',
+      status: 400
+    };
+  }
+
+  const inicioAnterior = mesmoPeriodoAnoAnterior(inicio);
+  const fimAnterior = mesmoPeriodoAnoAnterior(fim);
+
+  const inicioAcumuladoAtual = fim.slice(0, 4) + '-01-01';
+  const inicioAcumuladoAnterior =
+    fimAnterior.slice(0, 4) + '-01-01';
+
+  const valor = ehDevolucao
+    ? 'ABS(NVL(ITE.VLRTOT, 0))'
+    : '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0))';
+
+  const filtrosOperacao = ehDevolucao
+    ? [
+        '  AND CAB.CODTIPOPER = 1202',
+        "  AND CAB.TIPMOV = 'D'"
+      ]
+    : [
+        '  AND CAB.CODTIPOPER = 1101',
+        "  AND CAB.TIPMOV = 'V'"
+      ];
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    "  NVL(PAR.UF, 'SEM UF') AS UF,",
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ATUAL,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ATUAL',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    ...filtrosOperacao,
+    "  AND CAB.STATUSNOTA = 'L'",
+
+    'GROUP BY PAR.UF'
+  ].join('\n');
+
+  const linhas = await executarConsultaSankhya(token, sql);
+
+  const pracas = linhas.map(function(linha) {
+    const anterior = numero(linha[1]);
+    const atual = numero(linha[2]);
+    const acumuladoAnterior = numero(linha[3]);
+    const acumuladoAtual = numero(linha[4]);
+
+    if (ehDevolucao) {
+      return {
+        praca: nomeDaPraca(linha[0]),
+        devolucaoAnterior: anterior,
+        devolucaoAtual: atual,
+        devolucaoAcumuladaAnterior: acumuladoAnterior,
+        devolucaoAcumuladaAtual: acumuladoAtual
+      };
+    }
+
+    return {
+      praca: nomeDaPraca(linha[0]),
+      quantidadeAnterior: anterior,
+      quantidadeAtual: atual,
+      acumuladoAnterior: acumuladoAnterior,
+      acumuladoAtual: acumuladoAtual,
+      variacao:
+        anterior > 0
+          ? (atual - anterior) / anterior
+          : null,
+      variacaoAcumulado:
+        acumuladoAnterior > 0
+          ? (acumuladoAtual - acumuladoAnterior) /
+            acumuladoAnterior
+          : null
+    };
+  }).sort(function(a, b) {
+    return a.praca.localeCompare(b.praca, 'pt-BR');
+  });
+
+  const totalAnterior = pracas.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAnterior
+        : item.quantidadeAnterior
+    );
+  }, 0);
+
+  const totalAtual = pracas.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAtual
+        : item.quantidadeAtual
+    );
+  }, 0);
+
+  const totalAcumuladoAnterior = pracas.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAcumuladaAnterior
+        : item.acumuladoAnterior
+    );
+  }, 0);
+
+  const totalAcumuladoAtual = pracas.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAcumuladaAtual
+        : item.acumuladoAtual
+    );
+  }, 0);
+
+  return {
+    pracas: ehDevolucao ? undefined : pracas,
+    devolucoes: ehDevolucao ? pracas : undefined,
+
+    inicio: inicio,
+    fim: fim,
+    inicioAnterior: inicioAnterior,
+    fimAnterior: fimAnterior,
+
+    totalAnterior: totalAnterior,
+    totalAtual: totalAtual,
+    totalAcumuladoAnterior: totalAcumuladoAnterior,
+    totalAcumuladoAtual: totalAcumuladoAtual,
+
+    variacaoTotal:
+      totalAnterior > 0
+        ? (totalAtual - totalAnterior) / totalAnterior
+        : null,
+
+    variacaoTotalAcumulado:
+      totalAcumuladoAnterior > 0
+        ? (totalAcumuladoAtual - totalAcumuladoAnterior) /
+          totalAcumuladoAnterior
+        : null
+  };
+}
+
+function nomeDaPraca(uf) {
+  const nomes = {
+    AC:'Acre',
+    AL:'Alagoas',
+    AM:'Amazonas',
+    AP:'Amapá',
+    BA:'Bahia',
+    CE:'Ceará',
+    DF:'Distrito Federal',
+    ES:'Espírito Santo',
+    GO:'Goiás',
+    MA:'Maranhão',
+    MG:'Minas',
+    MS:'Mato Grosso Sul',
+    MT:'Mato Grosso',
+    PA:'Pará',
+    PB:'Paraíba',
+    PE:'Pernambuco',
+    PI:'Piauí',
+    PR:'Paraná',
+    RJ:'Rio de Janeiro',
+    RN:'Rio Grande do Norte',
+    RO:'Rondônia',
+    RR:'Roraima',
+    RS:'Rio Grande do Sul',
+    SC:'Santa Catarina',
+    SE:'Sergipe',
+    SP:'São Paulo',
+    TO:'Tocantins'
+  };
+
+  const codigo = String(uf || '').trim().toUpperCase();
+
+  return nomes[codigo] || codigo || 'SEM UF';
+}
+
 async function obterTokenSankhya(env) {
   const resposta = await fetch('https://api.sankhya.com.br/authenticate', {
     method: 'POST',
