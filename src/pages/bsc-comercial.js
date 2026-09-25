@@ -192,25 +192,25 @@ export function bscComercialPage() {
     }
 
     th {
-      padding:10px 8px;
-      border-bottom:1px solid var(--line);
-      background:#edf4f8;
-      color:#244665;
-      font-size:11px;
-      text-align:right;
-      text-transform:uppercase;
-    }
+  padding:10px 8px;
+  border-bottom:1px solid var(--line);
+  background:#edf4f8;
+  color:#244665;
+  font-size:11px;
+  text-align:center;
+  text-transform:uppercase;
+}
 
     th:first-child,
     th:nth-child(2) { text-align:left; }
 
     td {
-      padding:9px 8px;
-      border-bottom:1px solid #e5edf2;
-      color:#173957;
-      font-size:12px;
-      text-align:right;
-    }
+  padding:9px 8px;
+  border-bottom:1px solid #e5edf2;
+  color:#173957;
+  font-size:12px;
+  text-align:center;
+}
 
     td:first-child,
     td:nth-child(2) { text-align:left; }
@@ -232,12 +232,17 @@ body.modo-cliente .coluna-codigo {
     .neutro { color:#6c7f90; }
 
     tfoot td {
-      border:0;
-      background:#163a5a;
-      color:#fff;
-      font-size:13px;
-      font-weight:700;
-    }
+  border:0;
+  background:#163a5a;
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+}
+
+tfoot td:first-child {
+  text-align:left;
+}
 
     @media (max-width:700px) {
       main { padding:5px 4px 26px; }
