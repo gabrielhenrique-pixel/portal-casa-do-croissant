@@ -428,7 +428,9 @@ async function garantirTabelaMetaEmpresa(env) {
   ).run();
 }
 
-async function listarMetasVendedores(env) {
+export async function listarMetasVendedores(env) {
+  await garantirTabelaMetasVendedores(env);
+
   const resultado = await env.DB.prepare(
     `SELECT
        codigo_vendedor AS codigoVendedor,
