@@ -28,7 +28,8 @@ import {listarBscVolumeProduto,
         listarBscFinanceiroPraca,
         listarBscDevolucoesFinanceiroPraca,
         listarBscFinanceiroVendedor,
-        listarBscDevolucoesFinanceiroVendedor
+        listarBscDevolucoesFinanceiroVendedor,
+        listarBscVendedorPorProduto
        } from './bsc-comercial-service.js';
 import { dashboardsPage } from './pages/dashboards.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
@@ -727,6 +728,41 @@ if (
     return json({
       error:error.message ||
         'Não foi possível consultar as devoluções por vendedor.'
+    }, 502);
+  }
+}
+            if (
+  url.pathname === '/api/bsc/vendedor-produto' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARDS'
+  );
+
+  if (!permitido) {
+    return json({ error:'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const resultado = await listarBscVendedorPorProduto(
+      request,
+      env
+    );
+
+    if (resultado.error) {
+      return json(
+        { error:resultado.error },
+        resultado.status || 400
+      );
+    }
+
+    return json(resultado);
+  } catch (error) {
+    return json({
+      error:error.message ||
+        'Não foi possível consultar o vendedor por produto.'
     }, 502);
   }
 }
