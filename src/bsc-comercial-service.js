@@ -302,6 +302,205 @@ export async function listarBscDevolucoesVolume(request, env) {
   };
 }
 
+export async function listarBscFinanceiroProduto(request, env) {
+  return consultarBscFinanceiroProduto(request, env, false);
+}
+
+export async function listarBscDevolucoesFinanceiroProduto(request, env) {
+  return consultarBscFinanceiroProduto(request, env, true);
+}
+
+async function consultarBscFinanceiroProduto(
+  request,
+  env,
+  ehDevolucao
+) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error: 'A data inicial não pode ser maior que a data final.',
+      status: 400
+    };
+  }
+
+  if (
+    !env.SANKHYA_CLIENT_ID ||
+    !env.SANKHYA_CLIENT_SECRET ||
+    !env.SANKHYA_X_TOKEN
+  ) {
+    return {
+      error: 'A integração com o Sankhya ainda não foi configurada.',
+      status: 503
+    };
+  }
+
+  const inicioAnterior = mesmoPeriodoAnoAnterior(inicio);
+  const fimAnterior = mesmoPeriodoAnoAnterior(fim);
+
+  const inicioAcumuladoAtual = fim.slice(0, 4) + '-01-01';
+  const inicioAcumuladoAnterior =
+    fimAnterior.slice(0, 4) + '-01-01';
+
+  const valor = ehDevolucao
+    ? 'ABS(NVL(ITE.VLRTOT, 0))'
+    : '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0))';
+
+  const filtrosOperacao = ehDevolucao
+    ? [
+        '  AND CAB.CODTIPOPER = 1202',
+        "  AND CAB.TIPMOV = 'D'"
+      ]
+    : [
+        '  AND CAB.CODTIPOPER = 1101',
+        "  AND CAB.TIPMOV = 'V'"
+      ];
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    '  ITE.CODPROD AS CODIGO_PRODUTO,',
+    "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ATUAL,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ATUAL',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    ...filtrosOperacao,
+    "  AND CAB.STATUSNOTA = 'L'",
+
+    'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
+    'ORDER BY PRODUTO'
+  ].join('\n');
+
+  const linhas = await executarConsultaSankhya(token, sql);
+
+  const itens = linhas.map(function(linha) {
+    const anterior = numero(linha[2]);
+    const atual = numero(linha[3]);
+    const acumuladoAnterior = numero(linha[4]);
+    const acumuladoAtual = numero(linha[5]);
+
+    if (ehDevolucao) {
+      return {
+        codigoProduto: String(linha[0] || '').trim(),
+        produto: String(linha[1] || 'Sem produto').trim(),
+        devolucaoAnterior: anterior,
+        devolucaoAtual: atual,
+        devolucaoAcumuladaAnterior: acumuladoAnterior,
+        devolucaoAcumuladaAtual: acumuladoAtual
+      };
+    }
+
+    return {
+      codigoProduto: String(linha[0] || '').trim(),
+      produto: String(linha[1] || 'Sem produto').trim(),
+      quantidadeAnterior: anterior,
+      quantidadeAtual: atual,
+      acumuladoAnterior: acumuladoAnterior,
+      acumuladoAtual: acumuladoAtual,
+      variacao:
+        anterior > 0 ? (atual - anterior) / anterior : null,
+      variacaoAcumulado:
+        acumuladoAnterior > 0
+          ? (acumuladoAtual - acumuladoAnterior) / acumuladoAnterior
+          : null
+    };
+  });
+
+  const totalAnterior = itens.reduce(function(total, item) {
+    return total + (ehDevolucao
+      ? item.devolucaoAnterior
+      : item.quantidadeAnterior);
+  }, 0);
+
+  const totalAtual = itens.reduce(function(total, item) {
+    return total + (ehDevolucao
+      ? item.devolucaoAtual
+      : item.quantidadeAtual);
+  }, 0);
+
+  const totalAcumuladoAnterior = itens.reduce(function(total, item) {
+    return total + (ehDevolucao
+      ? item.devolucaoAcumuladaAnterior
+      : item.acumuladoAnterior);
+  }, 0);
+
+  const totalAcumuladoAtual = itens.reduce(function(total, item) {
+    return total + (ehDevolucao
+      ? item.devolucaoAcumuladaAtual
+      : item.acumuladoAtual);
+  }, 0);
+
+  return {
+    produtos: ehDevolucao ? undefined : itens,
+    devolucoes: ehDevolucao ? itens : undefined,
+
+    inicio: inicio,
+    fim: fim,
+    inicioAnterior: inicioAnterior,
+    fimAnterior: fimAnterior,
+
+    totalAnterior: totalAnterior,
+    totalAtual: totalAtual,
+    totalAcumuladoAnterior: totalAcumuladoAnterior,
+    totalAcumuladoAtual: totalAcumuladoAtual,
+
+    variacaoTotal:
+      totalAnterior > 0
+        ? (totalAtual - totalAnterior) / totalAnterior
+        : null,
+
+    variacaoTotalAcumulado:
+      totalAcumuladoAnterior > 0
+        ? (totalAcumuladoAtual - totalAcumuladoAnterior) /
+          totalAcumuladoAnterior
+        : null
+  };
+}
+
 async function obterTokenSankhya(env) {
   const resposta = await fetch('https://api.sankhya.com.br/authenticate', {
     method: 'POST',
