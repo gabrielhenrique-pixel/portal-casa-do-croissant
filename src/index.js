@@ -19,7 +19,7 @@ import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
 import { bscComercialPage } from './pages/bsc-comercial.js';
-import { listarBscVolumeProduto } from './bsc-comercial-service.js';
+import {listarBscVolumeProduto,listarBscDevolucoesVolume} from './bsc-comercial-service.js';
 import { dashboardsPage } from './pages/dashboards.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
@@ -407,6 +407,40 @@ if (
 
     return json({
       error:error.message || 'Não foi possível consultar o BSC.'
+    }, 502);
+  }
+}
+
+      if (
+  url.pathname === '/api/bsc/devolucoes-volume' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARDS'
+  );
+
+  if (!permitido) {
+    return json({ error:'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const resultado = await listarBscDevolucoesVolume(request, env);
+
+    if (resultado.error) {
+      return json(
+        { error:resultado.error },
+        resultado.status || 400
+      );
+    }
+
+    return json(resultado);
+  } catch (error) {
+    console.error('Falha no BSC - devoluções por produto:', error);
+
+    return json({
+      error:error.message || 'Não foi possível consultar as devoluções.'
     }, 502);
   }
 }
