@@ -19,7 +19,13 @@ import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
 import { bscComercialPage } from './pages/bsc-comercial.js';
-import {listarBscVolumeProduto,listarBscDevolucoesVolume,listarBscFinanceiroProduto,listarBscDevolucoesFinanceiroProduto} from './bsc-comercial-service.js';
+import {listarBscVolumeProduto,
+        listarBscDevolucoesVolume,
+        listarBscFinanceiroProduto,
+        listarBscDevolucoesFinanceiroProduto,
+        listarBscFinanceiroCliente,
+        listarBscDevolucoesFinanceiroCliente
+       } from './bsc-comercial-service.js';
 import { dashboardsPage } from './pages/dashboards.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
@@ -510,6 +516,73 @@ if (
     return json({
       error:error.message ||
         'Não foi possível consultar as devoluções financeiras.'
+    }, 502);
+  }
+}
+
+      if (
+  url.pathname === '/api/bsc/financeiro-cliente' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARDS'
+  );
+
+  if (!permitido) {
+    return json({ error:'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const resultado = await listarBscFinanceiroCliente(request, env);
+
+    if (resultado.error) {
+      return json(
+        { error:resultado.error },
+        resultado.status || 400
+      );
+    }
+
+    return json(resultado);
+  } catch (error) {
+    return json({
+      error:error.message ||
+        'Não foi possível consultar o financeiro por cliente.'
+    }, 502);
+  }
+}
+
+if (
+  url.pathname === '/api/bsc/devolucoes-financeiro-cliente' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARDS'
+  );
+
+  if (!permitido) {
+    return json({ error:'Acesso não autorizado.' }, 403);
+  }
+
+  try {
+    const resultado =
+      await listarBscDevolucoesFinanceiroCliente(request, env);
+
+    if (resultado.error) {
+      return json(
+        { error:resultado.error },
+        resultado.status || 400
+      );
+    }
+
+    return json(resultado);
+  } catch (error) {
+    return json({
+      error:error.message ||
+        'Não foi possível consultar as devoluções por cliente.'
     }, 502);
   }
 }
