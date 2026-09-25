@@ -1,4 +1,5 @@
 import {carregarClientesRentabilidade} from './clientes-rentabilidade.js';
+import {listarMetasVendedores} from './vendas-monitoramento-service.js';
 
 export async function listarBscVolumeProduto(request, env) {
   const url = new URL(request.url);
@@ -985,6 +986,248 @@ function nomeDaPraca(uf) {
   const codigo = String(uf || '').trim().toUpperCase();
 
   return nomes[codigo] || codigo || 'SEM UF';
+}
+
+export async function listarBscFinanceiroVendedor(request, env) {
+  return consultarBscFinanceiroVendedor(request, env, false);
+}
+
+export async function listarBscDevolucoesFinanceiroVendedor(
+  request,
+  env
+) {
+  return consultarBscFinanceiroVendedor(request, env, true);
+}
+
+async function consultarBscFinanceiroVendedor(
+  request,
+  env,
+  ehDevolucao
+) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error:'A data inicial não pode ser maior que a data final.',
+      status:400
+    };
+  }
+
+  const inicioAnterior = mesmoPeriodoAnoAnterior(inicio);
+  const fimAnterior = mesmoPeriodoAnoAnterior(fim);
+
+  const inicioAcumuladoAtual = fim.slice(0, 4) + '-01-01';
+  const inicioAcumuladoAnterior =
+    fimAnterior.slice(0, 4) + '-01-01';
+
+  const valor = ehDevolucao
+    ? 'ABS(NVL(ITE.VLRTOT, 0))'
+    : '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0))';
+
+  const filtrosOperacao = ehDevolucao
+    ? [
+        '  AND CAB.CODTIPOPER = 1202',
+        "  AND CAB.TIPMOV = 'D'"
+      ]
+    : [
+        '  AND CAB.CODTIPOPER = 1101',
+        "  AND CAB.TIPMOV = 'V'"
+      ];
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    '  CAB.CODVEND AS CODIGO_VENDEDOR,',
+    "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR,",
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ATUAL,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ATUAL',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    ...filtrosOperacao,
+    "  AND CAB.STATUSNOTA = 'L'",
+
+    'GROUP BY CAB.CODVEND, VEN.APELIDO'
+  ].join('\n');
+
+  const resultados = await Promise.all([
+    executarConsultaSankhya(token, sql),
+    ehDevolucao ? [] : listarMetasVendedores(env)
+  ]);
+
+  const linhas = resultados[0];
+  const metas = resultados[1];
+
+  const metasPorVendedor = new Map(
+    metas.map(function(meta) {
+      return [
+        String(meta.codigoVendedor || '').trim(),
+        numero(meta.meta)
+      ];
+    })
+  );
+
+  const vendedores = linhas.map(function(linha) {
+    const codigoVendedor = String(linha[0] || '').trim();
+    const vendedor = String(
+      linha[1] || 'SEM VENDEDOR'
+    ).trim();
+
+    const anterior = numero(linha[2]);
+    const atual = numero(linha[3]);
+    const acumuladoAnterior = numero(linha[4]);
+    const acumuladoAtual = numero(linha[5]);
+
+    if (ehDevolucao) {
+      return {
+        codigoVendedor: codigoVendedor,
+        vendedor: vendedor,
+        devolucaoAnterior: anterior,
+        devolucaoAtual: atual,
+        devolucaoAcumuladaAnterior: acumuladoAnterior,
+        devolucaoAcumuladaAtual: acumuladoAtual
+      };
+    }
+
+    const meta = metasPorVendedor.get(codigoVendedor) || 0;
+
+    return {
+      codigoVendedor: codigoVendedor,
+      vendedor: vendedor,
+      quantidadeAnterior: anterior,
+      quantidadeAtual: atual,
+      acumuladoAnterior: acumuladoAnterior,
+      acumuladoAtual: acumuladoAtual,
+      meta: meta,
+      percentualMeta: meta > 0 ? atual / meta : null,
+      variacao:
+        anterior > 0
+          ? (atual - anterior) / anterior
+          : null,
+      variacaoAcumulado:
+        acumuladoAnterior > 0
+          ? (acumuladoAtual - acumuladoAnterior) /
+            acumuladoAnterior
+          : null
+    };
+  }).sort(function(a, b) {
+    if (a.vendedor.toUpperCase() === 'EMPRESA') return -1;
+    if (b.vendedor.toUpperCase() === 'EMPRESA') return 1;
+    if (a.vendedor.toUpperCase() === 'OUTROS') return 1;
+    if (b.vendedor.toUpperCase() === 'OUTROS') return -1;
+
+    return a.vendedor.localeCompare(b.vendedor, 'pt-BR');
+  });
+
+  const totalAnterior = vendedores.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAnterior
+        : item.quantidadeAnterior
+    );
+  }, 0);
+
+  const totalAtual = vendedores.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAtual
+        : item.quantidadeAtual
+    );
+  }, 0);
+
+  const totalAcumuladoAnterior = vendedores.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAcumuladaAnterior
+        : item.acumuladoAnterior
+    );
+  }, 0);
+
+  const totalAcumuladoAtual = vendedores.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAcumuladaAtual
+        : item.acumuladoAtual
+    );
+  }, 0);
+
+  const totalMeta = ehDevolucao
+    ? 0
+    : vendedores.reduce(function(total, vendedor) {
+        return total + vendedor.meta;
+      }, 0);
+
+  return {
+    vendedores: ehDevolucao ? undefined : vendedores,
+    devolucoes: ehDevolucao ? vendedores : undefined,
+
+    inicio: inicio,
+    fim: fim,
+    inicioAnterior: inicioAnterior,
+    fimAnterior: fimAnterior,
+
+    totalAnterior: totalAnterior,
+    totalAtual: totalAtual,
+    totalAcumuladoAnterior: totalAcumuladoAnterior,
+    totalAcumuladoAtual: totalAcumuladoAtual,
+    totalMeta: totalMeta,
+
+    percentualMetaTotal:
+      totalMeta > 0 ? totalAtual / totalMeta : null,
+
+    variacaoTotal:
+      totalAnterior > 0
+        ? (totalAtual - totalAnterior) / totalAnterior
+        : null,
+
+    variacaoTotalAcumulado:
+      totalAcumuladoAnterior > 0
+        ? (totalAcumuladoAtual - totalAcumuladoAnterior) /
+          totalAcumuladoAnterior
+        : null
+  };
 }
 
 async function obterTokenSankhya(env) {
