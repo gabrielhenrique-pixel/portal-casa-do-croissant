@@ -301,29 +301,10 @@ tfoot td:first-child {
     </form>
 
     <section class="abas" aria-label="Abas do BSC">
-      <button
-  class="aba ativa"
-  type="button"
-  data-aba="volume-produto"
->
-  Volume por produto
-</button>
-
-<button
-  class="aba"
-  type="button"
-  data-aba="financeiro-produto"
->
-  Financeiro por produto
-</button>
-
-<button
-  class="aba"
-  type="button"
-  data-aba="financeiro-cliente"
->
-  Financeiro por cliente
-</button>
+      <buttonclass="aba ativa"type="button"data-aba="volume-produto">Volume por produto</button>
+      <buttonclass="aba"type="button"data-aba="financeiro-produto">Financeiro por produto</button>
+      <buttonclass="aba"type="button"data-aba="financeiro-cliente">Financeiro por cliente</button>
+      <buttonclass="aba"type="button"data-aba="financeiro-praca">Financeiro por praça</button>
     </section>
 
     <p id="estado" class="estado">Carregando dados...</p>
@@ -480,11 +461,25 @@ function percentual(valor) {
       }
 
       function renderizar(dados, dadosDevolucoes) {
-        var modoCliente = abaAtual === 'financeiro-cliente';
+        var modoAgrupado =
+  abaAtual === 'financeiro-cliente' ||
+  abaAtual === 'financeiro-praca';
 
-var registros = modoCliente
-  ? (Array.isArray(dados.clientes) ? dados.clientes : [])
-  : (Array.isArray(dados.produtos) ? dados.produtos : []);
+var campoAgrupamento =
+  abaAtual === 'financeiro-praca'
+    ? 'praca'
+    : 'cliente';
+
+var rotuloAgrupamento =
+  abaAtual === 'financeiro-praca'
+    ? 'Praça'
+    : 'Cliente';
+
+var registros = abaAtual === 'financeiro-praca'
+  ? (Array.isArray(dados.pracas) ? dados.pracas : [])
+  : abaAtual === 'financeiro-cliente'
+    ? (Array.isArray(dados.clientes) ? dados.clientes : [])
+    : (Array.isArray(dados.produtos) ? dados.produtos : []);
 
 var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
   ? dadosDevolucoes.devolucoes
@@ -493,22 +488,22 @@ var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
 var registrosPorChave = {};
 
 registros.forEach(function(registro) {
-  var chave = modoCliente
-    ? registro.cliente
+  var chave = modoAgrupado
+    ? registro[campoAgrupamento]
     : registro.codigoProduto;
 
   registrosPorChave[chave] = registro;
 });
 
-document.body.classList.toggle('modo-cliente', modoCliente);
+document.body.classList.toggle('modo-cliente', modoAgrupado);
 
 $('cabecalhoDescricao').textContent =
-  modoCliente ? 'Cliente' : 'Produto';
+  modoAgrupado ? rotuloAgrupamento : 'Produto';
 
 $('cabecalhoDevolucao').textContent =
-  modoCliente ? 'Cliente' : 'Produto';
+  modoAgrupado ? rotuloAgrupamento : 'Produto';
 
-$('rotuloTotal').colSpan = modoCliente ? 1 : 2;
+$('rotuloTotal').colSpan = modoAgrupado ? 1 : 2;
 
 var nomeIndicador = abaAtual === 'volume-produto'
   ? 'Volume'
@@ -535,8 +530,11 @@ $('tituloAtual').textContent =
            formatarData(dados.fim);
 
         $('linhas').innerHTML = registros.map(function(registro) {
-  var codigo = modoCliente ? '' : escapar(registro.codigoProduto);
-  var descricao = modoCliente ? registro.cliente : registro.produto;
+  var codigo = modoAgrupado ? '' : escapar(registro.codigoProduto);
+
+var descricao = modoAgrupado
+  ? registro[campoAgrupamento]
+  : registro.produto;
 
   return (
     '<tr>' +
@@ -591,10 +589,9 @@ function percentualDevolucao(devolucao, volume) {
 }
 
 $('linhasDevolucoes').innerHTML = devolucoes.map(function(devolucao) {
-  var chave = modoCliente
-    ? devolucao.cliente
-    : devolucao.codigoProduto;
-
+  var chave = modoAgrupado
+  ? devolucao[campoAgrupamento]
+  : devolucao.codigoProduto;
   var registro = registrosPorChave[chave] || {};
 
   var percentualAnterior = percentualDevolucao(
@@ -620,7 +617,9 @@ $('linhasDevolucoes').innerHTML = devolucoes.map(function(devolucao) {
   return (
     '<tr>' +
       '<td>' + escapar(
-                  modoCliente ? devolucao.cliente : devolucao.produto
+                  modoAgrupado
+                    ? devolucao[campoAgrupamento]
+                    : devolucao.produto
       ) + '</td>' +
       '<td>' + medida(devolucao.devolucaoAnterior) + '</td>' +
       '<td>' + medida(devolucao.devolucaoAtual) + '</td>' +
@@ -701,9 +700,13 @@ $('percentualDevAcumAtual').textContent = percentual(
     principal:'/api/bsc/financeiro-produto',
     devolucoes:'/api/bsc/devolucoes-financeiro-produto'
   },
-  'financeiro-cliente': {
+    'financeiro-cliente': {
     principal:'/api/bsc/financeiro-cliente',
     devolucoes:'/api/bsc/devolucoes-financeiro-cliente'
+  },
+  'financeiro-praca': {
+    principal:'/api/bsc/financeiro-praca',
+    devolucoes:'/api/bsc/devolucoes-financeiro-praca'
   }
 };
 
@@ -776,18 +779,22 @@ $('fim').value = iso(
     });
 
     $('tituloPainel').textContent =
-  abaAtual === 'financeiro-cliente'
-    ? 'BSC COMERCIAL - FINANCEIRO POR CLIENTE'
-    : abaAtual === 'financeiro-produto'
-      ? 'BSC COMERCIAL - FINANCEIRO POR PRODUTO'
-      : 'BSC COMERCIAL - VOLUME POR PRODUTO';
+  abaAtual === 'financeiro-praca'
+    ? 'BSC COMERCIAL - FINANCEIRO POR PRAÇA'
+    : abaAtual === 'financeiro-cliente'
+      ? 'BSC COMERCIAL - FINANCEIRO POR CLIENTE'
+      : abaAtual === 'financeiro-produto'
+        ? 'BSC COMERCIAL - FINANCEIRO POR PRODUTO'
+        : 'BSC COMERCIAL - VOLUME POR PRODUTO';
 
 $('tituloPainelDevolucoes').textContent =
-  abaAtual === 'financeiro-cliente'
-    ? 'DEVOLUÇÕES CLIENTES'
-    : abaAtual === 'financeiro-produto'
-      ? 'DEVOLUÇÕES FINANCEIRO POR PRODUTO'
-      : 'DEVOLUÇÕES POR PRODUTO EM VOLUME';
+  abaAtual === 'financeiro-praca'
+    ? 'DEVOLUÇÕES PRAÇAS'
+    : abaAtual === 'financeiro-cliente'
+      ? 'DEVOLUÇÕES CLIENTES'
+      : abaAtual === 'financeiro-produto'
+        ? 'DEVOLUÇÕES FINANCEIRO POR PRODUTO'
+        : 'DEVOLUÇÕES POR PRODUTO EM VOLUME';
 
     carregar();
   });
