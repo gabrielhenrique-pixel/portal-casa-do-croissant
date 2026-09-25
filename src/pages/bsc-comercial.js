@@ -169,6 +169,26 @@ export function bscComercialPage() {
   margin-top:20px;
 }
 
+.matriz-bsc {
+  margin-top:20px;
+}
+
+.tabela-matriz th,
+.tabela-matriz td {
+  text-align:center;
+  white-space:nowrap;
+}
+
+.tabela-matriz th:first-child,
+.tabela-matriz td:first-child {
+  text-align:left;
+}
+
+.tabela-matriz th:nth-child(2),
+.tabela-matriz td:nth-child(2) {
+  text-align:center;
+}
+
 .tabela-devolucoes th:nth-child(2),
 .tabela-devolucoes td:nth-child(2) {
   text-align:center;
@@ -359,8 +379,8 @@ tfoot td:first-child {
 
     <p id="estado" class="estado">Carregando dados...</p>
 
-    <section class="painel">
-      <div id="tituloPainel" class="titulo-painel">BSC Comercial - Volume por Produto</div>
+    <section id="painelPrincipal" class="painel">
+  <div id="tituloPainel" class="titulo-painel">
 
       <div class="tabela-area">
         <table>
@@ -398,7 +418,7 @@ tfoot td:first-child {
       </div>
         </section>
 
-    <section class="painel painel-devolucoes">
+    <section id="painelDevolucoes" class="painel painel-devolucoes">
       <div class="titulo-painel">
         <span id="tituloPainelDevolucoes">DEVOLUÇÕES POR PRODUTO EM VOLUME</span>
       </div>
@@ -435,7 +455,51 @@ tfoot td:first-child {
             </tr>
           </tfoot>
         </table>
-      </div>
+            </div>
+    </section>
+
+    <section id="painelMatriz" class="matriz-bsc" hidden>
+      <section class="painel">
+        <div
+          id="tituloMatrizUnidades"
+          class="titulo-painel"
+        >
+          BSC COMERCIAL - VENDEDOR POR PRODUTO - UNIDADES
+        </div>
+
+        <div class="tabela-area">
+          <table class="tabela-matriz">
+            <thead>
+              <tr id="cabecalhosMatrizUnidades"></tr>
+            </thead>
+            <tbody id="linhasMatrizUnidades"></tbody>
+            <tfoot>
+              <tr id="totaisMatrizUnidades"></tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <section class="painel painel-devolucoes">
+        <div
+          id="tituloMatrizCaixas"
+          class="titulo-painel"
+        >
+          BSC COMERCIAL - VENDEDOR POR PRODUTO - CAIXAS
+        </div>
+
+        <div class="tabela-area">
+          <table class="tabela-matriz">
+            <thead>
+              <tr id="cabecalhosMatrizCaixas"></tr>
+            </thead>
+            <tbody id="linhasMatrizCaixas"></tbody>
+            <tfoot>
+              <tr id="totaisMatrizCaixas"></tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -490,6 +554,13 @@ function medida(valor) {
       currency:'BRL'
     }).format(Number(valor || 0));
   }
+
+  function medidaMatriz(valor) {
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits:0,
+    maximumFractionDigits:2
+  }).format(Number(valor || 0));
+}
 
   return new Intl.NumberFormat('pt-BR', {
     minimumFractionDigits: 0,
@@ -787,6 +858,97 @@ $('percentualDevAcumAtual').textContent = percentual(
         $('estado').className = 'estado';
       }
 
+      function renderizarMatriz(dados) {
+  var vendedores = Array.isArray(dados.vendedores)
+    ? dados.vendedores
+    : [];
+
+  var produtos = Array.isArray(dados.produtos)
+    ? dados.produtos
+    : [];
+
+  var cabecalhos =
+    '<th>Produto</th>' +
+    vendedores.map(function(vendedor) {
+      return '<th>' + escapar(vendedor.vendedor) + '</th>';
+    }).join('') +
+    '<th>Total</th>';
+
+  $('cabecalhosMatrizUnidades').innerHTML = cabecalhos;
+  $('cabecalhosMatrizCaixas').innerHTML = cabecalhos;
+
+  $('tituloMatrizUnidades').textContent =
+    'BSC COMERCIAL - VENDEDOR POR PRODUTO - UNIDADES ' +
+    mesAno(dados.fim).toUpperCase();
+
+  $('tituloMatrizCaixas').textContent =
+    'BSC COMERCIAL - VENDEDOR POR PRODUTO - CAIXAS ' +
+    mesAno(dados.fim).toUpperCase();
+
+  function linhasDaMatriz(campo) {
+    return produtos.map(function(produto) {
+      var total = 0;
+
+      var colunas = vendedores.map(function(vendedor) {
+        var valor = Number(
+          produto[campo][vendedor.codigoVendedor] || 0
+        );
+
+        total += valor;
+
+        return '<td>' + medidaMatriz(valor) + '</td>';
+      }).join('');
+
+      return (
+        '<tr>' +
+          '<td>' + escapar(produto.produto) + '</td>' +
+          colunas +
+          '<td>' + medidaMatriz(total) + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  $('linhasMatrizUnidades').innerHTML =
+    linhasDaMatriz('unidadesPorVendedor');
+
+  $('linhasMatrizCaixas').innerHTML =
+    linhasDaMatriz('caixasPorVendedor');
+
+  function totaisDaMatriz(totaisPorVendedor, totalGeral) {
+    var colunas = vendedores.map(function(vendedor) {
+      return (
+        '<td>' +
+          medidaMatriz(
+            totaisPorVendedor[vendedor.codigoVendedor]
+          ) +
+        '</td>'
+      );
+    }).join('');
+
+    return (
+      '<td>TOTAL</td>' +
+      colunas +
+      '<td>' + medidaMatriz(totalGeral) + '</td>'
+    );
+  }
+
+  $('totaisMatrizUnidades').innerHTML =
+    totaisDaMatriz(
+      dados.totaisUnidadesPorVendedor || {},
+      dados.totalUnidades
+    );
+
+  $('totaisMatrizCaixas').innerHTML =
+    totaisDaMatriz(
+      dados.totaisCaixasPorVendedor || {},
+      dados.totalCaixas
+    );
+
+  $('estado').textContent = '';
+  $('estado').className = 'estado';
+}
+
       async function carregar() {
         var inicio = $('inicio').value;
         var fim = $('fim').value;
@@ -795,6 +957,36 @@ $('percentualDevAcumAtual').textContent = percentual(
 
         $('estado').textContent = 'Consultando dados...';
         $('estado').className = 'estado';
+
+if (abaAtual === 'vendedor-produto') {
+  try {
+    var respostaMatriz = await fetch(
+      '/api/bsc/vendedor-produto?inicio=' +
+        encodeURIComponent(inicio) +
+        '&fim=' +
+        encodeURIComponent(fim),
+      { cache:'no-store' }
+    );
+
+    var dadosMatriz = await respostaMatriz.json();
+
+    if (!respostaMatriz.ok) {
+      throw Error(
+        dadosMatriz.error ||
+        'Não foi possível consultar o vendedor por produto.'
+      );
+    }
+
+    renderizarMatriz(dadosMatriz);
+    return;
+  } catch (erro) {
+    $('estado').textContent = erro.message;
+    $('estado').className = 'estado erro';
+    return;
+  }
+}
+
+try {
 
         try {
           var rotasPorAba = {
@@ -887,6 +1079,12 @@ $('fim').value = iso(
         item.dataset.aba === abaAtual
       );
     });
+
+    var exibirMatriz = abaAtual === 'vendedor-produto';
+
+$('painelPrincipal').hidden = exibirMatriz;
+$('painelDevolucoes').hidden = exibirMatriz;
+$('painelMatriz').hidden = !exibirMatriz;
 
     $('tituloPainel').textContent =
   abaAtual === 'financeiro-vendedor'
