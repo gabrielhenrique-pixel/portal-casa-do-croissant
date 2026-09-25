@@ -403,6 +403,16 @@ function medida(valor) {
   }).format(Number(valor || 0));
 }
 
+function percentual(valor) {
+  if (valor === null || valor === undefined) return '—';
+
+  return new Intl.NumberFormat('pt-BR', {
+    style:'percent',
+    minimumFractionDigits:1,
+    maximumFractionDigits:1
+  }).format(Number(valor));
+}
+
       function classeVariacao(valor) {
         if (valor === null || valor === undefined) return 'neutro';
         if (valor > 0) return 'positivo';
