@@ -611,7 +611,7 @@ $('tituloAtual').textContent =
            ' até ' +
            formatarData(dados.fim);
 
-        $('linhas').innerHTML = registros.map(function(registro) {
+        $('linhas').innerHTML = registrosVisiveis.map(function(registro) {
   var codigo = modoAgrupado ? '' : escapar(registro.codigoProduto);
 
 var descricao = modoAgrupado
