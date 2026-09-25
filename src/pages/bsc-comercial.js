@@ -192,11 +192,11 @@ export function bscComercialPage() {
     }
 
     th {
-      padding:12px 10px;
+      padding:10px 8px;
       border-bottom:1px solid var(--line);
       background:#edf4f8;
       color:#244665;
-      font-size:12px;
+      font-size:11px;
       text-align:right;
       text-transform:uppercase;
     }
@@ -205,10 +205,10 @@ export function bscComercialPage() {
     th:nth-child(2) { text-align:left; }
 
     td {
-      padding:11px 10px;
+      padding:9px 8px;
       border-bottom:1px solid #e5edf2;
       color:#173957;
-      font-size:14px;
+      font-size:12px;
       text-align:right;
     }
 
@@ -235,7 +235,7 @@ body.modo-cliente .coluna-codigo {
       border:0;
       background:#163a5a;
       color:#fff;
-      font-size:15px;
+      font-size:13px;
       font-weight:700;
     }
 
