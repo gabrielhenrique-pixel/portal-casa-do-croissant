@@ -301,11 +301,38 @@ tfoot td:first-child {
     </form>
 
     <section class="abas" aria-label="Abas do BSC">
-      <buttonclass="aba ativa"type="button"data-aba="volume-produto">Volume por produto</button>
-      <buttonclass="aba"type="button"data-aba="financeiro-produto">Financeiro por produto</button>
-      <buttonclass="aba"type="button"data-aba="financeiro-cliente">Financeiro por cliente</button>
-      <buttonclass="aba"type="button"data-aba="financeiro-praca">Financeiro por praça</button>
-    </section>
+  <button
+    class="aba ativa"
+    type="button"
+    data-aba="volume-produto"
+  >
+    Volume por produto
+  </button>
+
+  <button
+    class="aba"
+    type="button"
+    data-aba="financeiro-produto"
+  >
+    Financeiro por produto
+  </button>
+
+  <button
+    class="aba"
+    type="button"
+    data-aba="financeiro-cliente"
+  >
+    Financeiro por cliente
+  </button>
+
+  <button
+    class="aba"
+    type="button"
+    data-aba="financeiro-praca"
+  >
+    Financeiro por praça
+  </button>
+</section>
 
     <p id="estado" class="estado">Carregando dados...</p>
 
