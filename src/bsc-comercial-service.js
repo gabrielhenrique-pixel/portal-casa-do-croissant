@@ -355,7 +355,7 @@ async function consultarBscFinanceiroProduto(
 
   const valor = ehDevolucao
   ? 'ABS(NVL(ITE.VLRTOT, 0))'
-  : 'NVL(ITE.VLRTOT, 0)';
+  : '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0))';
 
   const filtrosOperacao = ehDevolucao
     ? [
