@@ -238,6 +238,14 @@ body.modo-cliente .coluna-codigo {
   display:none;
 }
 
+.coluna-meta {
+  display:none;
+}
+
+body.modo-vendedor .coluna-meta {
+  display:table-cell;
+}
+
     .positivo { color:#098543; font-weight:700; }
     .negativo { color:#c24132; font-weight:700; }
     .neutro { color:#6c7f90; }
@@ -332,6 +340,14 @@ tfoot td:first-child {
   >
     Financeiro por praça
   </button>
+
+  <button
+  class="aba"
+  type="button"
+  data-aba="financeiro-vendedor"
+>
+  Financeiro por vendedor
+</button>
 </section>
 
     <p id="estado" class="estado">Carregando dados...</p>
@@ -344,13 +360,15 @@ tfoot td:first-child {
           <thead>
             <tr>
               <th id="cabecalhoCodigo">Código</th>
-             <th id="cabecalhoDescricao">Produto</th>
+              <th id="cabecalhoDescricao">Produto</th>
               <th id="tituloAnterior">Período anterior</th>
               <th id="tituloAtual">Período selecionado</th>
               <th>Variação</th>
               <th id="tituloAcumuladoAnterior">Acumulado anterior</th>
               <th id="tituloAcumuladoAtual">Acumulado atual</th>
               <th>Variação acumulada</th>
+              <th id="tituloMeta" class="coluna-meta">Meta mensal</th>
+              <th class="coluna-meta">% atingido</th>
             </tr>
           </thead>
 
@@ -365,6 +383,8 @@ tfoot td:first-child {
               <td id="totalAcumuladoAnterior">—</td>
               <td id="totalAcumuladoAtual">—</td>
               <td id="variacaoTotalAcumulado">—</td>
+              <td id="totalMeta" class="coluna-meta">—</td>
+              <td id="percentualMetaTotal" class="coluna-meta">—</td>
             </tr>
           </tfoot>
         </table>
@@ -440,6 +460,20 @@ tfoot td:first-child {
         return partes[2] + '/' + partes[1] + '/' + partes[0];
       }
 
+      function mesAno(data) {
+  var partes = String(data || '').split('-');
+
+  if (partes.length !== 3) return 'mensal';
+
+  var meses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril',
+    'Maio', 'Junho', 'Julho', 'Agosto',
+    'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  return meses[Number(partes[1]) - 1] + ' ' + partes[0];
+}
+
       var abaAtual = 'volume-produto';
 
 function medida(valor) {
@@ -490,23 +524,32 @@ function percentual(valor) {
       function renderizar(dados, dadosDevolucoes) {
         var modoAgrupado =
   abaAtual === 'financeiro-cliente' ||
-  abaAtual === 'financeiro-praca';
+  abaAtual === 'financeiro-praca' ||
+  abaAtual === 'financeiro-vendedor';
+
+var modoVendedor = abaAtual === 'financeiro-vendedor';
 
 var campoAgrupamento =
-  abaAtual === 'financeiro-praca'
-    ? 'praca'
-    : 'cliente';
+  abaAtual === 'financeiro-vendedor'
+    ? 'vendedor'
+    : abaAtual === 'financeiro-praca'
+      ? 'praca'
+      : 'cliente';
 
 var rotuloAgrupamento =
-  abaAtual === 'financeiro-praca'
-    ? 'Praça'
-    : 'Cliente';
+  abaAtual === 'financeiro-vendedor'
+    ? 'Vendedor'
+    : abaAtual === 'financeiro-praca'
+      ? 'Praça'
+      : 'Cliente';
 
-var registros = abaAtual === 'financeiro-praca'
-  ? (Array.isArray(dados.pracas) ? dados.pracas : [])
-  : abaAtual === 'financeiro-cliente'
-    ? (Array.isArray(dados.clientes) ? dados.clientes : [])
-    : (Array.isArray(dados.produtos) ? dados.produtos : []);
+var registros = abaAtual === 'financeiro-vendedor'
+  ? (Array.isArray(dados.vendedores) ? dados.vendedores : [])
+  : abaAtual === 'financeiro-praca'
+    ? (Array.isArray(dados.pracas) ? dados.pracas : [])
+    : abaAtual === 'financeiro-cliente'
+      ? (Array.isArray(dados.clientes) ? dados.clientes : [])
+      : (Array.isArray(dados.produtos) ? dados.produtos : []);
 
 var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
   ? dadosDevolucoes.devolucoes
@@ -523,6 +566,7 @@ registros.forEach(function(registro) {
 });
 
 document.body.classList.toggle('modo-cliente', modoAgrupado);
+document.body.classList.toggle('modo-vendedor', modoVendedor);
 
 $('cabecalhoDescricao').textContent =
   modoAgrupado ? rotuloAgrupamento : 'Produto';
@@ -531,6 +575,9 @@ $('cabecalhoDevolucao').textContent =
   modoAgrupado ? rotuloAgrupamento : 'Produto';
 
 $('rotuloTotal').colSpan = modoAgrupado ? 1 : 2;
+
+$('tituloMeta').textContent =
+  'Meta ' + mesAno(dados.fim);
 
 var nomeIndicador = abaAtual === 'volume-produto'
   ? 'Volume'
@@ -574,8 +621,14 @@ var descricao = modoAgrupado
       '</td>' +
       '<td>' + medida(registro.acumuladoAnterior) + '</td>' +
       '<td>' + medida(registro.acumuladoAtual) + '</td>' +
-      '<td class="' + classeVariacao(registro.variacaoAcumulado) + '">' +
+            '<td class="' + classeVariacao(registro.variacaoAcumulado) + '">' +
         percentual(registro.variacaoAcumulado) +
+      '</td>' +
+      '<td class="coluna-meta">' +
+        (modoVendedor ? medida(registro.meta) : '—') +
+      '</td>' +
+      '<td class="coluna-meta">' +
+        (modoVendedor ? percentual(registro.percentualMeta) : '—') +
       '</td>' +
     '</tr>'
   );
@@ -598,11 +651,19 @@ var descricao = modoAgrupado
         $('variacaoTotalAcumulado').className =
          classeVariacao(dados.variacaoTotalAcumulado);
 
-         $('tituloDevAnterior').textContent =
-  'Dev ' + dados.fimAnterior.slice(0, 4);
+         $('totalMeta').textContent = modoVendedor
+          ? medida(dados.totalMeta)
+          : '—';
 
-$('tituloDevAtual').textContent =
-  'Dev ' + dados.fim.slice(0, 4);
+        $('percentualMetaTotal').textContent = modoVendedor
+         ? percentual(dados.percentualMetaTotal)
+         : '—';
+
+        $('tituloDevAnterior').textContent =
+        'Dev ' + dados.fimAnterior.slice(0, 4);
+
+        $('tituloDevAtual').textContent =
+         'Dev ' + dados.fim.slice(0, 4);
 
 $('tituloDevAcumAnterior').textContent =
   'Dev acum. ' + dados.fimAnterior.slice(0, 4);
@@ -731,9 +792,13 @@ $('percentualDevAcumAtual').textContent = percentual(
     principal:'/api/bsc/financeiro-cliente',
     devolucoes:'/api/bsc/devolucoes-financeiro-cliente'
   },
-  'financeiro-praca': {
+    'financeiro-praca': {
     principal:'/api/bsc/financeiro-praca',
     devolucoes:'/api/bsc/devolucoes-financeiro-praca'
+  },
+  'financeiro-vendedor': {
+    principal:'/api/bsc/financeiro-vendedor',
+    devolucoes:'/api/bsc/devolucoes-financeiro-vendedor'
   }
 };
 
@@ -806,22 +871,26 @@ $('fim').value = iso(
     });
 
     $('tituloPainel').textContent =
-  abaAtual === 'financeiro-praca'
-    ? 'BSC COMERCIAL - FINANCEIRO POR PRAÇA'
-    : abaAtual === 'financeiro-cliente'
-      ? 'BSC COMERCIAL - FINANCEIRO POR CLIENTE'
-      : abaAtual === 'financeiro-produto'
-        ? 'BSC COMERCIAL - FINANCEIRO POR PRODUTO'
-        : 'BSC COMERCIAL - VOLUME POR PRODUTO';
+  abaAtual === 'financeiro-vendedor'
+    ? 'BSC COMERCIAL - FINANCEIRO POR VENDEDOR'
+    : abaAtual === 'financeiro-praca'
+      ? 'BSC COMERCIAL - FINANCEIRO POR PRAÇA'
+      : abaAtual === 'financeiro-cliente'
+        ? 'BSC COMERCIAL - FINANCEIRO POR CLIENTE'
+        : abaAtual === 'financeiro-produto'
+          ? 'BSC COMERCIAL - FINANCEIRO POR PRODUTO'
+          : 'BSC COMERCIAL - VOLUME POR PRODUTO';
 
 $('tituloPainelDevolucoes').textContent =
-  abaAtual === 'financeiro-praca'
-    ? 'DEVOLUÇÕES PRAÇAS'
-    : abaAtual === 'financeiro-cliente'
-      ? 'DEVOLUÇÕES CLIENTES'
-      : abaAtual === 'financeiro-produto'
-        ? 'DEVOLUÇÕES FINANCEIRO POR PRODUTO'
-        : 'DEVOLUÇÕES POR PRODUTO EM VOLUME';
+  abaAtual === 'financeiro-vendedor'
+    ? 'DEVOLUÇÕES VENDEDORES'
+    : abaAtual === 'financeiro-praca'
+      ? 'DEVOLUÇÕES PRAÇAS'
+      : abaAtual === 'financeiro-cliente'
+        ? 'DEVOLUÇÕES CLIENTES'
+        : abaAtual === 'financeiro-produto'
+          ? 'DEVOLUÇÕES FINANCEIRO POR PRODUTO'
+          : 'DEVOLUÇÕES POR PRODUTO EM VOLUME';
 
     carregar();
   });
