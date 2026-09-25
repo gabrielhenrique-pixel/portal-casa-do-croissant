@@ -206,6 +206,11 @@ export function bscComercialPage() {
       font-family:monospace;
     }
 
+    body.modo-cliente #cabecalhoCodigo,
+body.modo-cliente .coluna-codigo {
+  display:none;
+}
+
     .positivo { color:#098543; font-weight:700; }
     .negativo { color:#c24132; font-weight:700; }
     .neutro { color:#6c7f90; }
@@ -279,6 +284,14 @@ export function bscComercialPage() {
 >
   Financeiro por produto
 </button>
+
+<button
+  class="aba"
+  type="button"
+  data-aba="financeiro-cliente"
+>
+  Financeiro por cliente
+</button>
     </section>
 
     <p id="estado" class="estado">Carregando dados...</p>
@@ -290,8 +303,8 @@ export function bscComercialPage() {
         <table>
           <thead>
             <tr>
-              <th>Código</th>
-              <th>Produto</th>
+              <th id="cabecalhoCodigo">Código</th>
+             <th id="cabecalhoDescricao">Produto</th>
               <th id="tituloAnterior">Período anterior</th>
               <th id="tituloAtual">Período selecionado</th>
               <th>Variação</th>
@@ -305,7 +318,7 @@ export function bscComercialPage() {
 
           <tfoot>
             <tr>
-              <td colspan="2">TOTAL</td>
+              <td id="rotuloTotal" colspan="2">TOTAL</td>
               <td id="totalAnterior">—</td>
               <td id="totalAtual">—</td>
               <td id="variacaoTotal">—</td>
@@ -327,7 +340,7 @@ export function bscComercialPage() {
         <table class="tabela-devolucoes">
           <thead>
             <tr>
-              <th>Produto</th>
+              <th id="cabecalhoDevolucao">Produto</th>
               <th id="tituloDevAnterior">Dev anterior</th>
               <th id="tituloDevAtual">Dev atual</th>
               <th>% Dev anterior</th>
@@ -390,7 +403,7 @@ export function bscComercialPage() {
       var abaAtual = 'volume-produto';
 
 function medida(valor) {
-  if (abaAtual === 'financeiro-produto') {
+  if (abaAtual !== 'volume-produto') {
     return new Intl.NumberFormat('pt-BR', {
       style:'currency',
       currency:'BRL'
@@ -435,21 +448,39 @@ function percentual(valor) {
       }
 
       function renderizar(dados, dadosDevolucoes) {
-        var produtos = Array.isArray(dados.produtos) ? dados.produtos : [];
+        var modoCliente = abaAtual === 'financeiro-cliente';
 
-        var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
+var registros = modoCliente
+  ? (Array.isArray(dados.clientes) ? dados.clientes : [])
+  : (Array.isArray(dados.produtos) ? dados.produtos : []);
+
+var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
   ? dadosDevolucoes.devolucoes
   : [];
 
-var produtosPorCodigo = {};
+var registrosPorChave = {};
 
-produtos.forEach(function(produto) {
-  produtosPorCodigo[produto.codigoProduto] = produto;
+registros.forEach(function(registro) {
+  var chave = modoCliente
+    ? registro.cliente
+    : registro.codigoProduto;
+
+  registrosPorChave[chave] = registro;
 });
 
-        var nomeIndicador = abaAtual === 'financeiro-produto'
-  ? 'Faturamento'
-  : 'Volume';
+document.body.classList.toggle('modo-cliente', modoCliente);
+
+$('cabecalhoDescricao').textContent =
+  modoCliente ? 'Cliente' : 'Produto';
+
+$('cabecalhoDevolucao').textContent =
+  modoCliente ? 'Cliente' : 'Produto';
+
+$('rotuloTotal').colSpan = modoCliente ? 1 : 2;
+
+var nomeIndicador = abaAtual === 'volume-produto'
+  ? 'Volume'
+  : 'Faturamento';
 
 $('tituloAnterior').textContent =
   nomeIndicador + ' ' +
@@ -471,24 +502,27 @@ $('tituloAtual').textContent =
            ' até ' +
            formatarData(dados.fim);
 
-        $('linhas').innerHTML = produtos.map(function(produto) {
-          return (
-            '<tr>' +
-              '<td class="codigo">' + escapar(produto.codigoProduto) + '</td>' +
-              '<td>' + escapar(produto.produto) + '</td>' +
-              '<td>' + medida(produto.quantidadeAnterior) + '</td>' +
-              '<td>' + medida(produto.quantidadeAtual) + '</td>' +
-              '<td class="' + classeVariacao(produto.variacao) + '">' +
-                percentual(produto.variacao) +
-              '</td>' +
-              '<td>' + medida(produto.acumuladoAnterior) + '</td>' +
-              '<td>' + medida(produto.acumuladoAtual) + '</td>' +
-              '<td class="' + classeVariacao(produto.variacaoAcumulado) + '">' +
-               percentual(produto.variacaoAcumulado) +
-              '</td>' +
-            '</tr>'
-          );
-        }).join('');
+        $('linhas').innerHTML = registros.map(function(registro) {
+  var codigo = modoCliente ? '' : escapar(registro.codigoProduto);
+  var descricao = modoCliente ? registro.cliente : registro.produto;
+
+  return (
+    '<tr>' +
+      '<td class="codigo coluna-codigo">' + codigo + '</td>' +
+      '<td>' + escapar(descricao) + '</td>' +
+      '<td>' + medida(registro.quantidadeAnterior) + '</td>' +
+      '<td>' + medida(registro.quantidadeAtual) + '</td>' +
+      '<td class="' + classeVariacao(registro.variacao) + '">' +
+        percentual(registro.variacao) +
+      '</td>' +
+      '<td>' + medida(registro.acumuladoAnterior) + '</td>' +
+      '<td>' + medida(registro.acumuladoAtual) + '</td>' +
+      '<td class="' + classeVariacao(registro.variacaoAcumulado) + '">' +
+        percentual(registro.variacaoAcumulado) +
+      '</td>' +
+    '</tr>'
+  );
+}).join('');
 
         $('totalAnterior').textContent = medida(dados.totalAnterior);
         $('totalAtual').textContent = medida(dados.totalAtual);
@@ -525,31 +559,37 @@ function percentualDevolucao(devolucao, volume) {
 }
 
 $('linhasDevolucoes').innerHTML = devolucoes.map(function(devolucao) {
-  var volume = produtosPorCodigo[devolucao.codigoProduto] || {};
+  var chave = modoCliente
+    ? devolucao.cliente
+    : devolucao.codigoProduto;
+
+  var registro = registrosPorChave[chave] || {};
 
   var percentualAnterior = percentualDevolucao(
     devolucao.devolucaoAnterior,
-    volume.quantidadeAnterior
+    registro.quantidadeAnterior
   );
 
   var percentualAtual = percentualDevolucao(
     devolucao.devolucaoAtual,
-    volume.quantidadeAtual
+    registro.quantidadeAtual
   );
 
   var percentualAcumAnterior = percentualDevolucao(
     devolucao.devolucaoAcumuladaAnterior,
-    volume.acumuladoAnterior
+    registro.acumuladoAnterior
   );
 
   var percentualAcumAtual = percentualDevolucao(
     devolucao.devolucaoAcumuladaAtual,
-    volume.acumuladoAtual
+    registro.acumuladoAtual
   );
 
   return (
     '<tr>' +
-      '<td>' + escapar(devolucao.produto) + '</td>' +
+      '<td>' + escapar(
+                  modoCliente ? devolucao.cliente : devolucao.produto
+      ) + '</td>' +
       '<td>' + medida(devolucao.devolucaoAnterior) + '</td>' +
       '<td>' + medida(devolucao.devolucaoAtual) + '</td>' +
       '<td class="negativo">' + percentual(percentualAnterior) + '</td>' +
@@ -616,27 +656,38 @@ $('percentualDevAcumAtual').textContent = percentual(
 
         if (!inicio || !fim) return;
 
-        $('estado').textContent = 'Consultando volume por produto...';
+        $('estado').textContent = 'Consultando dados...';
         $('estado').className = 'estado';
 
         try {
-          var respostas = await Promise.all([
+          var rotasPorAba = {
+  'volume-produto': {
+    principal:'/api/bsc/volume-produto',
+    devolucoes:'/api/bsc/devolucoes-volume'
+  },
+  'financeiro-produto': {
+    principal:'/api/bsc/financeiro-produto',
+    devolucoes:'/api/bsc/devolucoes-financeiro-produto'
+  },
+  'financeiro-cliente': {
+    principal:'/api/bsc/financeiro-cliente',
+    devolucoes:'/api/bsc/devolucoes-financeiro-cliente'
+  }
+};
+
+var rotas = rotasPorAba[abaAtual];
+
+var respostas = await Promise.all([
   fetch(
-    (abaAtual === 'financeiro-produto'
-      ? '/api/bsc/financeiro-produto?inicio='
-      : '/api/bsc/volume-produto?inicio=') +
-      encodeURIComponent(inicio) +
-      '&fim=' +
-      encodeURIComponent(fim),
+    rotas.principal +
+      '?inicio=' + encodeURIComponent(inicio) +
+      '&fim=' + encodeURIComponent(fim),
     { cache:'no-store' }
   ),
   fetch(
-    (abaAtual === 'financeiro-produto'
-      ? '/api/bsc/devolucoes-financeiro-produto?inicio='
-      : '/api/bsc/devolucoes-volume?inicio=') +
-      encodeURIComponent(inicio) +
-      '&fim=' +
-      encodeURIComponent(fim),
+    rotas.devolucoes +
+      '?inicio=' + encodeURIComponent(inicio) +
+      '&fim=' + encodeURIComponent(fim),
     { cache:'no-store' }
   )
 ]);
@@ -691,14 +742,18 @@ renderizar(dados, dadosDevolucoes);
     });
 
     $('tituloPainel').textContent =
-      abaAtual === 'financeiro-produto'
-        ? 'BSC COMERCIAL - FINANCEIRO POR PRODUTO'
-        : 'BSC COMERCIAL - VOLUME POR PRODUTO';
+  abaAtual === 'financeiro-cliente'
+    ? 'BSC COMERCIAL - FINANCEIRO POR CLIENTE'
+    : abaAtual === 'financeiro-produto'
+      ? 'BSC COMERCIAL - FINANCEIRO POR PRODUTO'
+      : 'BSC COMERCIAL - VOLUME POR PRODUTO';
 
-    $('tituloPainelDevolucoes').textContent =
-      abaAtual === 'financeiro-produto'
-        ? 'DEVOLUÇÕES FINANCEIRO POR PRODUTO'
-        : 'DEVOLUÇÕES POR PRODUTO EM VOLUME';
+$('tituloPainelDevolucoes').textContent =
+  abaAtual === 'financeiro-cliente'
+    ? 'DEVOLUÇÕES CLIENTES'
+    : abaAtual === 'financeiro-produto'
+      ? 'DEVOLUÇÕES FINANCEIRO POR PRODUTO'
+      : 'DEVOLUÇÕES POR PRODUTO EM VOLUME';
 
     carregar();
   });
