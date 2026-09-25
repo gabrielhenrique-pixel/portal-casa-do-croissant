@@ -348,6 +348,13 @@ tfoot td:first-child {
 >
   Financeiro por vendedor
 </button>
+<button
+  class="aba"
+  type="button"
+  data-aba="vendedor-produto"
+>
+  Vendedor por produto
+</button>
 </section>
 
     <p id="estado" class="estado">Carregando dados...</p>
