@@ -1,3 +1,5 @@
+import {carregarClientesRentabilidade} from './clientes-rentabilidade.js';
+
 export async function listarBscVolumeProduto(request, env) {
   const url = new URL(request.url);
   const hoje = dataHoje();
@@ -476,6 +478,252 @@ async function consultarBscFinanceiroProduto(
 
   return {
     produtos: ehDevolucao ? undefined : itens,
+    devolucoes: ehDevolucao ? itens : undefined,
+
+    inicio: inicio,
+    fim: fim,
+    inicioAnterior: inicioAnterior,
+    fimAnterior: fimAnterior,
+
+    totalAnterior: totalAnterior,
+    totalAtual: totalAtual,
+    totalAcumuladoAnterior: totalAcumuladoAnterior,
+    totalAcumuladoAtual: totalAcumuladoAtual,
+
+    variacaoTotal:
+      totalAnterior > 0
+        ? (totalAtual - totalAnterior) / totalAnterior
+        : null,
+
+    variacaoTotalAcumulado:
+      totalAcumuladoAnterior > 0
+        ? (totalAcumuladoAtual - totalAcumuladoAnterior) /
+          totalAcumuladoAnterior
+        : null
+  };
+}
+
+export async function listarBscFinanceiroCliente(request, env) {
+  return consultarBscFinanceiroCliente(request, env, false);
+}
+
+export async function listarBscDevolucoesFinanceiroCliente(
+  request,
+  env
+) {
+  return consultarBscFinanceiroCliente(request, env, true);
+}
+
+async function consultarBscFinanceiroCliente(
+  request,
+  env,
+  ehDevolucao
+) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error: 'A data inicial não pode ser maior que a data final.',
+      status: 400
+    };
+  }
+
+  const inicioAnterior = mesmoPeriodoAnoAnterior(inicio);
+  const fimAnterior = mesmoPeriodoAnoAnterior(fim);
+
+  const inicioAcumuladoAtual = fim.slice(0, 4) + '-01-01';
+  const inicioAcumuladoAnterior =
+    fimAnterior.slice(0, 4) + '-01-01';
+
+  const valor = ehDevolucao
+    ? 'ABS(NVL(ITE.VLRTOT, 0))'
+    : '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0))';
+
+  const filtrosOperacao = ehDevolucao
+    ? [
+        '  AND CAB.CODTIPOPER = 1202',
+        "  AND CAB.TIPMOV = 'D'"
+      ]
+    : [
+        '  AND CAB.CODTIPOPER = 1101',
+        "  AND CAB.TIPMOV = 'V'"
+      ];
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    '  CAB.CODPARC AS CODIGO_PARCEIRO,',
+    "  NVL(PAR.NOMEPARC, 'SEM CLIENTE') AS PARCEIRO,",
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ATUAL,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fimAnterior + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ANTERIOR,',
+
+    '  SUM(CASE',
+    "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAtual + "', 'YYYY-MM-DD')",
+    "     AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    '    THEN ' + valor,
+    '    ELSE 0',
+    '  END) AS VALOR_ACUMULADO_ATUAL',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    ...filtrosOperacao,
+    "  AND CAB.STATUSNOTA = 'L'",
+
+    'GROUP BY CAB.CODPARC, PAR.NOMEPARC'
+  ].join('\n');
+
+  const resultados = await Promise.all([
+    executarConsultaSankhya(token, sql),
+    carregarClientesRentabilidade(env)
+  ]);
+
+  const linhas = resultados[0];
+  const clientesPortal = resultados[1];
+
+  const redePorCodigo = new Map(
+    clientesPortal.map(function(cliente) {
+      return [
+        String(cliente.codigoParceiro || '').trim(),
+        String(cliente.rede || '').trim()
+      ];
+    })
+  );
+
+  const grupos = new Map();
+
+  linhas.forEach(function(linha) {
+    const codigoParceiro = String(linha[0] || '').trim();
+    const redeCadastrada = redePorCodigo.get(codigoParceiro);
+
+    const cliente =
+      redeCadastrada &&
+      redeCadastrada !== 'SEM REDE'
+        ? redeCadastrada
+        : 'OUTROS';
+
+    if (!grupos.has(cliente)) {
+      grupos.set(cliente, {
+        cliente: cliente,
+        anterior: 0,
+        atual: 0,
+        acumuladoAnterior: 0,
+        acumuladoAtual: 0
+      });
+    }
+
+    const grupo = grupos.get(cliente);
+
+    grupo.anterior += numero(linha[2]);
+    grupo.atual += numero(linha[3]);
+    grupo.acumuladoAnterior += numero(linha[4]);
+    grupo.acumuladoAtual += numero(linha[5]);
+  });
+
+  const itens = Array.from(grupos.values())
+    .sort(function(a, b) {
+      if (a.cliente === 'OUTROS') return 1;
+      if (b.cliente === 'OUTROS') return -1;
+
+      return a.cliente.localeCompare(b.cliente, 'pt-BR');
+    })
+    .map(function(grupo) {
+      if (ehDevolucao) {
+        return {
+          cliente: grupo.cliente,
+          devolucaoAnterior: grupo.anterior,
+          devolucaoAtual: grupo.atual,
+          devolucaoAcumuladaAnterior: grupo.acumuladoAnterior,
+          devolucaoAcumuladaAtual: grupo.acumuladoAtual
+        };
+      }
+
+      return {
+        cliente: grupo.cliente,
+        quantidadeAnterior: grupo.anterior,
+        quantidadeAtual: grupo.atual,
+        acumuladoAnterior: grupo.acumuladoAnterior,
+        acumuladoAtual: grupo.acumuladoAtual,
+        variacao:
+          grupo.anterior > 0
+            ? (grupo.atual - grupo.anterior) / grupo.anterior
+            : null,
+        variacaoAcumulado:
+          grupo.acumuladoAnterior > 0
+            ? (grupo.acumuladoAtual - grupo.acumuladoAnterior) /
+              grupo.acumuladoAnterior
+            : null
+      };
+    });
+
+  const totalAnterior = itens.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAnterior
+        : item.quantidadeAnterior
+    );
+  }, 0);
+
+  const totalAtual = itens.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAtual
+        : item.quantidadeAtual
+    );
+  }, 0);
+
+  const totalAcumuladoAnterior = itens.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAcumuladaAnterior
+        : item.acumuladoAnterior
+    );
+  }, 0);
+
+  const totalAcumuladoAtual = itens.reduce(function(total, item) {
+    return total + (
+      ehDevolucao
+        ? item.devolucaoAcumuladaAtual
+        : item.acumuladoAtual
+    );
+  }, 0);
+
+  return {
+    clientes: ehDevolucao ? undefined : itens,
     devolucoes: ehDevolucao ? itens : undefined,
 
     inicio: inicio,
