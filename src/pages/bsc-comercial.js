@@ -753,11 +753,13 @@ renderizar(dados, dadosDevolucoes);
 
       var hoje = new Date();
 
-      $('inicio').value = iso(
-        new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-      );
+$('inicio').value = iso(
+  new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
+);
 
-      $('fim').value = iso(hoje);
+$('fim').value = iso(
+  new Date(hoje.getFullYear(), hoje.getMonth(), 0)
+);
 
       $('inicio').addEventListener('change', carregar);
       $('fim').addEventListener('change', carregar);
