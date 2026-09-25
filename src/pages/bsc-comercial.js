@@ -171,7 +171,7 @@ export function bscComercialPage() {
 
 .tabela-devolucoes th:nth-child(2),
 .tabela-devolucoes td:nth-child(2) {
-  text-align:right;
+  text-align:center;
 }
 
     .titulo-painel {
@@ -201,9 +201,14 @@ export function bscComercialPage() {
   text-transform:uppercase;
 }
 
-    th:first-child,
-    th:nth-child(2) { text-align:left; }
+    .painel:not(.painel-devolucoes) th:first-child,
+.painel:not(.painel-devolucoes) th:nth-child(2) {
+  text-align:left;
+}
 
+.tabela-devolucoes th:first-child {
+  text-align:left;
+}
     td {
   padding:9px 8px;
   border-bottom:1px solid #e5edf2;
@@ -212,8 +217,14 @@ export function bscComercialPage() {
   text-align:center;
 }
 
-    td:first-child,
-    td:nth-child(2) { text-align:left; }
+    .painel:not(.painel-devolucoes) td:first-child,
+.painel:not(.painel-devolucoes) td:nth-child(2) {
+  text-align:left;
+}
+
+.tabela-devolucoes td:first-child {
+  text-align:left;
+}
 
     tbody tr:nth-child(even) { background:#f8fbfd; }
 
