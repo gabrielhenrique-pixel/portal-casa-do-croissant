@@ -117,17 +117,33 @@ export function bscComercialPage() {
 }
 
     .aba {
-      min-width:190px;
-      padding:14px 18px;
-      border:0;
-      border-radius:10px;
-      background:linear-gradient(135deg,#168454,#0d5e3d);
-      box-shadow:0 7px 15px #0f5b3c2e;
-      color:#fff;
-      font-size:13px;
-      font-weight:700;
-      text-transform:uppercase;
-    }
+  min-width:190px;
+  padding:14px 18px;
+  border:0;
+  border-radius:10px;
+  background:linear-gradient(135deg,#168454,#0d5e3d);
+  box-shadow:0 7px 15px #0f5b3c2e;
+  color:#fff;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    filter .18s ease;
+}
+
+.aba:hover {
+  filter:brightness(1.08);
+  transform:translateY(-3px);
+  box-shadow:0 11px 20px #0f5b3c42;
+}
+
+.aba:active {
+  transform:translateY(0);
+  box-shadow:0 5px 10px #0f5b3c2e;
+}
 
     .estado {
       min-height:18px;
