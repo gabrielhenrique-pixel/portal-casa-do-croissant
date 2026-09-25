@@ -563,10 +563,7 @@ var devolucoes = Array.isArray(dadosDevolucoes.devolucoes)
   var devolucoesVisiveis = devolucoes.filter(function(devolucao) {
   if (!modoVendedor) return true;
 
-  return (
-    Number(devolucao.devolucaoAnterior || 0) !== 0 ||
-    Number(devolucao.devolucaoAtual || 0) !== 0
-  );
+  return Number(devolucao.devolucaoAtual || 0) !== 0;
 });
 
 var registrosPorChave = {};
