@@ -555,16 +555,16 @@ function medida(valor) {
     }).format(Number(valor || 0));
   }
 
-  function medidaMatriz(valor) {
   return new Intl.NumberFormat('pt-BR', {
     minimumFractionDigits:0,
     maximumFractionDigits:2
   }).format(Number(valor || 0));
 }
 
+function medidaMatriz(valor) {
   return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
+    minimumFractionDigits:0,
+    maximumFractionDigits:2
   }).format(Number(valor || 0));
 }
 
@@ -987,9 +987,7 @@ if (abaAtual === 'vendedor-produto') {
 }
 
 try {
-
-        try {
-          var rotasPorAba = {
+  var rotasPorAba = {
   'volume-produto': {
     principal:'/api/bsc/volume-produto',
     devolucoes:'/api/bsc/devolucoes-volume'
