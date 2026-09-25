@@ -810,7 +810,7 @@ async function consultarBscFinanceiroPraca(
 
   const sql = [
     'SELECT',
-    "  NVL(PAR.UF, 'SEM UF') AS UF,",
+    "  NVL(CID.UF, 'SEM UF') AS UF,",
 
     '  SUM(CASE',
     "    WHEN CAB.DTNEG >= TO_DATE('" + inicioAnterior + "', 'YYYY-MM-DD')",
@@ -843,13 +843,14 @@ async function consultarBscFinanceiroPraca(
     'FROM TGFCAB CAB',
     'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
     'LEFT JOIN TGFPAR PAR ON PAR.CODPARC = CAB.CODPARC',
+    'LEFT JOIN TSICID CID ON CID.CODCID = PAR.CODCID',
 
     "WHERE CAB.DTNEG >= TO_DATE('" + inicioAcumuladoAnterior + "', 'YYYY-MM-DD')",
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     ...filtrosOperacao,
     "  AND CAB.STATUSNOTA = 'L'",
 
-    'GROUP BY PAR.UF'
+    'GROUP BY CID.UF'
   ].join('\n');
 
   const linhas = await executarConsultaSankhya(token, sql);
