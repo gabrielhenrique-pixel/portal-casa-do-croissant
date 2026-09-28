@@ -100,10 +100,11 @@ export function bscComercialPage() {
     }
 
     .abas {
-      display:flex;
-      gap:10px;
-      margin-top:15px;
-    }
+  display:flex;
+  gap:8px;
+  margin-top:15px;
+  flex-wrap:nowrap;
+}
 
     .aba.ativa {
   background:linear-gradient(135deg,#168454,#0d5e3d);
@@ -117,17 +118,20 @@ export function bscComercialPage() {
 }
 
     .aba {
-  min-width:190px;
-  padding:14px 18px;
+  flex:1 1 0;
+  min-width:0;
+  padding:11px 9px;
   border:0;
   border-radius:10px;
   background:linear-gradient(135deg,#168454,#0d5e3d);
   box-shadow:0 7px 15px #0f5b3c2e;
   color:#fff;
   cursor:pointer;
-  font-size:13px;
+  font-size:12px;
   font-weight:700;
+  letter-spacing:-0.15px;
   text-transform:uppercase;
+  white-space:nowrap;
   transition:
     transform .18s ease,
     box-shadow .18s ease,
@@ -298,7 +302,15 @@ tfoot td:first-child {
 
       input[type=date] { width:100%; }
 
-      .abas { overflow:auto; }
+      .abas {
+  overflow:auto;
+  gap:8px;
+}
+
+.aba {
+  flex:0 0 auto;
+  min-width:150px;
+}
 
       .titulo-painel { font-size:16px; }
     }
