@@ -1511,3 +1511,104 @@ function numero(valor) {
   const convertido = Number(texto);
   return Number.isFinite(convertido) ? convertido : 0;
 }
+
+export async function listarBscPositivacaoProduto(request, env) {
+  const url = new URL(request.url);
+  const hoje = dataHoje();
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    hoje.slice(0, 8) + '01'
+  );
+
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+
+  if (inicio > fim) {
+    return {
+      error: 'A data inicial não pode ser maior que a data final.',
+      status: 400
+    };
+  }
+
+  if (
+    !env.SANKHYA_CLIENT_ID ||
+    !env.SANKHYA_CLIENT_SECRET ||
+    !env.SANKHYA_X_TOKEN
+  ) {
+    return {
+      error: 'A integração com o Sankhya ainda não foi configurada.',
+      status: 503
+    };
+  }
+
+  const token = await obterTokenSankhya(env);
+
+  const sql = [
+    'SELECT',
+    '  ITE.CODPROD AS CODIGO_PRODUTO,',
+    "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
+    '  COUNT(DISTINCT CAB.CODPARC) AS CLIENTES_POSITIVADOS,',
+
+    '  (',
+    '    SELECT COUNT(DISTINCT CAB_TOTAL.CODPARC)',
+    '    FROM TGFCAB CAB_TOTAL',
+    "    WHERE CAB_TOTAL.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "      AND CAB_TOTAL.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "      AND CAB_TOTAL.TIPMOV = 'V'",
+    "      AND CAB_TOTAL.STATUSNOTA = 'L'",
+    '      AND CAB_TOTAL.CODTIPOPER = 1101',
+    '  ) - COUNT(DISTINCT CAB.CODPARC) AS A_POSITIVAR,',
+
+    '  SUM(NVL(ITE.QTDNEG, 0)) AS QUANTIDADE,',
+
+    '  SUM(' +
+      '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + ' +
+      'NVL(ITE.VLRSUBST, 0))' +
+    ') AS FATURAMENTO_LIQUIDO',
+
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.TIPMOV = 'V'",
+    "  AND CAB.STATUSNOTA = 'L'",
+    '  AND CAB.CODTIPOPER = 1101',
+
+    'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
+    'ORDER BY CLIENTES_POSITIVADOS DESC, PRODUTO'
+  ].join('\n');
+
+  const linhas = await executarConsultaSankhya(token, sql);
+
+  const totalClientes = linhas.length
+    ? numero(linhas[0][2]) + numero(linhas[0][3])
+    : 0;
+
+  const produtos = linhas.map(function(linha) {
+    const clientesPositivados = numero(linha[2]);
+
+    return {
+      codigoProduto: String(linha[0] || '').trim(),
+      produto: String(linha[1] || 'Sem produto').trim(),
+      clientesPositivados: clientesPositivados,
+      aPositivar: numero(linha[3]),
+      percentualPositivacao: totalClientes > 0
+        ? clientesPositivados / totalClientes
+        : 0,
+      quantidade: numero(linha[4]),
+      faturamentoLiquido: numero(linha[5])
+    };
+  });
+
+  return {
+    inicio: inicio,
+    fim: fim,
+    totalClientes: totalClientes,
+    produtos: produtos
+  };
+}
