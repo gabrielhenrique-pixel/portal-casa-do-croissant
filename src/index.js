@@ -2845,18 +2845,20 @@ const redePorCodigoParceiro = new Map(
     ].join('\n'); 
 
     const sqlFaturamento = [
-      'SELECT',
-      '  NVL(SUM(CAB.VLRNOTA), 0) AS FATURAMENTO',
-      'FROM TGFCAB CAB',
-      'INNER JOIN TGFTOP TOP',
-      '  ON TOP.CODTIPOPER = CAB.CODTIPOPER',
-      ' AND TOP.DHALTER = CAB.DHTIPOPER',
-      "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
-      "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
-      "  AND CAB.TIPMOV = 'V'",
-      "  AND CAB.STATUSNOTA = 'L'",
-      "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'"
-    ].join(String.fromCharCode(10));
+  'SELECT',
+  '  CAB.CODPARC AS COD_PARCEIRO,',
+  '  NVL(SUM(CAB.VLRNOTA), 0) AS FATURAMENTO',
+  'FROM TGFCAB CAB',
+  'INNER JOIN TGFTOP TOP',
+  '  ON TOP.CODTIPOPER = CAB.CODTIPOPER',
+  ' AND TOP.DHALTER = CAB.DHTIPOPER',
+  "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+  "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+  "  AND CAB.TIPMOV = 'V'",
+  "  AND CAB.STATUSNOTA = 'L'",
+  "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'",
+  'GROUP BY CAB.CODPARC'
+].join(String.fromCharCode(10));
 
     const resultados = await Promise.all([
       executarConsultaSankhya(accessToken, sqlDevolucoes),
@@ -2879,14 +2881,28 @@ const redePorCodigoParceiro = new Map(
       };
     });
 
-    const faturamento = resultados[1].length
-      ? numeroSankhya(resultados[1][0][0])
-      : 0;
+    const faturamentoPorRede = resultados[1].reduce(function(acumulado, linha) {
+  const codigoParceiro = String(linha[0] || '').trim();
+  const rede = redePorCodigoParceiro.get(codigoParceiro) || 'SEM REDE';
+  const valor = numeroSankhya(linha[1]);
+
+  acumulado[rede] = Number(acumulado[rede] || 0) + valor;
+
+  return acumulado;
+}, {});
+
+const faturamento = Object.keys(faturamentoPorRede).reduce(
+  function(total, rede) {
+    return total + Number(faturamentoPorRede[rede] || 0);
+  },
+  0
+);
 
     return json({
-      items: itens,
-      faturamento: faturamento
-    });
+  items: itens,
+  faturamento: faturamento,
+  faturamentoPorRede: faturamentoPorRede
+});
   } catch (error) {
   console.error('Falha na consulta ao Sankhya:', error);
 
