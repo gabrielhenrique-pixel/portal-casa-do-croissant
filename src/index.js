@@ -2810,6 +2810,16 @@ async function listarDevolucoesDoSankhya(request, env) {
   );
 
   try {
+          const clientesPortal = await carregarClientesRentabilidade(env);
+
+const redePorCodigoParceiro = new Map(
+  clientesPortal.map(function(cliente) {
+    return [
+      String(cliente.codigoParceiro || '').trim(),
+      String(cliente.rede || '').trim() || 'SEM REDE'
+    ];
+  })
+);
     const accessToken = await obterTokenSankhya(env);
 
     const sqlDevolucoes = [
@@ -2859,6 +2869,9 @@ async function listarDevolucoesDoSankhya(request, env) {
         numeroNota: String(linha[1] || ''),
         codigoParceiro: String(linha[2] || ''),
         parceiro: String(linha[3] || ''),
+        rede: redePorCodigoParceiro.get(
+              String(linha[2] || '').trim()
+        ) || 'SEM REDE',
         produto: String(linha[4] || ''),
         quantidade: numeroSankhya(linha[5]),
         valorUnitario: numeroSankhya(linha[6]),
