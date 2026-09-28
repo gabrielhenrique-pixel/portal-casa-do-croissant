@@ -1048,18 +1048,11 @@ export function devolucoesPage() {
       </div>
 
       <div class="filtro">
-        <label>Parceiro</label>
-        <select id="filtroParceiro" onchange="aplicarFiltros()">
-          <option value="">Todos</option>
-        </select>
-      </div>
-
-      <div class="filtro">
-        <label>Código do Parceiro</label>
-        <select id="filtroCodigo" onchange="aplicarFiltros()">
-          <option value="">Todos</option>
-        </select>
-      </div>
+  <label>Rede</label>
+  <select id="filtroRede" onchange="aplicarFiltros()">
+    <option value="">Todas</option>
+  </select>
+</div>
 
       <div class="filtro">
         <label>Produto</label>
@@ -1381,18 +1374,11 @@ function aplicarIconesVetoriais() {
 
     function preencherFiltros() {
       preencherSelect(
-        'filtroParceiro',
-        devolucoes.map(function(item) {
-          return item.parceiro;
-        })
-      );
-
-      preencherSelect(
-        'filtroCodigo',
-        devolucoes.map(function(item) {
-          return item.codigoParceiro;
-        })
-      );
+  'filtroRede',
+  devolucoes.map(function(item) {
+    return item.rede;
+  })
+);
 
       preencherSelect(
         'filtroProduto',
@@ -1457,14 +1443,12 @@ function aplicarIconesVetoriais() {
     function aplicarFiltros() {
       tabelaCompleta = false;
 
-      var parceiro = document.getElementById('filtroParceiro').value;
-      var codigo = document.getElementById('filtroCodigo').value;
+      var rede = document.getElementById('filtroRede').value;
       var produto = document.getElementById('filtroProduto').value;
 
       devolucoesFiltradas = devolucoes.filter(function(item) {
-        return (!parceiro || item.parceiro === parceiro) &&
-          (!codigo || item.codigoParceiro === codigo) &&
-          (!produto || item.produto === produto);
+        return (!rede || item.rede === rede) &&
+  (!produto || item.produto === produto);
       });
 
       atualizarPainel();
