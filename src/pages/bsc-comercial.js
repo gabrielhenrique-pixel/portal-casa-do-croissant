@@ -375,6 +375,14 @@ tfoot td:first-child {
 >
   Vendedor por produto
 </button>
+
+<button
+  class="aba"
+  type="button"
+  data-aba="positivacao-produto"
+>
+  Positivação
+</button>
 </section>
 
     <p id="estado" class="estado">Carregando dados...</p>
@@ -502,6 +510,29 @@ tfoot td:first-child {
           </table>
         </div>
       </section>
+        </section>
+
+    <section id="painelPositivacao" class="painel" hidden>
+      <div class="titulo-painel">
+        BSC COMERCIAL - POSITIVAÇÃO POR PRODUTO
+      </div>
+
+      <div class="tabela-area">
+        <table class="tabela-positivacao">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Clientes positivados</th>
+              <th>A positivar</th>
+              <th>% Positivação</th>
+              <th>Quantidade</th>
+              <th>Faturamento líquido</th>
+            </tr>
+          </thead>
+
+          <tbody id="linhasPositivacao"></tbody>
+        </table>
+      </div>
     </section>
   </main>
 
@@ -951,6 +982,33 @@ $('percentualDevAcumAtual').textContent = percentual(
   $('estado').className = 'estado';
 }
 
+function renderizarPositivacao(dados) {
+  var produtos = Array.isArray(dados.produtos)
+    ? dados.produtos
+    : [];
+
+  $('linhasPositivacao').innerHTML = produtos.map(function(produto) {
+    var faturamento = new Intl.NumberFormat('pt-BR', {
+      style:'currency',
+      currency:'BRL'
+    }).format(Number(produto.faturamentoLiquido || 0));
+
+    return (
+      '<tr>' +
+        '<td>' + escapar(produto.produto) + '</td>' +
+        '<td>' + medidaMatriz(produto.clientesPositivados) + '</td>' +
+        '<td>' + medidaMatriz(produto.aPositivar) + '</td>' +
+        '<td>' + percentual(produto.percentualPositivacao) + '</td>' +
+        '<td>' + medidaMatriz(produto.quantidade) + '</td>' +
+        '<td>' + faturamento + '</td>' +
+      '</tr>'
+    );
+  }).join('');
+
+  $('estado').textContent = '';
+  $('estado').className = 'estado';
+}
+
       async function carregar() {
         var inicio = $('inicio').value;
         var fim = $('fim').value;
@@ -959,6 +1017,35 @@ $('percentualDevAcumAtual').textContent = percentual(
 
         $('estado').textContent = 'Consultando dados...';
         $('estado').className = 'estado';
+
+        if (abaAtual === 'positivacao-produto') {
+  try {
+    var respostaPositivacao = await fetch(
+      '/api/bsc/positivacao-produto?inicio=' +
+        encodeURIComponent(inicio) +
+        '&fim=' +
+        encodeURIComponent(fim),
+      { cache:'no-store' }
+    );
+
+    var dadosPositivacao = await respostaPositivacao.json();
+
+    if (!respostaPositivacao.ok) {
+      throw Error(
+        dadosPositivacao.error ||
+        'Não foi possível consultar a positivação por produto.'
+      );
+    }
+
+    renderizarPositivacao(dadosPositivacao);
+    return;
+  } catch (erro) {
+    $('estado').textContent = erro.message;
+    $('estado').className = 'estado erro';
+    $('linhasPositivacao').innerHTML = '';
+    return;
+  }
+}
 
 if (abaAtual === 'vendedor-produto') {
   try {
@@ -1081,10 +1168,12 @@ $('fim').value = iso(
     });
 
     var exibirMatriz = abaAtual === 'vendedor-produto';
+var exibirPositivacao = abaAtual === 'positivacao-produto';
 
-$('painelPrincipal').hidden = exibirMatriz;
-$('painelDevolucoes').hidden = exibirMatriz;
+$('painelPrincipal').hidden = exibirMatriz || exibirPositivacao;
+$('painelDevolucoes').hidden = exibirMatriz || exibirPositivacao;
 $('painelMatriz').hidden = !exibirMatriz;
+$('painelPositivacao').hidden = !exibirPositivacao;
 
     $('tituloPainel').textContent =
   abaAtual === 'financeiro-vendedor'
