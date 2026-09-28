@@ -1282,6 +1282,7 @@ export function devolucoesPage() {
     var devolucoes = [];
     var devolucoesFiltradas = [];
     var faturamentoPeriodo = 0;
+    var faturamentoPorRede = {};
     var tabelaCompleta = false;
 
     aplicarIconesVetoriais();
@@ -1367,6 +1368,7 @@ function aplicarIconesVetoriais() {
         .then(function(dados) {
           devolucoes = dados.items || [];
           faturamentoPeriodo = Number(dados.faturamento || 0);
+          faturamentoPorRede = dados.faturamentoPorRede || {};
           preencherFiltros();
           aplicarFiltros();
         })
@@ -1424,26 +1426,31 @@ function aplicarIconesVetoriais() {
     return total + Number(item.valorTotal || 0);
   }, 0);
 
-  var percentual = faturamentoPeriodo > 0
-    ? (valorDevolvido / faturamentoPeriodo) * 100
+  var redeSelecionada = document.getElementById('filtroRede').value;
+
+  var faturamentoSelecionado = redeSelecionada
+    ? Number(faturamentoPorRede[redeSelecionada] || 0)
+    : faturamentoPeriodo;
+
+  var percentual = faturamentoSelecionado > 0
+    ? (valorDevolvido / faturamentoSelecionado) * 100
     : 0;
 
   var percentualGrafico = Math.min(percentual, 100);
-  var graus = percentualGrafico * 3.6;
 
   document.getElementById('percentualImpacto').textContent =
     percentual.toFixed(2).replace('.', ',') + '%';
 
   document.getElementById('valorFaturamento').textContent =
-    formatarMoeda(faturamentoPeriodo);
+    formatarMoeda(faturamentoSelecionado);
 
   document.getElementById('valorDevolucoesImpacto').textContent =
     formatarMoeda(valorDevolvido);
 
   document.getElementById('arcoImpacto').setAttribute(
-  'stroke-dasharray',
-  percentualGrafico + ' ' + (100 - percentualGrafico)
-);
+    'stroke-dasharray',
+    percentualGrafico + ' ' + (100 - percentualGrafico)
+  );
 }
 
     function aplicarFiltros() {
