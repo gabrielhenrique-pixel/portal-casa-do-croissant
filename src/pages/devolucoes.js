@@ -1039,13 +1039,22 @@ export function devolucoesPage() {
 
     <section class="filtros">
       <div class="filtro">
-        <label>Período</label>
-        <div class="periodo-inputs">
-          <input id="filtroInicio" type="date" onchange="carregarDevolucoes()">
-          <span>até</span>
-          <input id="filtroFim" type="date" onchange="carregarDevolucoes()">
-        </div>
-      </div>
+  <label>Data inicial</label>
+  <input
+    id="filtroInicio"
+    type="date"
+    onchange="carregarDevolucoes()"
+  >
+</div>
+
+<div class="filtro">
+  <label>Data final</label>
+  <input
+    id="filtroFim"
+    type="date"
+    onchange="carregarDevolucoes()"
+  >
+</div>
 
       <div class="filtro">
   <label>Rede</label>
@@ -1058,13 +1067,6 @@ export function devolucoesPage() {
         <label>Produto</label>
         <select id="filtroProduto" onchange="aplicarFiltros()">
           <option value="">Todos</option>
-        </select>
-      </div>
-
-      <div class="filtro">
-        <label>Região / Loja</label>
-        <select id="filtroRegiao" disabled title="Será conectado quando definirmos o campo de região no Sankhya.">
-          <option>Todas</option>
         </select>
       </div>
     </section>
@@ -1330,16 +1332,20 @@ function aplicarIconesVetoriais() {
 }
 
     function configurarPeriodoInicial() {
-      var hoje = new Date();
-      var inicio = new Date(
-        hoje.getFullYear(),
-        hoje.getMonth() - 1,
-        hoje.getDate()
-      );
+  var hoje = new Date();
 
-      document.getElementById('filtroInicio').value = dataParaInput(inicio);
-      document.getElementById('filtroFim').value = dataParaInput(hoje);
-    }
+  var inicio = new Date(
+    hoje.getFullYear(),
+    hoje.getMonth(),
+    1
+  );
+
+  document.getElementById('filtroInicio').value =
+    dataParaInput(inicio);
+
+  document.getElementById('filtroFim').value =
+    dataParaInput(hoje);
+}
 
     function carregarDevolucoes() {
       mostrarCarregando(true);
