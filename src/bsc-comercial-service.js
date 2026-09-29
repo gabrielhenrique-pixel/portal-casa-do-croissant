@@ -1653,10 +1653,6 @@ clientesPortal.forEach(function(cliente) {
     dadosVendedor.codigoVendedor
   ).clientesAtivos += 1;
 });
-    }
-
-    vendedoresPorCodigo.get(codigoVendedor).clientesAtivos += 1;
-  });
 
   const produtosPorCodigo = new Map();
   const clientesPositivados = new Set();
