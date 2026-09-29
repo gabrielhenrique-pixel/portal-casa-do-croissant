@@ -483,7 +483,8 @@ function mostrarToast(texto) {
     const PAINEIS_DASHBOARD = [
   'DASHBOARD_RENTABILIDADE',
   'DASHBOARD_VENDAS',
-  'DEVOLUCOES'
+  'DEVOLUCOES',
+  'BSC_COMERCIAL'
 ];
 
     function esc(valor) {
