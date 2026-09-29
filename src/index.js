@@ -4188,13 +4188,14 @@ const APP_HTML = `<!doctype html>
 </button>
 
       <button
-        id="navClientes"
-        class="nav-btn"
-        type="button"
-        data-view="clientes"
-      >
-        Clientes
-      </button>
+  id="navClientes"
+  class="nav-btn oculto"
+  type="button"
+  data-view="clientes"
+  data-module="CLIENTES"
+>
+  Clientes
+</button>
 
       <button
         class="nav-btn"
