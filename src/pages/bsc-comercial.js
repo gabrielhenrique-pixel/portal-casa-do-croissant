@@ -1091,8 +1091,8 @@ function renderizarPositivacao(dados) {
   var percentualInteiro = function(valor) {
     return new Intl.NumberFormat('pt-BR', {
       style:'percent',
-      minimumFractionDigits:0,
-      maximumFractionDigits:0
+      minimumFractionDigits:1,
+      maximumFractionDigits:1
     }).format(Number(valor || 0));
   };
 
