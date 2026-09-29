@@ -511,7 +511,7 @@ tfoot td:first-child {
   width:30%;
 }
 
-#modalNaoPositivados input {
+#modalNaoPositivados select {
   box-sizing:border-box;
   display:block;
   width:100%;
@@ -821,33 +821,33 @@ tfoot td:first-child {
   <div class="lista-nao-positivados">
     <table>
       <thead>
-        <tr>
+                <tr>
           <th>
             Código do cliente
-            <input
+            <select
               id="filtroNaoPosCodigo"
-              type="search"
-              placeholder="Filtrar código"
               aria-label="Filtrar código do cliente"
             >
+              <option value="">Todos</option>
+            </select>
           </th>
           <th>
             Cliente
-            <input
+            <select
               id="filtroNaoPosCliente"
-              type="search"
-              placeholder="Filtrar cliente"
               aria-label="Filtrar nome do cliente"
             >
+              <option value="">Todos</option>
+            </select>
           </th>
           <th>
             Rede
-            <input
+            <select
               id="filtroNaoPosRede"
-              type="search"
-              placeholder="Filtrar rede"
               aria-label="Filtrar rede"
             >
+              <option value="">Todas</option>
+            </select>
           </th>
         </tr>
       </thead>
@@ -1308,23 +1308,44 @@ $('percentualDevAcumAtual').textContent = percentual(
 var detalhesPositivacao = null;
 var clientesNaoPositivadosAbertos = [];
 
-function filtrarClientesNaoPositivados() {
-  function normalizar(valor) {
-    return String(valor || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLocaleLowerCase('pt-BR')
-      .trim();
-  }
+function preencherSelecoesNaoPositivados() {
+  var campos = [
+    { id:'filtroNaoPosCodigo', campo:'codigo', todos:'Todos' },
+    { id:'filtroNaoPosCliente', campo:'cliente', todos:'Todos' },
+    { id:'filtroNaoPosRede', campo:'rede', todos:'Todas' }
+  ];
 
-  var codigo = normalizar($('filtroNaoPosCodigo').value);
-  var cliente = normalizar($('filtroNaoPosCliente').value);
-  var rede = normalizar($('filtroNaoPosRede').value);
+  campos.forEach(function(config) {
+    var select = $(config.id);
+
+    var valores = Array.from(new Set(
+      clientesNaoPositivadosAbertos.map(function(item) {
+        return String(item[config.campo] || '');
+      }).filter(function(valor) {
+        return valor !== '';
+      })
+    )).sort(function(a, b) {
+      return a.localeCompare(b, 'pt-BR', { numeric:true });
+    });
+
+    select.innerHTML = '';
+    select.add(new Option(config.todos, ''));
+
+    valores.forEach(function(valor) {
+      select.add(new Option(valor, valor));
+    });
+  });
+}
+
+function filtrarClientesNaoPositivados() {
+  var codigo = $('filtroNaoPosCodigo').value;
+  var cliente = $('filtroNaoPosCliente').value;
+  var rede = $('filtroNaoPosRede').value;
 
   var filtrados = clientesNaoPositivadosAbertos.filter(function(item) {
-    return normalizar(item.codigo).includes(codigo) &&
-      normalizar(item.cliente).includes(cliente) &&
-      normalizar(item.rede).includes(rede);
+    return (!codigo || String(item.codigo) === codigo) &&
+      (!cliente || String(item.cliente) === cliente) &&
+      (!rede || String(item.rede) === rede);
   });
 
   $('linhasNaoPositivados').innerHTML = filtrados.length
@@ -1367,9 +1388,7 @@ $('linhasPositivacaoVendedor').addEventListener('click', function(evento) {
   $('periodoNaoPositivados').textContent =
     textoPeriodo(detalhesPositivacao.inicio, detalhesPositivacao.fim);
 
-  $('filtroNaoPosCodigo').value = '';
-  $('filtroNaoPosCliente').value = '';
-  $('filtroNaoPosRede').value = '';
+  preencherSelecoesNaoPositivados();
 
   filtrarClientesNaoPositivados();
   $('modalNaoPositivados').showModal();
@@ -1381,7 +1400,7 @@ $('linhasPositivacaoVendedor').addEventListener('click', function(evento) {
   'filtroNaoPosCliente',
   'filtroNaoPosRede'
 ].forEach(function(id) {
-  $(id).addEventListener('input', filtrarClientesNaoPositivados);
+  $(id).addEventListener('change', filtrarClientesNaoPositivados);
 });
 
 $('fecharNaoPositivados').addEventListener('click', function() {
