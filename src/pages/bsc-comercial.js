@@ -376,6 +376,152 @@ tfoot td:first-child {
 
       .titulo-painel { font-size:16px; }
     }
+
+.botao-ver-clientes {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:28px;
+  height:26px;
+  padding:0;
+  margin-left:5px;
+  border:1px solid #c9dcd3;
+  border-radius:6px;
+  background:#e4f1ea;
+  color:#0d5e3d;
+  cursor:pointer;
+  vertical-align:middle;
+}
+
+.botao-ver-clientes:hover {
+  background:#cfe8da;
+}
+
+.olho-clientes {
+  position:relative;
+  display:block;
+  width:15px;
+  height:10px;
+  border:1.5px solid currentColor;
+  border-radius:70% 30% / 70% 30%;
+  transform:rotate(45deg);
+}
+
+.olho-clientes::after {
+  content:'';
+  position:absolute;
+  width:4px;
+  height:4px;
+  top:50%;
+  left:50%;
+  border-radius:50%;
+  background:currentColor;
+  transform:translate(-50%, -50%);
+}
+
+#modalNaoPositivados {
+  box-sizing:border-box;
+  width:900px;
+  max-width:94vw;
+  max-height:88vh;
+  padding:0;
+  border:0;
+  border-radius:16px;
+  background:#fff;
+  color:#173957;
+  box-shadow:0 20px 70px #0005;
+}
+
+#modalNaoPositivados::backdrop {
+  background:#102e4980;
+}
+
+.cabecalho-nao-positivados {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:20px;
+  background:#163a5a;
+  color:#fff;
+}
+
+.cabecalho-nao-positivados h2 {
+  margin:0;
+  font-size:18px;
+}
+
+.cabecalho-nao-positivados p {
+  margin:6px 0 0;
+  font-size:12px;
+}
+
+#fecharNaoPositivados {
+  padding:8px 12px;
+  border:0;
+  border-radius:7px;
+  background:#fff;
+  color:#163a5a;
+  cursor:pointer;
+}
+
+.lista-nao-positivados {
+  max-height:58vh;
+  overflow:auto;
+}
+
+#modalNaoPositivados table {
+  width:100%;
+  min-width:0;
+  table-layout:fixed;
+}
+
+#modalNaoPositivados th,
+#modalNaoPositivados td {
+  text-align:left;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  padding:10px;
+}
+
+#modalNaoPositivados th {
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+
+#modalNaoPositivados th:first-child {
+  width:22%;
+}
+
+#modalNaoPositivados th:nth-child(2) {
+  width:48%;
+}
+
+#modalNaoPositivados th:nth-child(3) {
+  width:30%;
+}
+
+#modalNaoPositivados input {
+  box-sizing:border-box;
+  display:block;
+  width:100%;
+  min-width:0;
+  margin-top:8px;
+  padding:8px;
+  border:1px solid #c7d8e5;
+  border-radius:6px;
+  background:#fff;
+  color:#173957;
+  font-size:12px;
+}
+
+#contadorNaoPositivados {
+  margin:0;
+  padding:14px 20px;
+  font-size:12px;
+}
+    
   </style>
 </head>
 
@@ -651,6 +797,57 @@ tfoot td:first-child {
     </section>
   </div>
 </section>
+<dialog id="modalNaoPositivados" aria-labelledby="tituloNaoPositivados">
+  <div class="cabecalho-nao-positivados">
+    <div>
+      <h2 id="tituloNaoPositivados">Clientes não positivados</h2>
+      <p id="periodoNaoPositivados"></p>
+    </div>
+
+    <button id="fecharNaoPositivados" type="button">
+      Fechar
+    </button>
+  </div>
+
+  <div class="lista-nao-positivados">
+    <table>
+      <thead>
+        <tr>
+          <th>
+            Código do cliente
+            <input
+              id="filtroNaoPosCodigo"
+              type="search"
+              placeholder="Filtrar código"
+              aria-label="Filtrar código do cliente"
+            >
+          </th>
+          <th>
+            Cliente
+            <input
+              id="filtroNaoPosCliente"
+              type="search"
+              placeholder="Filtrar cliente"
+              aria-label="Filtrar nome do cliente"
+            >
+          </th>
+          <th>
+            Rede
+            <input
+              id="filtroNaoPosRede"
+              type="search"
+              placeholder="Filtrar rede"
+              aria-label="Filtrar rede"
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody id="linhasNaoPositivados"></tbody>
+    </table>
+  </div>
+
+  <p id="contadorNaoPositivados" aria-live="polite"></p>
+</dialog>
   </main>
 
   <script>
@@ -1099,7 +1296,91 @@ $('percentualDevAcumAtual').textContent = percentual(
   $('estado').className = 'estado';
 }
 
+var detalhesPositivacao = null;
+var clientesNaoPositivadosAbertos = [];
+
+function filtrarClientesNaoPositivados() {
+  function normalizar(valor) {
+    return String(valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('pt-BR')
+      .trim();
+  }
+
+  var codigo = normalizar($('filtroNaoPosCodigo').value);
+  var cliente = normalizar($('filtroNaoPosCliente').value);
+  var rede = normalizar($('filtroNaoPosRede').value);
+
+  var filtrados = clientesNaoPositivadosAbertos.filter(function(item) {
+    return normalizar(item.codigo).includes(codigo) &&
+      normalizar(item.cliente).includes(cliente) &&
+      normalizar(item.rede).includes(rede);
+  });
+
+  $('linhasNaoPositivados').innerHTML = filtrados.length
+    ? filtrados.map(function(item) {
+        return (
+          '<tr>' +
+            '<td>' + escapar(item.codigo) + '</td>' +
+            '<td>' + escapar(item.cliente) + '</td>' +
+            '<td>' + escapar(item.rede) + '</td>' +
+          '</tr>'
+        );
+      }).join('')
+    : '<tr><td colspan="3">Nenhum cliente encontrado.</td></tr>';
+
+  $('contadorNaoPositivados').textContent =
+    filtrados.length + ' de ' +
+    clientesNaoPositivadosAbertos.length + ' clientes';
+}
+
+$('linhasPositivacaoVendedor').addEventListener('click', function(evento) {
+  var botao = evento.target.closest('[data-ver-nao-positivados]');
+
+  if (!botao || !detalhesPositivacao) return;
+
+  var vendedor = (detalhesPositivacao.vendedores || []).find(
+    function(item) {
+      return String(item.codigoVendedor) ===
+        botao.dataset.verNaoPositivados;
+    }
+  );
+
+  if (!vendedor) return;
+
+  clientesNaoPositivadosAbertos =
+    vendedor.clientesNaoPositivados || [];
+
+  $('tituloNaoPositivados').textContent =
+    'Clientes não positivados — ' + vendedor.vendedor;
+
+  $('periodoNaoPositivados').textContent =
+    textoPeriodo(detalhesPositivacao.inicio, detalhesPositivacao.fim);
+
+  $('filtroNaoPosCodigo').value = '';
+  $('filtroNaoPosCliente').value = '';
+  $('filtroNaoPosRede').value = '';
+
+  filtrarClientesNaoPositivados();
+  $('modalNaoPositivados').showModal();
+  $('filtroNaoPosCodigo').focus();
+});
+
+[
+  'filtroNaoPosCodigo',
+  'filtroNaoPosCliente',
+  'filtroNaoPosRede'
+].forEach(function(id) {
+  $(id).addEventListener('input', filtrarClientesNaoPositivados);
+});
+
+$('fecharNaoPositivados').addEventListener('click', function() {
+  $('modalNaoPositivados').close();
+});
+
 function renderizarPositivacao(dados) {
+  detalhesPositivacao = dados;
   var produtos = Array.isArray(dados.produtos)
     ? dados.produtos
     : [];
@@ -1176,7 +1457,17 @@ function renderizarPositivacao(dados) {
           '<td>' + escapar(vendedor.vendedor) + '</td>' +
           '<td>' + medidaMatriz(vendedor.clientesAtivos) + '</td>' +
           '<td>' + medidaMatriz(vendedor.positivados) + '</td>' +
-          '<td>' + medidaMatriz(vendedor.naoPositivados) + '</td>' +
+          '<td>' +
+  medidaMatriz(vendedor.naoPositivados) +
+  '<button type="button" class="botao-ver-clientes"' +
+    ' data-ver-nao-positivados="' +
+      escapar(vendedor.codigoVendedor) + '"' +
+    ' title="Visualizar clientes não positivados"' +
+    ' aria-label="Ver clientes não positivados de ' +
+      escapar(vendedor.vendedor) + '">' +
+    '<span class="olho-clientes" aria-hidden="true"></span>' +
+  '</button>' +
+'</td>' +
           '<td>' +
             percentual(vendedor.percentualPositivacao) +
           '</td>' +
