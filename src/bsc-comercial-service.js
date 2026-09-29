@@ -1723,12 +1723,33 @@ clientesPortal.forEach(function(cliente) {
     .map(function(vendedor) {
       const positivados = vendedor.clientesPositivados.size;
 
+      const clientesNaoPositivados = clientesPortal
+  .filter(function(cliente) {
+    const codigo = String(cliente.codigoParceiro || '').trim();
+    const cadastro = clientesAtivosPorCodigo.get(codigo);
+
+    return cadastro &&
+      cadastro.codigoVendedor === vendedor.codigoVendedor &&
+      !vendedor.clientesPositivados.has(codigo);
+  })
+  .map(function(cliente) {
+    return {
+      codigo: String(cliente.codigoParceiro || '').trim(),
+      cliente: String(cliente.cliente || '').trim(),
+      rede: String(cliente.rede || '').trim() || 'SEM REDE'
+    };
+  })
+  .sort(function(a, b) {
+    return a.cliente.localeCompare(b.cliente, 'pt-BR');
+  });
+
       return {
         codigoVendedor: vendedor.codigoVendedor,
         vendedor: vendedor.vendedor,
         clientesAtivos: vendedor.clientesAtivos,
         positivados: positivados,
         naoPositivados: vendedor.clientesAtivos - positivados,
+        clientesNaoPositivados: clientesNaoPositivados,
         percentualPositivacao: vendedor.clientesAtivos > 0
           ? positivados / vendedor.clientesAtivos
           : 0
