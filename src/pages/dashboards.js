@@ -1,4 +1,4 @@
-export function dashboardsPage() {
+export function dashboardsPage({ podeVerBsc = false } = {}) {
   return new Response(String.raw`<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -46,10 +46,12 @@ export function dashboardsPage() {
         <span class="icone">↶</span>
         <strong>Painel de devoluções</strong>
       </a>
-      <a class="card bsc" href="/dashboard-bsc">
+      ${podeVerBsc ? `
+<a class="card bsc" href="/dashboard-bsc">
   <span class="icone">▦</span>
   <strong>BSC Comercial</strong>
 </a>
+` : ''}
     </section>
   </main>
 </body>
