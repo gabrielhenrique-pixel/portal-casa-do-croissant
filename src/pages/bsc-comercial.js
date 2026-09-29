@@ -389,7 +389,7 @@ tfoot td:first-child {
   border-radius:0;
   background:transparent;
   box-shadow:none;
-  color:#222;
+  color:#60a5fa;
   cursor:pointer;
   vertical-align:middle;
 }
@@ -407,8 +407,8 @@ tfoot td:first-child {
 
 .olho-clientes {
   display:block;
-  width:24px;
-  height:24px;
+  width:16px;
+  height:16px;
   fill:none;
   stroke:currentColor;
   stroke-width:1.9;
