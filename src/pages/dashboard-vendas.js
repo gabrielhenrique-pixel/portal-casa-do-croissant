@@ -690,6 +690,80 @@ export function dashboardVendasPage() {
   outline:2px solid #60a5fa;
   outline-offset:2px;
 }
+
+.ranking-tabela .ranking-linha {
+  cursor:pointer;
+  transition:transform .18s ease, filter .18s ease;
+}
+
+.ranking-tabela .ranking-linha td {
+  transition:
+    background-color .18s ease,
+    color .18s ease,
+    box-shadow .18s ease;
+}
+
+.ranking-tabela .ranking-linha:hover {
+  transform:translateY(-2px);
+  filter:drop-shadow(0 3px 4px #163a5a20);
+}
+
+.ranking-tabela .ranking-linha:hover td {
+  background:#e6f0f8;
+}
+
+.ranking-tabela .ranking-linha:active {
+  transform:translateY(0);
+}
+
+.ranking-tabela .ranking-selecionado td {
+  background:#dcefe5;
+  color:#0d5e3d;
+  border-color:transparent;
+  box-shadow:
+    inset 0 1px #168454,
+    inset 0 -1px #168454;
+}
+
+.ranking-tabela .ranking-selecionado td:first-child {
+  box-shadow:
+    inset 3px 0 #168454,
+    inset 0 1px #168454,
+    inset 0 -1px #168454;
+}
+
+.ranking-tabela .ranking-selecionado td:last-child {
+  box-shadow:
+    inset -1px 0 #168454,
+    inset 0 1px #168454,
+    inset 0 -1px #168454;
+}
+
+.ranking-tabela .ranking-selecionado:hover td {
+  background:#cee7db;
+}
+
+.ranking-tabela .selecionar-vendedor,
+.ranking-tabela .selecionar-vendedor:hover,
+.ranking-tabela .selecionar-vendedor[aria-pressed="true"] {
+  background:transparent;
+  color:inherit;
+}
+
+.ranking-tabela .ranking-selecionado .selecionar-vendedor {
+  font-weight:700;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .ranking-tabela .ranking-linha,
+  .ranking-tabela .ranking-linha td {
+    transition:none;
+  }
+
+  .ranking-tabela .ranking-linha:hover {
+    transform:none;
+  }
+}
     
   </style>
 </head>
@@ -1025,8 +1099,13 @@ export function dashboardVendasPage() {
 
             return (
               '<tr class="ranking-linha' +
-                (indice === 0 ? ' ranking-primeiro' : '') +
-                '">' +
+               (indice === 0 ? ' ranking-primeiro' : '') +
+               (String(vendedor.codigoVendedor) === vendedorSelecionado
+                ? ' ranking-selecionado'
+                : '') +
+              '" data-linha-vendedor="' +
+                escapar(vendedor.codigoVendedor) +
+              '">' +
                 '<td class="ranking-vendedor">' +
                   '<span class="ranking-posicao">' +
                     (indice + 1) +
@@ -1285,17 +1364,17 @@ if (!respostaMetaEmpresa.ok) {
       );
 
       $('linhas').addEventListener('click', function(evento) {
-  var botao = evento.target.closest('[data-selecionar-vendedor]');
+         var linha = evento.target.closest('[data-linha-vendedor]');
 
-  if (!botao || $('atualizar').disabled) return;
+       if (!linha || $('atualizar').disabled) return;
 
-  var codigo = botao.dataset.selecionarVendedor;
-  var filtro = $('vendedor');
+        var codigo = linha.dataset.linhaVendedor;
+        var filtro = $('vendedor');
 
-  filtro.value = filtro.value === codigo ? '' : codigo;
+      filtro.value = filtro.value === codigo ? '' : codigo;
 
-  carregar();
-});
+       carregar();
+     });
 
       $('abrirMetas').addEventListener('click', abrirMetas);
       $('cancelarMetas').addEventListener('click', fecharMetas);
