@@ -381,30 +381,39 @@ tfoot td:first-child {
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  width:28px;
-  height:26px;
+  width:24px;
+  height:22px;
   padding:0;
-  margin-left:5px;
-  border:1px solid #c9dcd3;
-  border-radius:6px;
-  background:#e4f1ea;
-  color:#0d5e3d;
+  margin-left:4px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:#222;
   cursor:pointer;
   vertical-align:middle;
 }
 
 .botao-ver-clientes:hover {
-  background:#cfe8da;
+  background:transparent;
+  box-shadow:none;
+  opacity:.65;
+}
+
+.botao-ver-clientes:focus-visible {
+  outline:2px solid #168454;
+  outline-offset:2px;
 }
 
 .olho-clientes {
-  position:relative;
   display:block;
-  width:15px;
-  height:10px;
-  border:1.5px solid currentColor;
-  border-radius:70% 30% / 70% 30%;
-  transform:rotate(45deg);
+  width:24px;
+  height:24px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  transform:none;
 }
 
 .olho-clientes::after {
@@ -1465,7 +1474,10 @@ function renderizarPositivacao(dados) {
     ' title="Visualizar clientes não positivados"' +
     ' aria-label="Ver clientes não positivados de ' +
       escapar(vendedor.vendedor) + '">' +
-    '<span class="olho-clientes" aria-hidden="true"></span>' +
+    '<svg class="olho-clientes" viewBox="0 0 24 24" aria-hidden="true">' +
+  '<path d="M3 12a9 9 0 0 1 18 0" />' +
+  '<circle cx="12" cy="12" r="3.3" />' +
+'</svg>' +
   '</button>' +
 '</td>' +
           '<td>' +
