@@ -345,7 +345,13 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
     return redirectToPortal();
   }
 
-  return dashboardsPage();
+  return dashboardsPage({
+  podeVerBsc: await podeConsultarModulo(
+    request,
+    env,
+    'BSC_COMERCIAL'
+  )
+});
 }
 
  if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
