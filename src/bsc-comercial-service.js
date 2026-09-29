@@ -1546,69 +1546,176 @@ export async function listarBscPositivacaoProduto(request, env) {
 
   const token = await obterTokenSankhya(env);
 
-  const sql = [
+  const sqlClientesAtivos = [
     'SELECT',
+    '  PAR.CODPARC AS CODIGO_CLIENTE,',
+    '  PAR.CODVEND AS CODIGO_VENDEDOR,',
+    "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR",
+    'FROM TGFPAR PAR',
+    'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = PAR.CODVEND',
+    "WHERE PAR.CLIENTE = 'S'",
+    "  AND PAR.ATIVO = 'S'"
+  ].join('\n');
+
+  const sqlVendas = [
+    'SELECT',
+    '  CAB.CODPARC AS CODIGO_CLIENTE,',
     '  ITE.CODPROD AS CODIGO_PRODUTO,',
     "  NVL(PRO.DESCRPROD, 'SEM PRODUTO') AS PRODUTO,",
-    '  COUNT(DISTINCT CAB.CODPARC) AS CLIENTES_POSITIVADOS,',
-
-    '  (',
-    '    SELECT COUNT(DISTINCT CAB_TOTAL.CODPARC)',
-    '    FROM TGFCAB CAB_TOTAL',
-    "    WHERE CAB_TOTAL.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
-    "      AND CAB_TOTAL.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
-    "      AND CAB_TOTAL.TIPMOV = 'V'",
-    "      AND CAB_TOTAL.STATUSNOTA = 'L'",
-    '      AND CAB_TOTAL.CODTIPOPER = 1101',
-    '  ) - COUNT(DISTINCT CAB.CODPARC) AS A_POSITIVAR,',
-
     '  SUM(NVL(ITE.QTDNEG, 0)) AS QUANTIDADE,',
-
     '  SUM(' +
       '(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + ' +
       'NVL(ITE.VLRSUBST, 0))' +
     ') AS FATURAMENTO_LIQUIDO',
-
     'FROM TGFCAB CAB',
     'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
     'LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
-
     "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER = 1101',
-
-    'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
-    'ORDER BY CLIENTES_POSITIVADOS DESC, PRODUTO'
+    'GROUP BY',
+    '  CAB.CODPARC,',
+    '  ITE.CODPROD,',
+    '  PRO.DESCRPROD'
   ].join('\n');
 
-  const linhas = await executarConsultaSankhya(token, sql);
+  const resultados = await Promise.all([
+    executarConsultaSankhya(token, sqlClientesAtivos),
+    executarConsultaSankhya(token, sqlVendas)
+  ]);
 
-  const totalClientes = linhas.length
-    ? numero(linhas[0][2]) + numero(linhas[0][3])
-    : 0;
+  const clientesAtivosPorCodigo = new Map();
+  const vendedoresPorCodigo = new Map();
 
-  const produtos = linhas.map(function(linha) {
-    const clientesPositivados = numero(linha[2]);
+  resultados[0].forEach(function(linha) {
+    const codigoCliente = String(linha[0] || '').trim();
+    const codigoVendedor = String(linha[1] || '').trim() ||
+      'SEM_VENDEDOR';
+    const vendedor = String(linha[2] || 'SEM VENDEDOR').trim();
 
-    return {
-      codigoProduto: String(linha[0] || '').trim(),
-      produto: String(linha[1] || 'Sem produto').trim(),
-      clientesPositivados: clientesPositivados,
-      aPositivar: numero(linha[3]),
-      percentualPositivacao: totalClientes > 0
-        ? clientesPositivados / totalClientes
-        : 0,
-      quantidade: numero(linha[4]),
-      faturamentoLiquido: numero(linha[5])
-    };
+    if (!codigoCliente) return;
+
+    clientesAtivosPorCodigo.set(codigoCliente, {
+      codigoVendedor: codigoVendedor,
+      vendedor: vendedor
+    });
+
+    if (!vendedoresPorCodigo.has(codigoVendedor)) {
+      vendedoresPorCodigo.set(codigoVendedor, {
+        codigoVendedor: codigoVendedor,
+        vendedor: vendedor,
+        clientesAtivos: 0,
+        clientesPositivados: new Set()
+      });
+    }
+
+    vendedoresPorCodigo.get(codigoVendedor).clientesAtivos += 1;
   });
+
+  const produtosPorCodigo = new Map();
+  const clientesPositivados = new Set();
+
+  resultados[1].forEach(function(linha) {
+    const codigoCliente = String(linha[0] || '').trim();
+    const clienteAtivo = clientesAtivosPorCodigo.get(codigoCliente);
+
+    if (!clienteAtivo) return;
+
+    const codigoProduto = String(linha[1] || '').trim();
+    const produto = String(linha[2] || 'SEM PRODUTO').trim();
+    const quantidade = numero(linha[3]);
+    const faturamentoLiquido = numero(linha[4]);
+
+    clientesPositivados.add(codigoCliente);
+
+    const vendedor = vendedoresPorCodigo.get(
+      clienteAtivo.codigoVendedor
+    );
+
+    if (vendedor) {
+      vendedor.clientesPositivados.add(codigoCliente);
+    }
+
+    if (!produtosPorCodigo.has(codigoProduto)) {
+      produtosPorCodigo.set(codigoProduto, {
+        codigoProduto: codigoProduto,
+        produto: produto,
+        clientesPositivados: new Set(),
+        quantidade: 0,
+        faturamentoLiquido: 0
+      });
+    }
+
+    const produtoAtual = produtosPorCodigo.get(codigoProduto);
+
+    produtoAtual.clientesPositivados.add(codigoCliente);
+    produtoAtual.quantidade += quantidade;
+    produtoAtual.faturamentoLiquido += faturamentoLiquido;
+  });
+
+  const totalClientes = clientesAtivosPorCodigo.size;
+
+  const produtos = Array.from(produtosPorCodigo.values())
+    .map(function(produto) {
+      const quantidadeClientesPositivados =
+        produto.clientesPositivados.size;
+
+      return {
+        codigoProduto: produto.codigoProduto,
+        produto: produto.produto,
+        clientesPositivados: quantidadeClientesPositivados,
+        aPositivar: totalClientes - quantidadeClientesPositivados,
+        percentualPositivacao: totalClientes > 0
+          ? quantidadeClientesPositivados / totalClientes
+          : 0,
+        quantidade: produto.quantidade,
+        faturamentoLiquido: produto.faturamentoLiquido
+      };
+    })
+    .sort(function(a, b) {
+      return b.clientesPositivados - a.clientesPositivados ||
+        a.produto.localeCompare(b.produto, 'pt-BR');
+    });
+
+  const vendedores = Array.from(vendedoresPorCodigo.values())
+    .map(function(vendedor) {
+      const positivados = vendedor.clientesPositivados.size;
+
+      return {
+        codigoVendedor: vendedor.codigoVendedor,
+        vendedor: vendedor.vendedor,
+        clientesAtivos: vendedor.clientesAtivos,
+        positivados: positivados,
+        naoPositivados: vendedor.clientesAtivos - positivados,
+        percentualPositivacao: vendedor.clientesAtivos > 0
+          ? positivados / vendedor.clientesAtivos
+          : 0
+      };
+    })
+    .sort(function(a, b) {
+      if (a.vendedor.toUpperCase() === 'EMPRESA') return -1;
+      if (b.vendedor.toUpperCase() === 'EMPRESA') return 1;
+
+      return a.vendedor.localeCompare(b.vendedor, 'pt-BR');
+    });
 
   return {
     inicio: inicio,
     fim: fim,
-    totalClientes: totalClientes,
-    produtos: produtos
+    produtos: produtos,
+    indicadores: {
+      clientesAtivos: totalClientes,
+      clientesPositivados: clientesPositivados.size,
+      clientesSemAtendimento: totalClientes - clientesPositivados.size,
+      percentualPositivacao: totalClientes > 0
+        ? clientesPositivados.size / totalClientes
+        : 0,
+      percentualSemAtendimento: totalClientes > 0
+        ? (totalClientes - clientesPositivados.size) / totalClientes
+        : 0
+    },
+    vendedores: vendedores
   };
 }
