@@ -18,6 +18,11 @@ import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,l
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
+import { metasVendasPage } from './pages/metas-vendas.js';
+import {
+  carregarCadastroMetasPainel,
+  salvarMetasPainel
+} from './vendas-metas-caixas-service.js';
 import { bscComercialPage } from './pages/bsc-comercial.js';
 import {listarBscVolumeProduto,
         listarBscDevolucoesVolume,
@@ -366,6 +371,83 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   }
 
   return dashboardRentabilidadePage();
+}
+
+if (
+  url.pathname === '/dashboard-vendas/metas' &&
+  request.method === 'GET'
+) {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'DASHBOARD_VENDAS'
+  );
+
+  if (!acesso?.permissions.view) {
+    return redirectToPortal();
+  }
+
+  return metasVendasPage({
+    podeEditar: !!acesso.permissions.update
+  });
+}
+
+if (url.pathname === '/api/vendas/metas-painel') {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'DASHBOARD_VENDAS'
+  );
+
+  if (!acesso?.permissions.view) {
+    return json({
+      error: 'Acesso não autorizado.'
+    }, 403);
+  }
+
+  if (
+    request.method === 'PUT' &&
+    !acesso.permissions.update
+  ) {
+    return json({
+      error: 'É necessário o acesso Alterar em Monitoramento de vendas.'
+    }, 403);
+  }
+
+  try {
+    if (request.method === 'GET') {
+      const cadastro = await carregarCadastroMetasPainel(env);
+
+      return json({
+        ...cadastro,
+        podeEditar: !!acesso.permissions.update
+      });
+    }
+
+    if (request.method === 'PUT') {
+      const dados = await bodyAsJson(request);
+
+      const resultado = await salvarMetasPainel(
+        env,
+        dados,
+        acesso.session.username
+      );
+
+      return json(
+        resultado,
+        resultado.status || 200
+      );
+    }
+
+    return json({
+      error: 'Método não permitido.'
+    }, 405);
+
+  } catch (erro) {
+    return json({
+      error: erro.message || 'Não foi possível processar as metas.'
+    }, 500);
+  }
 }
 
       if (url.pathname === '/dashboard-vendas' && request.method === 'GET') {
@@ -853,14 +935,17 @@ if (!acesso?.permissions.view) {
       env
     );
 
-    if (resultado.error) {
+        if (resultado.error) {
       return json(
         { error: resultado.error },
         resultado.status || 400
       );
     }
 
-    return json(resultado);
+    return json({
+      ...resultado,
+      podeEditarMetas: !!acesso.permissions.update
+    });
   } catch (error) {
     console.error('Falha no monitoramento de vendas:', error);
 
