@@ -530,6 +530,134 @@ tfoot td:first-child {
   padding:14px 20px;
   font-size:12px;
 }
+
+#modalNaoPositivados th {
+  background:#163a5a;
+  color:#fff;
+}
+
+.np-cabecalho {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#fff;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+
+.np-cabecalho span {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  width:22px;
+  height:22px;
+  border-radius:4px;
+  background:#ffffff26;
+}
+
+.np-cabecalho.filtrado span {
+  background:#60a5fa;
+  color:#102e49;
+}
+
+.np-menu-filtro {
+  position:fixed;
+  inset:auto;
+  box-sizing:border-box;
+  width:292px;
+  max-width:calc(100vw - 16px);
+  max-height:calc(100vh - 16px);
+  overflow:auto;
+  margin:0;
+  padding:12px;
+  border:1px solid #9eb3c7;
+  border-radius:8px;
+  background:#fff;
+  color:#173957;
+  box-shadow:0 12px 26px #1235;
+  font-family:inherit;
+  font-size:14px;
+}
+
+.np-menu-filtro input[type="search"] {
+  box-sizing:border-box;
+  width:100%;
+  margin:8px 0;
+  padding:8px;
+  border:1px solid #b9cce0;
+  border-radius:5px;
+  font:inherit;
+}
+
+.np-menu-filtro input[type="checkbox"] {
+  width:14px;
+  height:14px;
+  margin:0;
+  flex-shrink:0;
+  accent-color:#1683ff;
+}
+
+.np-todos,
+.np-opcoes label {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  cursor:pointer;
+}
+
+.np-todos {
+  padding:3px 4px;
+}
+
+.np-opcoes {
+  max-height:235px;
+  overflow:auto;
+  border:1px solid #d6e1ea;
+}
+
+.np-opcoes label {
+  padding:7px 8px;
+  font-size:12px;
+  overflow-wrap:anywhere;
+}
+
+.np-opcoes label[hidden] {
+  display:none;
+}
+
+.np-opcoes label:hover {
+  background:#edf5fc;
+}
+
+.np-acoes {
+  display:flex;
+  justify-content:flex-end;
+  gap:7px;
+  margin-top:10px;
+}
+
+.np-acoes button {
+  padding:8px 12px;
+  border:1px solid #aebfd0;
+  border-radius:5px;
+  background:#fff;
+  color:#244866;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.np-acoes .np-aplicar {
+  border-color:#102e49;
+  background:#102e49;
+  color:#fff;
+}
     
   </style>
 </head>
@@ -821,36 +949,40 @@ tfoot td:first-child {
   <div class="lista-nao-positivados">
     <table>
       <thead>
-                <tr>
+        <tr>
           <th>
-            Código do cliente
-            <select
-              id="filtroNaoPosCodigo"
-              aria-label="Filtrar código do cliente"
+            <button
+              type="button"
+              class="np-cabecalho"
+              data-np-filtro="codigo"
             >
-              <option value="">Todos</option>
-            </select>
+              Código do cliente
+              <span aria-hidden="true">▾</span>
+            </button>
           </th>
           <th>
-            Cliente
-            <select
-              id="filtroNaoPosCliente"
-              aria-label="Filtrar nome do cliente"
+            <button
+              type="button"
+              class="np-cabecalho"
+              data-np-filtro="cliente"
             >
-              <option value="">Todos</option>
-            </select>
+              Cliente
+              <span aria-hidden="true">▾</span>
+            </button>
           </th>
           <th>
-            Rede
-            <select
-              id="filtroNaoPosRede"
-              aria-label="Filtrar rede"
+            <button
+              type="button"
+              class="np-cabecalho"
+              data-np-filtro="rede"
             >
-              <option value="">Todas</option>
-            </select>
+              Rede
+              <span aria-hidden="true">▾</span>
+            </button>
           </th>
         </tr>
       </thead>
+
       <tbody id="linhasNaoPositivados"></tbody>
     </table>
   </div>
@@ -1307,45 +1439,26 @@ $('percentualDevAcumAtual').textContent = percentual(
 
 var detalhesPositivacao = null;
 var clientesNaoPositivadosAbertos = [];
+var filtrosNaoPositivados = {};
+var menuNaoPositivados = null;
 
-function preencherSelecoesNaoPositivados() {
-  var campos = [
-    { id:'filtroNaoPosCodigo', campo:'codigo', todos:'Todos' },
-    { id:'filtroNaoPosCliente', campo:'cliente', todos:'Todos' },
-    { id:'filtroNaoPosRede', campo:'rede', todos:'Todas' }
-  ];
-
-  campos.forEach(function(config) {
-    var select = $(config.id);
-
-    var valores = Array.from(new Set(
-      clientesNaoPositivadosAbertos.map(function(item) {
-        return String(item[config.campo] || '');
-      }).filter(function(valor) {
-        return valor !== '';
-      })
-    )).sort(function(a, b) {
-      return a.localeCompare(b, 'pt-BR', { numeric:true });
-    });
-
-    select.innerHTML = '';
-    select.add(new Option(config.todos, ''));
-
-    valores.forEach(function(valor) {
-      select.add(new Option(valor, valor));
-    });
-  });
+function fecharFiltroNaoPositivados() {
+  if (menuNaoPositivados) {
+    menuNaoPositivados.remove();
+    menuNaoPositivados = null;
+  }
 }
 
 function filtrarClientesNaoPositivados() {
-  var codigo = $('filtroNaoPosCodigo').value;
-  var cliente = $('filtroNaoPosCliente').value;
-  var rede = $('filtroNaoPosRede').value;
+  var campos = ['codigo', 'cliente', 'rede'];
 
   var filtrados = clientesNaoPositivadosAbertos.filter(function(item) {
-    return (!codigo || String(item.codigo) === codigo) &&
-      (!cliente || String(item.cliente) === cliente) &&
-      (!rede || String(item.rede) === rede);
+    return campos.every(function(campo) {
+      var selecao = filtrosNaoPositivados[campo];
+
+      return !selecao ||
+        selecao.has(String(item[campo] || ''));
+    });
   });
 
   $('linhasNaoPositivados').innerHTML = filtrados.length
@@ -1363,7 +1476,162 @@ function filtrarClientesNaoPositivados() {
   $('contadorNaoPositivados').textContent =
     filtrados.length + ' de ' +
     clientesNaoPositivadosAbertos.length + ' clientes';
+
+  document.querySelectorAll('[data-np-filtro]').forEach(function(botao) {
+    botao.classList.toggle(
+      'filtrado',
+      !!filtrosNaoPositivados[botao.dataset.npFiltro]
+    );
+  });
 }
+
+function abrirFiltroNaoPositivados(campo, botao) {
+  fecharFiltroNaoPositivados();
+
+  var nomes = {
+    codigo:'Código do cliente',
+    cliente:'Cliente',
+    rede:'Rede'
+  };
+
+  var valores = Array.from(new Set(
+    clientesNaoPositivadosAbertos.map(function(item) {
+      return String(item[campo] || '');
+    })
+  )).sort(function(a, b) {
+    return a.localeCompare(b, 'pt-BR', { numeric:true });
+  });
+
+  var atual = filtrosNaoPositivados[campo] || new Set(valores);
+  var menu = document.createElement('div');
+
+  menu.className = 'np-menu-filtro';
+  menu.setAttribute('popover', 'auto');
+
+  menu.innerHTML =
+    '<strong>Filtro: ' + escapar(nomes[campo]) + '</strong>' +
+    '<input type="search" placeholder="Pesquisar"' +
+      ' aria-label="Pesquisar opções">' +
+    '<label class="np-todos">' +
+      '<input type="checkbox"> Selecionar tudo' +
+    '</label>' +
+    '<div class="np-opcoes">' +
+      valores.map(function(valor, indice) {
+        return (
+          '<label data-np-indice="' + indice + '">' +
+            '<input type="checkbox" ' +
+              (atual.has(valor) ? 'checked' : '') +
+            '> ' + escapar(valor || '(Em branco)') +
+          '</label>'
+        );
+      }).join('') +
+    '</div>' +
+    '<div class="np-acoes">' +
+      '<button type="button" class="np-limpar">Limpar</button>' +
+      '<button type="button" class="np-aplicar">Aplicar</button>' +
+    '</div>';
+
+  $('modalNaoPositivados').appendChild(menu);
+  menuNaoPositivados = menu;
+  menu.showPopover();
+
+  var posicao = botao.getBoundingClientRect();
+
+  menu.style.left = Math.max(
+    8,
+    Math.min(posicao.right - menu.offsetWidth,
+      window.innerWidth - menu.offsetWidth - 8)
+  ) + 'px';
+
+  menu.style.top = Math.max(
+    8,
+    Math.min(posicao.bottom + 6,
+      window.innerHeight - menu.offsetHeight - 8)
+  ) + 'px';
+
+  var busca = menu.querySelector('input[type="search"]');
+  var todos = menu.querySelector('.np-todos input');
+
+  function atualizarSelecionarTudo() {
+    var visiveis = Array.from(
+      menu.querySelectorAll('[data-np-indice]:not([hidden]) input')
+    );
+
+    var marcados = visiveis.filter(function(input) {
+      return input.checked;
+    }).length;
+
+    todos.checked = visiveis.length > 0 &&
+      marcados === visiveis.length;
+
+    todos.indeterminate = marcados > 0 &&
+      marcados < visiveis.length;
+  }
+
+  busca.addEventListener('input', function() {
+    var texto = busca.value.toLocaleLowerCase('pt-BR').trim();
+
+    menu.querySelectorAll('[data-np-indice]').forEach(function(label) {
+      var valor = valores[Number(label.dataset.npIndice)];
+
+      label.hidden = !(valor || '(Em branco)')
+        .toLocaleLowerCase('pt-BR')
+        .includes(texto);
+    });
+
+    atualizarSelecionarTudo();
+  });
+
+  todos.addEventListener('change', function() {
+    menu.querySelectorAll('[data-np-indice]:not([hidden]) input')
+      .forEach(function(input) {
+        input.checked = todos.checked;
+      });
+
+    atualizarSelecionarTudo();
+  });
+
+  menu.querySelector('.np-opcoes').addEventListener(
+    'change',
+    atualizarSelecionarTudo
+  );
+
+  menu.querySelector('.np-limpar').addEventListener('click', function() {
+    delete filtrosNaoPositivados[campo];
+    fecharFiltroNaoPositivados();
+    filtrarClientesNaoPositivados();
+    botao.focus();
+  });
+
+  menu.querySelector('.np-aplicar').addEventListener('click', function() {
+    var selecionados = new Set(
+      Array.from(
+        menu.querySelectorAll('[data-np-indice] input:checked')
+      ).map(function(input) {
+        return valores[Number(input.parentElement.dataset.npIndice)];
+      })
+    );
+
+    if (selecionados.size === valores.length) {
+      delete filtrosNaoPositivados[campo];
+    } else {
+      filtrosNaoPositivados[campo] = selecionados;
+    }
+
+    fecharFiltroNaoPositivados();
+    filtrarClientesNaoPositivados();
+    botao.focus();
+  });
+
+  atualizarSelecionarTudo();
+  busca.focus();
+}
+
+document.querySelectorAll('[data-np-filtro]').forEach(function(botao) {
+  botao.addEventListener('click', function() {
+    abrirFiltroNaoPositivados(botao.dataset.npFiltro, botao);
+  });
+});
 
 $('linhasPositivacaoVendedor').addEventListener('click', function(evento) {
   var botao = evento.target.closest('[data-ver-nao-positivados]');
@@ -1379,6 +1647,9 @@ $('linhasPositivacaoVendedor').addEventListener('click', function(evento) {
 
   if (!vendedor) return;
 
+  fecharFiltroNaoPositivados();
+  filtrosNaoPositivados = {};
+
   clientesNaoPositivadosAbertos =
     vendedor.clientesNaoPositivados || [];
 
@@ -1388,24 +1659,19 @@ $('linhasPositivacaoVendedor').addEventListener('click', function(evento) {
   $('periodoNaoPositivados').textContent =
     textoPeriodo(detalhesPositivacao.inicio, detalhesPositivacao.fim);
 
-  preencherSelecoesNaoPositivados();
-
   filtrarClientesNaoPositivados();
   $('modalNaoPositivados').showModal();
-  $('filtroNaoPosCodigo').focus();
-});
-
-[
-  'filtroNaoPosCodigo',
-  'filtroNaoPosCliente',
-  'filtroNaoPosRede'
-].forEach(function(id) {
-  $(id).addEventListener('change', filtrarClientesNaoPositivados);
 });
 
 $('fecharNaoPositivados').addEventListener('click', function() {
+  fecharFiltroNaoPositivados();
   $('modalNaoPositivados').close();
 });
+
+$('modalNaoPositivados').addEventListener(
+  'close',
+  fecharFiltroNaoPositivados
+);
 
 function renderizarPositivacao(dados) {
   detalhesPositivacao = dados;
