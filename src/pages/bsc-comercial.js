@@ -320,6 +320,35 @@ tfoot td:first-child {
   }
 }
 
+.tabela-positivacao-vendedor {
+  min-width:0;
+  table-layout:fixed;
+}
+
+.tabela-positivacao-vendedor th,
+.tabela-positivacao-vendedor td {
+  padding:8px 5px;
+  white-space:nowrap;
+}
+
+.tabela-positivacao-vendedor th {
+  font-size:10px;
+}
+
+.tabela-positivacao-vendedor td {
+  font-size:11px;
+}
+
+.tabela-positivacao-vendedor th:first-child,
+.tabela-positivacao-vendedor td:first-child {
+  width:26%;
+}
+
+.tabela-positivacao-vendedor th:not(:first-child),
+.tabela-positivacao-vendedor td:not(:first-child) {
+  width:18.5%;
+}
+
     @media (max-width:700px) {
       main { padding:5px 4px 26px; }
 
