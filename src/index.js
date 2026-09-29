@@ -48,6 +48,7 @@ const MODULOS_ACESSO = [
   ['DASHBOARDS', 'Dashboards', 30],
   ['DASHBOARD_RENTABILIDADE', 'Rentabilidade', 31],
   ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
+  ['BSC_COMERCIAL', 'BSC Comercial', 36],
   ['DEVOLUCOES', 'Painel de devoluções', 33],
   ['MARGEM_REDE', 'Margem por rede', 34],
   ['RENTABILIDADE_SKU', 'Rentabilidade SKU', 35],
@@ -373,6 +374,27 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   }
 
   return dashboardVendasPage();
+}
+
+            if (
+  url.pathname === '/dashboard-bsc' ||
+  url.pathname.startsWith('/api/bsc/')
+) {
+  const podeAcessarBsc = await podeConsultarModulo(
+    request,
+    env,
+    'BSC_COMERCIAL'
+  );
+
+  if (!podeAcessarBsc) {
+    if (url.pathname.startsWith('/api/bsc/')) {
+      return json({
+        error: 'Você não possui permissão para consultar a BSC Comercial.'
+      }, 403);
+    }
+
+    return redirectToPortal();
+  }
 }
 
 if (url.pathname === '/dashboard-bsc' && request.method === 'GET') {
