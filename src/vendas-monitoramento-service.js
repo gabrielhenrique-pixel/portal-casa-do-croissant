@@ -1,3 +1,9 @@
+import {
+  consultarCaixasVendidas,
+  listarMetasCaixas,
+  agruparMetasCaixas
+} from './vendas-metas-caixas-service.js';
+
 const META_MAXIMA = 999999999.99;
 
 export async function listarMonitoramentoVendasSankhya(request, env) {
@@ -124,13 +130,20 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     'ORDER BY VENDEDOR'
   ].join('\n');
 
-  const resultados = await Promise.all([
+    const resultados = await Promise.all([
     executarConsultaSankhya(token, sqlVendedores),
     executarConsultaSankhya(token, sqlProdutos),
     executarConsultaSankhya(token, sqlOpcoesVendedores),
     listarMetasVendedores(env),
     listarMetasProdutos(env),
-    carregarMetaEmpresa(env)
+    carregarMetaEmpresa(env),
+    consultarCaixasVendidas(
+      token,
+      inicio,
+      fim,
+      vendedorSelecionado
+    ),
+    listarMetasCaixas(env)
   ]);
 
   const linhasVendedores = resultados[0];
@@ -139,6 +152,8 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   const metasVendedores = resultados[3];
   const metasProdutos = resultados[4];
   const metaEmpresa = numero(resultados[5]);
+  const linhasCaixas = resultados[6];
+  const metasCaixas = resultados[7];
 
   const metasPorVendedor = new Map(
     metasVendedores.map((meta) => [
@@ -202,16 +217,23 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
       );
     });
 
-  const produtos = linhasProdutos.map((linha) => {
-  const grupo = String(linha[0] || '').trim();
-  const faturamento = numero(linha[1]);
+  const faturamentoPorGrupo = new Map(
+    linhasProdutos.map((linha) => [
+      String(linha[0] || '').trim(),
+      numero(linha[1])
+    ])
+  );
 
-  return {
-    codigoProduto: grupo,
-    produto: grupo,
-    faturamento
-  };
-});
+  const gruposCaixas = agruparMetasCaixas(
+    linhasCaixas,
+    metasCaixas,
+    vendedorSelecionado
+  );
+
+  const produtos = gruposCaixas.map((grupo) => ({
+    ...grupo,
+    faturamento: faturamentoPorGrupo.get(grupo.produto) || 0
+  }));
 
   const opcoesVendedores = linhasOpcoesVendedores.map((linha) => {
   const codigoVendedor = String(linha[0] || '');
