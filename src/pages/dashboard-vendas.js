@@ -660,6 +660,37 @@ export function dashboardVendasPage() {
         grid-template-columns:1fr;
       }
     }
+
+     .selecionar-vendedor {
+  padding:3px 5px;
+  border:0;
+  border-radius:4px;
+  background:transparent;
+  color:inherit;
+  font-family:inherit;
+  font-size:inherit;
+  font-weight:400;
+  text-align:left;
+  vertical-align:middle;
+  cursor:pointer;
+}
+
+.selecionar-vendedor:hover {
+  background:#e0edf8;
+  color:#12558d;
+}
+
+.selecionar-vendedor[aria-pressed="true"] {
+  background:#dcefe5;
+  color:#0d5e3d;
+  font-weight:700;
+}
+
+.selecionar-vendedor:focus-visible {
+  outline:2px solid #60a5fa;
+  outline-offset:2px;
+}
+    
   </style>
 </head>
 
@@ -1000,9 +1031,16 @@ export function dashboardVendasPage() {
                   '<span class="ranking-posicao">' +
                     (indice + 1) +
                     'º</span>' +
-                  '<strong>' +
-                    escapar(vendedor.vendedor) +
-                  '</strong>' +
+                  '<button type="button" class="selecionar-vendedor"' +
+                  ' data-selecionar-vendedor="' +
+                    escapar(vendedor.codigoVendedor) + '"' +
+                  ' aria-pressed="' +
+                   (String(vendedor.codigoVendedor) === vendedorSelecionado
+                   ? 'true'
+                   : 'false') +
+                  '">' +
+                   escapar(vendedor.vendedor) +
+                  '</button>' +
                 '</td>' +
                                 '<td>' +
                   (
@@ -1245,6 +1283,19 @@ if (!respostaMetaEmpresa.ok) {
           carregar();
         }
       );
+
+      $('linhas').addEventListener('click', function(evento) {
+  var botao = evento.target.closest('[data-selecionar-vendedor]');
+
+  if (!botao || $('atualizar').disabled) return;
+
+  var codigo = botao.dataset.selecionarVendedor;
+  var filtro = $('vendedor');
+
+  filtro.value = filtro.value === codigo ? '' : codigo;
+
+  carregar();
+});
 
       $('abrirMetas').addEventListener('click', abrirMetas);
       $('cancelarMetas').addEventListener('click', fecharMetas);
