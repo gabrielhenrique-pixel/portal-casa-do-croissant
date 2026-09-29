@@ -489,6 +489,13 @@ export function dashboardVendasPage() {
       text-align:center;
     }
 
+        .grupo-resumo {
+      margin: 5px 0 0;
+      color: #60718b;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     .acoes-metas {
       display:flex;
       justify-content:center;
@@ -884,525 +891,399 @@ export function dashboardVendasPage() {
     </section>
   </main>
 
-  <div id="modalMetas" class="modal">
-    <section class="janela-metas">
-      <h2>Atualizar metas de vendedores</h2>
-      <p>Defina a meta total da empresa e as metas individuais dos vendedores.</p>
-
-      <div class="meta-total">
-        <span>Meta total</span>
-        <input id="metaTotalEdicao" type="text" inputmode="decimal">
-      </div>
-
-      <div id="listaMetas" class="lista-metas"></div>
-
-      <div class="acoes-modal">
-        <button id="cancelarMetas" class="cancelar" type="button">
-          Cancelar
-        </button>
-
-        <button id="salvarMetas" type="button">
-          Salvar metas
-        </button>
-      </div>
-    </section>
-  </div>
-
   <script>
-    (function () {
-      var $ = function (id) {
-        return document.getElementById(id);
-      };
+(function () {
+  var $ = function (id) {
+    return document.getElementById(id);
+  };
 
-      var dadosAtuais = null;
+  var GRUPOS = [
+    'Croissant TO GO',
+    'Biscoitos',
+    'Amêndoas',
+    'Pão croissant 10un',
+    'Pão Croissant 125g',
+    'Pão Croissant 250g'
+  ];
 
-      var GRUPOS = [
-        'Croissant TO GO',
-        'Biscoitos',
-        'Amêndoas',
-        'Pão croissant 10un',
-        'Pão Croissant 125g',
-        'Pão Croissant 250g'
-      ];
+  var caixas = new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits: 2
+  });
 
-      var META_POR_GRUPO = 200000;
+  var moeda = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
 
-      var moeda = new Intl.NumberFormat('pt-BR', {
-        style:'currency',
-        currency:'BRL'
-      });
+  var percentual = new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+  });
 
-      var percentual = new Intl.NumberFormat('pt-BR', {
-        style:'percent',
-        minimumFractionDigits:0,
-        maximumFractionDigits:1
-      });
-
-      function numero(valor) {
-        valor = Number(valor);
-        return Number.isFinite(valor) ? valor : 0;
-      }
-
-      function numeroMeta(valor) {
-        var texto = String(valor || '')
-          .trim()
-          .replace(/\s/g, '');
-
-        if (texto.includes(',')) {
-          texto = texto.replace(/\./g, '').replace(',', '.');
-        }
-
-        return Number(texto);
-      }
-
-      function dataIso(data) {
-        return data.getFullYear() + '-' +
-          String(data.getMonth() + 1).padStart(2, '0') + '-' +
-          String(data.getDate()).padStart(2, '0');
-      }
-
-      function escapar(valor) {
-        var elemento = document.createElement('div');
-        elemento.textContent = String(valor || '');
-        return elemento.innerHTML;
-      }
-
-      function corMeta(valor) {
-  if (valor == null) {
-    return '#60738e';
+  function numero(valor) {
+    valor = Number(valor);
+    return Number.isFinite(valor) ? valor : 0;
   }
 
-  // vermelho: 0% a 39% | amarelo: 39% a 61% | verde: acima de 61%.
-  if (valor < .39) {
-    return '#eb5560';
+  function dataIso(data) {
+    return data.getFullYear() + '-' +
+      String(data.getMonth() + 1).padStart(2, '0') + '-' +
+      String(data.getDate()).padStart(2, '0');
   }
 
-  if (valor < .61) {
-    return '#df9400';
+  function escapar(valor) {
+    var elemento = document.createElement('div');
+    elemento.textContent = String(valor ?? '');
+    return elemento.innerHTML;
   }
 
-  return '#15954f';
-}
+  function corMeta(valor) {
+    if (valor == null) {
+      return '#60738e';
+    }
 
-      function angulo(valor) {
-        valor = Math.max(0, Math.min(numero(valor), 1));
-        return -90 + valor * 180;
-      }
+    if (valor < .39) {
+      return '#eb5560';
+    }
 
-      function preencherFiltro(vendedores) {
-        var select = $('vendedor');
-        var anterior = select.value;
+    if (valor < .61) {
+      return '#df9400';
+    }
 
-        select.innerHTML =
-          '<option value="">Todos</option>' +
-          vendedores.map(function (vendedor) {
-            return (
-              '<option value="' +
-                escapar(vendedor.codigoVendedor) +
-                '">' +
-                escapar(vendedor.vendedor) +
-              '</option>'
-            );
-          }).join('');
+    return '#15954f';
+  }
 
-        var existe = Array.from(select.options).some(
-          function (opcao) {
-            return opcao.value === anterior;
-          }
+  function angulo(valor) {
+    valor = Math.max(0, Math.min(numero(valor), 1));
+    return -90 + valor * 180;
+  }
+
+  function preencherFiltro(vendedores) {
+    var select = $('vendedor');
+    var anterior = select.value;
+
+    select.innerHTML =
+      '<option value="">Todos</option>' +
+      vendedores.map(function (vendedor) {
+        return (
+          '<option value="' +
+            escapar(vendedor.codigoVendedor) +
+          '">' +
+            escapar(vendedor.vendedor) +
+          '</option>'
         );
+      }).join('');
 
-        if (existe) {
-          select.value = anterior;
-        }
+    var existe = Array.from(select.options).some(
+      function (opcao) {
+        return opcao.value === anterior;
       }
+    );
 
-      function velocimetroGrupo(grupo) {
-        var participacao = grupo.participacao;
-        var progresso = Math.max(
-          0,
-          Math.min(numero(participacao), 1)
-        ) * 245;
+    if (existe) {
+      select.value = anterior;
+    }
+  }
+
+  function velocimetroGrupo(grupo) {
+    var participacao = grupo.participacao;
+
+    var progresso = Math.max(
+      0,
+      Math.min(numero(participacao), 1)
+    ) * 245;
+
+    var textoPercentual;
+
+    if (grupo.semConversao) {
+      textoPercentual = '—';
+    } else if (participacao == null) {
+      textoPercentual = 'Sem meta';
+    } else {
+      textoPercentual = percentual.format(participacao);
+    }
+
+    return (
+      '<div class="grupo-gauge">' +
+        '<svg viewBox="0 0 190 130" aria-hidden="true">' +
+          '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
+            'fill="none" stroke="#a7a7a7" stroke-width="25"/>' +
+          '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
+            'fill="none" stroke="#00ad4f" stroke-width="25" ' +
+            'stroke-dasharray="' +
+              progresso.toFixed(1) +
+              ' 245"/>' +
+        '</svg>' +
+        '<i class="grupo-ponteiro" style="transform:rotate(' +
+          angulo(participacao) +
+          'deg)"></i>' +
+        '<b>' +
+          textoPercentual +
+        '</b>' +
+      '</div>'
+    );
+  }
+
+  function montarGrupos(produtos) {
+    var porNome = new Map(
+      produtos.map(function (produto) {
+        return [produto.produto, produto];
+      })
+    );
+
+    return GRUPOS.map(function (nome) {
+      var produto = porNome.get(nome) || {};
+
+      return {
+        nome: nome,
+        caixasVendidas: produto.caixasVendidas,
+        metaCaixas: numero(produto.metaCaixas),
+        semConversao: numero(produto.semConversao),
+        participacao: produto.percentualMeta == null
+          ? null
+          : numero(produto.percentualMeta)
+      };
+    });
+  }
+
+  function render(dados) {
+    $('abrirMetas').textContent = dados.podeEditarMetas
+      ? 'ATUALIZAR METAS'
+      : 'CONSULTAR METAS';
+
+    var vendedores = dados.vendedores || [];
+
+    var vendedorSelecionado = String(
+      dados.vendedorSelecionado || ''
+    );
+
+    var opcoesVendedores =
+      dados.opcoesVendedores || vendedores;
+
+    var produtos = dados.produtos || [];
+    var grupos = montarGrupos(produtos);
+
+    preencherFiltro(opcoesVendedores);
+    $('vendedor').value = vendedorSelecionado;
+
+    $('linhas').innerHTML =
+      vendedores.map(function (vendedor, indice) {
+        var semMeta = vendedor.percentualMeta == null;
+
+        var metaAtingida = semMeta
+          ? 'Sem meta'
+          : percentual.format(vendedor.percentualMeta);
+
+        var classeMeta = 'ranking-meta--sem';
+
+        if (!semMeta && vendedor.percentualMeta < .39) {
+          classeMeta = 'ranking-meta--vermelha';
+        } else if (!semMeta && vendedor.percentualMeta < .61) {
+          classeMeta = 'ranking-meta--amarela';
+        } else if (!semMeta) {
+          classeMeta = 'ranking-meta--verde';
+        }
+
+        var selecionado =
+          String(vendedor.codigoVendedor) === vendedorSelecionado;
 
         return (
-          '<div class="grupo-gauge">' +
-            '<svg viewBox="0 0 190 130" aria-hidden="true">' +
-              '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
-                'fill="none" stroke="#a7a7a7" stroke-width="25"/>' +
-              '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
-                'fill="none" stroke="#00ad4f" stroke-width="25" ' +
-                'stroke-dasharray="' +
-                  progresso.toFixed(1) +
-                  ' 245"/>' +
-            '</svg>' +
-            '<i class="grupo-ponteiro" style="transform:rotate(' +
-              angulo(participacao) +
-              'deg)"></i>' +
-            '<b>' +
-              percentual.format(participacao) +
-            '</b>' +
-          '</div>'
-        );
-      }
-
-      function montarGrupos(produtos) {
-        var porNome = new Map();
-
-        produtos.forEach(function (produto) {
-          porNome.set(
-            String(produto.produto || ''),
-            numero(produto.faturamento)
-          );
-        });
-
-        return GRUPOS.map(function (nome) {
-          var faturamento = porNome.get(nome) || 0;
-
-          return {
-            nome:nome,
-            faturamento:faturamento,
-            participacao:META_POR_GRUPO > 0
-              ? faturamento / META_POR_GRUPO
-              : 0
-          };
-        });
-      }
-
-      function render(dados) {
-        dadosAtuais = dados;
-
-                var vendedores = dados.vendedores || [];
-        var vendedorSelecionado = String(
-          dados.vendedorSelecionado || ''
-        );
-        var opcoesVendedores = dados.opcoesVendedores || vendedores;
-        var produtos = dados.produtos || [];
-        var grupos = montarGrupos(produtos);
-
-        preencherFiltro(opcoesVendedores);
-
-                $('linhas').innerHTML =
-          vendedores.map(function (vendedor, indice) {
-            var semMeta = vendedor.percentualMeta == null;
-            var metaAtingida = semMeta
-              ? 'Sem meta'
-              : percentual.format(vendedor.percentualMeta);
-
-            var classeMeta = 'ranking-meta--sem';
-
-            if (!semMeta && vendedor.percentualMeta < .39) {
-              classeMeta = 'ranking-meta--vermelha';
-            } else if (!semMeta && vendedor.percentualMeta < .61) {
-              classeMeta = 'ranking-meta--amarela';
-            } else if (!semMeta) {
-              classeMeta = 'ranking-meta--verde';
-            }
-
-            return (
-              '<tr class="ranking-linha' +
-               (indice === 0 ? ' ranking-primeiro' : '') +
-               (String(vendedor.codigoVendedor) === vendedorSelecionado
-                ? ' ranking-selecionado'
-                : '') +
-              '" data-linha-vendedor="' +
-                escapar(vendedor.codigoVendedor) +
+          '<tr class="ranking-linha' +
+            (indice === 0 ? ' ranking-primeiro' : '') +
+            (selecionado ? ' ranking-selecionado' : '') +
+          '" data-linha-vendedor="' +
+            escapar(vendedor.codigoVendedor) +
+          '">' +
+            '<td class="ranking-vendedor">' +
+              '<span class="ranking-posicao">' +
+                (indice + 1) +
+                'º</span>' +
+              '<button type="button" class="selecionar-vendedor"' +
+                ' data-selecionar-vendedor="' +
+                  escapar(vendedor.codigoVendedor) + '"' +
+                ' aria-pressed="' +
+                  (selecionado ? 'true' : 'false') +
+                '">' +
+                escapar(vendedor.vendedor) +
+              '</button>' +
+            '</td>' +
+            '<td>' +
+              (
+                vendedorSelecionado && !selecionado
+                  ? '—'
+                  : moeda.format(numero(vendedor.faturamento))
+              ) +
+            '</td>' +
+            '<td>' +
+              '<span class="ranking-meta ' +
+                classeMeta +
               '">' +
-                '<td class="ranking-vendedor">' +
-                  '<span class="ranking-posicao">' +
-                    (indice + 1) +
-                    'º</span>' +
-                  '<button type="button" class="selecionar-vendedor"' +
-                  ' data-selecionar-vendedor="' +
-                    escapar(vendedor.codigoVendedor) + '"' +
-                  ' aria-pressed="' +
-                   (String(vendedor.codigoVendedor) === vendedorSelecionado
-                   ? 'true'
-                   : 'false') +
-                  '">' +
-                   escapar(vendedor.vendedor) +
-                  '</button>' +
-                '</td>' +
-                                '<td>' +
-                  (
-                    vendedorSelecionado &&
-                    String(vendedor.codigoVendedor) !== vendedorSelecionado
-                      ? '—'
-                      : moeda.format(numero(vendedor.faturamento))
-                  ) +
-                '</td>' +
-                '<td>' +
-                  '<span class="ranking-meta ' +
-                    classeMeta +
-                    '">' +
-                    metaAtingida +
-                  '</span>' +
-                '</td>' +
-              '</tr>'
-            );
-          }).join('') ||
-          '<tr><td colspan="3" class="sem-meta">' +
-            'Nenhuma venda encontrada no período.' +
-          '</td>';
-
-        $('faturamentoTotal').textContent = moeda.format(
-          numero(dados.totalFaturamento)
+                metaAtingida +
+              '</span>' +
+            '</td>' +
+          '</tr>'
         );
+      }).join('') ||
+      '<tr><td colspan="3" class="sem-meta">' +
+        'Nenhuma venda encontrada no período.' +
+      '</td>';
 
-        $('metaTotal').textContent = dados.totalMeta
-          ? moeda.format(numero(dados.totalMeta))
-          : 'Defina as metas';
+    $('faturamentoTotal').textContent = moeda.format(
+      numero(dados.totalFaturamento)
+    );
 
-        $('pctTotal').textContent = dados.percentualMeta == null
-          ? '—'
-          : percentual.format(dados.percentualMeta);
+    $('metaTotal').textContent = dados.totalMeta
+      ? moeda.format(numero(dados.totalMeta))
+      : 'Defina as metas';
 
-        $('pctTotal').style.color = corMeta(
-          dados.percentualMeta
+    $('pctTotal').textContent = dados.percentualMeta == null
+      ? '—'
+      : percentual.format(dados.percentualMeta);
+
+    $('pctTotal').style.color = corMeta(
+      dados.percentualMeta
+    );
+
+    $('ponteiroTotal').style.transform =
+      'rotate(' + angulo(dados.percentualMeta) + 'deg)';
+
+    $('cardsGrupos').innerHTML =
+      grupos.map(function (grupo) {
+        var textoVendas = grupo.semConversao
+          ? 'Verificar conversão em caixas no Sankhya'
+          : caixas.format(numero(grupo.caixasVendidas)) +
+            ' cx vendidas';
+
+        return (
+          '<article class="grupo-card">' +
+            '<h3>' +
+              escapar(grupo.nome) +
+            '</h3>' +
+            velocimetroGrupo(grupo) +
+            '<p class="grupo-resumo">' +
+              textoVendas +
+            '</p>' +
+            '<p class="grupo-resumo">' +
+              'Meta: ' +
+              caixas.format(grupo.metaCaixas) +
+              ' cx' +
+            '</p>' +
+          '</article>'
         );
+      }).join('');
 
-        $('ponteiroTotal').style.transform =
-          'rotate(' + angulo(dados.percentualMeta) + 'deg)';
-
-        $('cardsGrupos').innerHTML =
-          grupos.map(function (grupo) {
-            return (
-              '<article class="grupo-card">' +
-                '<h3>' +
-                  escapar(grupo.nome) +
-                '</h3>' +
-                velocimetroGrupo(grupo) +
-              '</article>'
-            );
-          }).join('');
-
-        $('estado').textContent = '';
-        $('estado').className = 'estado';
-      }
-
-      function abrirMetas() {
-        if (!dadosAtuais) {
-          return;
-        }
-
-        var vendedores = dadosAtuais.opcoesVendedores ||
-          dadosAtuais.vendedores ||
-          [];
-
-        $('listaMetas').innerHTML =
-          vendedores.map(function (vendedor) {
-            return (
-              '<label class="linha-meta">' +
-                '<strong>' +
-                  escapar(vendedor.vendedor) +
-                '</strong>' +
-                '<input class="input-meta-vendedor" ' +
-                  'type="text" ' +
-                  'inputmode="decimal" ' +
-                  'data-codigo="' +
-                    escapar(vendedor.codigoVendedor) +
-                  '" ' +
-                  'data-vendedor="' +
-                    escapar(vendedor.vendedor) +
-                  '" ' +
-                  'value="' +
-                    numero(vendedor.meta) +
-                  '">' +
-              '</label>'
-            );
-          }).join('') ||
-          '<div class="vazio">Nenhum vendedor encontrado.</div>';
-
-        $('metaTotalEdicao').value = numero(
-  dadosAtuais.totalMeta
-);
-
-        $('modalMetas').classList.add('aberto');
-      }
-
-      function fecharMetas() {
-        $('modalMetas').classList.remove('aberto');
-      }
-
-      async function salvarMetas() {
-        var botao = $('salvarMetas');
-
-        var entradas = Array.from(
-          document.querySelectorAll('.input-meta-vendedor')
-        );
-
-        var metas = entradas.map(function (input) {
-          return {
-            codigoVendedor:input.dataset.codigo,
-            vendedor:input.dataset.vendedor,
-            meta:numeroMeta(input.value)
-          };
-        });
-
-        var metaEmpresa = numeroMeta(
-  $('metaTotalEdicao').value
-);
-
-if (!Number.isFinite(metaEmpresa) || metaEmpresa < 0) {
-  $('estado').textContent =
-    'Informe uma meta total válida.';
-  $('estado').className = 'estado erro';
-  return;
-}
-
-        var invalida = metas.some(function (meta) {
-          return !Number.isFinite(meta.meta) || meta.meta < 0;
-        });
-
-        if (invalida) {
-          $('estado').textContent =
-            'Existem metas com valor inválido.';
-          $('estado').className = 'estado erro';
-          return;
-        }
-
-        botao.disabled = true;
-        botao.textContent = 'Salvando...';
-
-        try {
-        var respostaMetaEmpresa = await fetch(
-  '/api/vendas/meta-empresa',
-  {
-    method:'PUT',
-    headers:{
-      'content-type':'application/json'
-    },
-    body:JSON.stringify({
-      meta:metaEmpresa
-    })
+    $('estado').textContent = '';
+    $('estado').className = 'estado';
   }
-);
 
-var dadosMetaEmpresa =
-  await respostaMetaEmpresa.json();
+  function abrirMetas() {
+    var parametros = new URLSearchParams({
+      inicio: $('inicio').value,
+      fim: $('fim').value,
+      vendedor: $('vendedor').value
+    });
 
-if (!respostaMetaEmpresa.ok) {
-  throw Error(
-    dadosMetaEmpresa.error ||
-    'Não foi possível salvar a meta total.'
+    window.location.href =
+      '/dashboard-vendas/metas?' + parametros.toString();
+  }
+
+  async function carregar() {
+    var botao = $('atualizar');
+
+    botao.disabled = true;
+
+    $('estado').textContent =
+      'Consultando vendas e metas...';
+
+    $('estado').className = 'estado';
+
+    try {
+      var url =
+        '/api/vendas/monitoramento?inicio=' +
+        encodeURIComponent($('inicio').value) +
+        '&fim=' +
+        encodeURIComponent($('fim').value) +
+        '&vendedor=' +
+        encodeURIComponent($('vendedor').value);
+
+      var resposta = await fetch(url);
+      var dados = await resposta.json();
+
+      if (!resposta.ok) {
+        throw Error(
+          dados.error ||
+          'Não foi possível carregar o monitoramento.'
+        );
+      }
+
+      render(dados);
+    } catch (erro) {
+      $('estado').textContent = erro.message;
+      $('estado').className = 'estado erro';
+    } finally {
+      botao.disabled = false;
+    }
+  }
+
+  $('filtros').addEventListener('submit', function (evento) {
+    evento.preventDefault();
+    carregar();
+  });
+
+  $('linhas').addEventListener('click', function (evento) {
+    var linha = evento.target.closest('[data-linha-vendedor]');
+
+    if (!linha || $('atualizar').disabled) {
+      return;
+    }
+
+    var codigo = linha.dataset.linhaVendedor;
+    var filtro = $('vendedor');
+
+    filtro.value = filtro.value === codigo ? '' : codigo;
+
+    carregar();
+  });
+
+  $('abrirMetas').addEventListener('click', abrirMetas);
+
+  var hoje = new Date();
+
+  $('inicio').value = dataIso(
+    new Date(
+      hoje.getFullYear(),
+      hoje.getMonth(),
+      1
+    )
   );
-}
-          for (var indice = 0; indice < metas.length; indice++) {
-            var resposta = await fetch(
-              '/api/vendas/metas',
-              {
-                method:'PUT',
-                headers:{
-                  'content-type':'application/json'
-                },
-                body:JSON.stringify(metas[indice])
-              }
-            );
 
-            var dados = await resposta.json();
+  $('fim').value = dataIso(hoje);
 
-            if (!resposta.ok) {
-              throw Error(
-                dados.error ||
-                'Não foi possível salvar as metas.'
-              );
-            }
-          }
+  // Recupera os filtros ao voltar da página de metas.
+  var parametrosIniciais = new URLSearchParams(location.search);
 
-          fecharMetas();
-          await carregar();
-        } catch (erro) {
-          $('estado').textContent = erro.message;
-          $('estado').className = 'estado erro';
-        } finally {
-          botao.disabled = false;
-          botao.textContent = 'Salvar metas';
-        }
-      }
+  ['inicio', 'fim'].forEach(function (campo) {
+    var valor = parametrosIniciais.get(campo);
 
-      async function carregar() {
-        var botao = $('atualizar');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(valor || '')) {
+      $(campo).value = valor;
+    }
+  });
 
-        botao.disabled = true;
-        $('estado').textContent =
-          'Consultando vendas e metas...';
+  var vendedorInicial = parametrosIniciais.get('vendedor');
 
-        $('estado').className = 'estado';
+  if (/^\d+$/.test(vendedorInicial || '')) {
+    $('vendedor').add(
+      new Option(vendedorInicial, vendedorInicial)
+    );
 
-        try {
-          var url =
-            '/api/vendas/monitoramento?inicio=' +
-            encodeURIComponent($('inicio').value) +
-            '&fim=' +
-            encodeURIComponent($('fim').value) +
-            '&vendedor=' +
-            encodeURIComponent($('vendedor').value);
+    $('vendedor').value = vendedorInicial;
+  }
 
-          var resposta = await fetch(url);
-          var dados = await resposta.json();
-
-          if (!resposta.ok) {
-            throw Error(
-              dados.error ||
-              'Não foi possível carregar o monitoramento.'
-            );
-          }
-
-          render(dados);
-        } catch (erro) {
-          $('estado').textContent = erro.message;
-          $('estado').className = 'estado erro';
-        } finally {
-          botao.disabled = false;
-        }
-      }
-
-      $('filtros').addEventListener(
-        'submit',
-        function (evento) {
-          evento.preventDefault();
-          carregar();
-        }
-      );
-
-      $('linhas').addEventListener('click', function(evento) {
-         var linha = evento.target.closest('[data-linha-vendedor]');
-
-       if (!linha || $('atualizar').disabled) return;
-
-        var codigo = linha.dataset.linhaVendedor;
-        var filtro = $('vendedor');
-
-      filtro.value = filtro.value === codigo ? '' : codigo;
-
-       carregar();
-     });
-
-      $('abrirMetas').addEventListener('click', abrirMetas);
-      $('cancelarMetas').addEventListener('click', fecharMetas);
-      $('salvarMetas').addEventListener('click', salvarMetas);
-      $('modalMetas').addEventListener(
-        'click',
-        function (evento) {
-          if (evento.target === $('modalMetas')) {
-            fecharMetas();
-          }
-        }
-      );
-
-      var hoje = new Date();
-
-      $('inicio').value = dataIso(
-        new Date(
-          hoje.getFullYear(),
-          hoje.getMonth(),
-          1
-        )
-      );
-
-      $('fim').value = dataIso(hoje);
-
-      carregar();
-    })();
-  </script>
+  carregar();
+})();
+</script>
 </body>
 </html>`, {
     headers: {
