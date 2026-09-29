@@ -1544,18 +1544,45 @@ export async function listarBscPositivacaoProduto(request, env) {
     };
   }
 
-  const token = await obterTokenSankhya(env);
+  const clientesPortal = await carregarClientesRentabilidade(env);
 
-  const sqlClientesAtivos = [
-    'SELECT',
-    '  PAR.CODPARC AS CODIGO_CLIENTE,',
-    '  PAR.CODVEND AS CODIGO_VENDEDOR,',
-    "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR",
-    'FROM TGFPAR PAR',
-    'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = PAR.CODVEND',
-    "WHERE PAR.CLIENTE = 'S'",
-    "  AND PAR.ATIVO = 'S'"
-  ].join('\n');
+const codigosClientesPortal = clientesPortal
+  .map(function(cliente) {
+    return String(cliente.codigoParceiro || '').trim();
+  })
+  .filter(function(codigo) {
+    return /^\d+$/.test(codigo);
+  });
+
+if (!codigosClientesPortal.length) {
+  return {
+    inicio: inicio,
+    fim: fim,
+    produtos: [],
+    vendedores: [],
+    indicadores: {
+      clientesAtivos: 0,
+      clientesPositivados: 0,
+      clientesSemAtendimento: 0,
+      percentualPositivacao: 0,
+      percentualSemAtendimento: 0
+    }
+  };
+}
+
+const token = await obterTokenSankhya(env);
+
+const sqlVendedoresClientes = [
+  'SELECT',
+  '  PAR.CODPARC AS CODIGO_CLIENTE,',
+  '  PAR.CODVEND AS CODIGO_VENDEDOR,',
+  "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR",
+  'FROM TGFPAR PAR',
+  'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = PAR.CODVEND',
+  'WHERE PAR.CODPARC IN (' +
+    codigosClientesPortal.join(', ') +
+  ')'
+].join('\n');
 
   const sqlVendas = [
     'SELECT',
@@ -1582,33 +1609,50 @@ export async function listarBscPositivacaoProduto(request, env) {
   ].join('\n');
 
   const resultados = await Promise.all([
-    executarConsultaSankhya(token, sqlClientesAtivos),
+    executarConsultaSankhya(token, sqlVendedoresClientes),
     executarConsultaSankhya(token, sqlVendas)
   ]);
 
   const clientesAtivosPorCodigo = new Map();
   const vendedoresPorCodigo = new Map();
 
-  resultados[0].forEach(function(linha) {
-    const codigoCliente = String(linha[0] || '').trim();
-    const codigoVendedor = String(linha[1] || '').trim() ||
-      'SEM_VENDEDOR';
-    const vendedor = String(linha[2] || 'SEM VENDEDOR').trim();
+ const vendedorPorCliente = new Map();
 
-    if (!codigoCliente) return;
+resultados[0].forEach(function(linha) {
+  const codigoCliente = String(linha[0] || '').trim();
 
-    clientesAtivosPorCodigo.set(codigoCliente, {
-      codigoVendedor: codigoVendedor,
-      vendedor: vendedor
+  vendedorPorCliente.set(codigoCliente, {
+    codigoVendedor: String(linha[1] || '').trim() ||
+      'SEM_VENDEDOR',
+    vendedor: String(linha[2] || 'SEM VENDEDOR').trim()
+  });
+});
+
+clientesPortal.forEach(function(cliente) {
+  const codigoCliente = String(cliente.codigoParceiro || '').trim();
+
+  if (!/^\d+$/.test(codigoCliente)) return;
+
+  const dadosVendedor = vendedorPorCliente.get(codigoCliente) || {
+    codigoVendedor: 'SEM_VENDEDOR',
+    vendedor: 'SEM VENDEDOR'
+  };
+
+  clientesAtivosPorCodigo.set(codigoCliente, dadosVendedor);
+
+  if (!vendedoresPorCodigo.has(dadosVendedor.codigoVendedor)) {
+    vendedoresPorCodigo.set(dadosVendedor.codigoVendedor, {
+      codigoVendedor: dadosVendedor.codigoVendedor,
+      vendedor: dadosVendedor.vendedor,
+      clientesAtivos: 0,
+      clientesPositivados: new Set()
     });
+  }
 
-    if (!vendedoresPorCodigo.has(codigoVendedor)) {
-      vendedoresPorCodigo.set(codigoVendedor, {
-        codigoVendedor: codigoVendedor,
-        vendedor: vendedor,
-        clientesAtivos: 0,
-        clientesPositivados: new Set()
-      });
+  vendedoresPorCodigo.get(
+    dadosVendedor.codigoVendedor
+  ).clientesAtivos += 1;
+});
     }
 
     vendedoresPorCodigo.get(codigoVendedor).clientesAtivos += 1;
