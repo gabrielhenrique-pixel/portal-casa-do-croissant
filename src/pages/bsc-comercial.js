@@ -287,6 +287,39 @@ tfoot td:first-child {
   text-align:left;
 }
 
+    .positivacao-bsc {
+  margin-top:20px;
+}
+
+.positivacao-grade {
+  display:grid;
+  grid-template-columns:minmax(290px, .8fr) minmax(520px, 1.2fr);
+  gap:20px;
+  margin-top:20px;
+}
+
+.tabela-indicadores-positivacao {
+  min-width:0;
+}
+
+.tabela-indicadores-positivacao th:nth-child(2),
+.tabela-indicadores-positivacao td:nth-child(2) {
+  text-align:right;
+}
+
+.tabela-positivacao th:not(:first-child),
+.tabela-positivacao td:not(:first-child),
+.tabela-positivacao-vendedor th:not(:first-child),
+.tabela-positivacao-vendedor td:not(:first-child) {
+  text-align:center;
+}
+
+@media (max-width:1000px) {
+  .positivacao-grade {
+    grid-template-columns:1fr;
+  }
+}
+
     @media (max-width:700px) {
       main { padding:5px 4px 26px; }
 
@@ -524,28 +557,71 @@ tfoot td:first-child {
       </section>
         </section>
 
-    <section id="painelPositivacao" class="painel" hidden>
-      <div class="titulo-painel">
-        BSC COMERCIAL - POSITIVAÇÃO POR PRODUTO
-      </div>
+    <section id="painelPositivacao" class="positivacao-bsc" hidden>
+  <section class="painel">
+    <div class="titulo-painel">
+      BSC COMERCIAL - POSITIVAÇÃO POR PRODUTO
+    </div>
+
+    <div class="tabela-area">
+      <table class="tabela-positivacao">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Clientes positivados</th>
+            <th>A positivar</th>
+            <th>% Positivação</th>
+            <th>Quantidade</th>
+            <th>Faturamento líquido</th>
+          </tr>
+        </thead>
+
+        <tbody id="linhasPositivacao"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="positivacao-grade">
+    <section class="painel">
+      <div class="titulo-painel">Indicadores</div>
 
       <div class="tabela-area">
-        <table class="tabela-positivacao">
+        <table class="tabela-indicadores-positivacao">
           <thead>
             <tr>
-              <th>Produto</th>
-              <th>Clientes positivados</th>
-              <th>A positivar</th>
-              <th>% Positivação</th>
-              <th>Quantidade</th>
-              <th>Faturamento líquido</th>
+              <th>Indicador</th>
+              <th id="tituloResultadoPositivacao">Resultado</th>
             </tr>
           </thead>
 
-          <tbody id="linhasPositivacao"></tbody>
+          <tbody id="linhasIndicadoresPositivacao"></tbody>
         </table>
       </div>
     </section>
+
+    <section class="painel">
+      <div class="titulo-painel">
+        Positivação por vendedor
+      </div>
+
+      <div class="tabela-area">
+        <table class="tabela-positivacao-vendedor">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Clientes ativos</th>
+              <th>Positivados</th>
+              <th>Não positivados</th>
+              <th>% Positivação</th>
+            </tr>
+          </thead>
+
+          <tbody id="linhasPositivacaoVendedor"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</section>
   </main>
 
   <script>
@@ -999,12 +1075,28 @@ function renderizarPositivacao(dados) {
     ? dados.produtos
     : [];
 
-  $('linhasPositivacao').innerHTML = produtos.map(function(produto) {
-    var faturamento = new Intl.NumberFormat('pt-BR', {
+  var vendedores = Array.isArray(dados.vendedores)
+    ? dados.vendedores
+    : [];
+
+  var indicadores = dados.indicadores || {};
+
+  var formatarMoeda = function(valor) {
+    return new Intl.NumberFormat('pt-BR', {
       style:'currency',
       currency:'BRL'
-    }).format(Number(produto.faturamentoLiquido || 0));
+    }).format(Number(valor || 0));
+  };
 
+  var percentualInteiro = function(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+      style:'percent',
+      minimumFractionDigits:0,
+      maximumFractionDigits:0
+    }).format(Number(valor || 0));
+  };
+
+  $('linhasPositivacao').innerHTML = produtos.map(function(produto) {
     return (
       '<tr>' +
         '<td>' + escapar(produto.produto) + '</td>' +
@@ -1012,10 +1104,56 @@ function renderizarPositivacao(dados) {
         '<td>' + medidaMatriz(produto.aPositivar) + '</td>' +
         '<td>' + percentual(produto.percentualPositivacao) + '</td>' +
         '<td>' + medidaMatriz(produto.quantidade) + '</td>' +
-        '<td>' + faturamento + '</td>' +
+        '<td>' + formatarMoeda(produto.faturamentoLiquido) + '</td>' +
       '</tr>'
     );
   }).join('');
+
+  $('tituloResultadoPositivacao').textContent =
+    'Resultado ' + mesAno(dados.fim).toUpperCase();
+
+  $('linhasIndicadoresPositivacao').innerHTML =
+    '<tr>' +
+      '<td>Clientes ativos</td>' +
+      '<td>' + medidaMatriz(indicadores.clientesAtivos) + '</td>' +
+    '</tr>' +
+    '<tr>' +
+      '<td>Clientes positivados</td>' +
+      '<td>' + medidaMatriz(indicadores.clientesPositivados) + '</td>' +
+    '</tr>' +
+    '<tr>' +
+      '<td>Clientes sem atendimento</td>' +
+      '<td>' +
+        medidaMatriz(indicadores.clientesSemAtendimento) +
+      '</td>' +
+    '</tr>' +
+    '<tr>' +
+      '<td>% Positivação</td>' +
+      '<td>' +
+        percentualInteiro(indicadores.percentualPositivacao) +
+      '</td>' +
+    '</tr>' +
+    '<tr>' +
+      '<td>% Sem atendimento</td>' +
+      '<td>' +
+        percentualInteiro(indicadores.percentualSemAtendimento) +
+      '</td>' +
+    '</tr>';
+
+  $('linhasPositivacaoVendedor').innerHTML =
+    vendedores.map(function(vendedor) {
+      return (
+        '<tr>' +
+          '<td>' + escapar(vendedor.vendedor) + '</td>' +
+          '<td>' + medidaMatriz(vendedor.clientesAtivos) + '</td>' +
+          '<td>' + medidaMatriz(vendedor.positivados) + '</td>' +
+          '<td>' + medidaMatriz(vendedor.naoPositivados) + '</td>' +
+          '<td>' +
+            percentual(vendedor.percentualPositivacao) +
+          '</td>' +
+        '</tr>'
+      );
+    }).join('');
 
   $('estado').textContent = '';
   $('estado').className = 'estado';
@@ -1055,6 +1193,8 @@ function renderizarPositivacao(dados) {
     $('estado').textContent = erro.message;
     $('estado').className = 'estado erro';
     $('linhasPositivacao').innerHTML = '';
+    $('linhasIndicadoresPositivacao').innerHTML = '';
+    $('linhasPositivacaoVendedor').innerHTML = '';
     return;
   }
 }
