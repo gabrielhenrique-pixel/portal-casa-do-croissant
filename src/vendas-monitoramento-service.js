@@ -77,7 +77,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER IN (1101, 1107),
+    '  AND CAB.CODTIPOPER IN (1101, 1107)',
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
@@ -105,7 +105,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   "    AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
   "    AND CAB.TIPMOV = 'V'",
   "    AND CAB.STATUSNOTA = 'L'",
-  '    AND CAB.CODTIPOPER IN (1101, 1107),
+  '  AND CAB.CODTIPOPER IN (1101, 1107)',
   filtroVendedor,
   ')',
   "WHERE GRUPO <> 'OUTROS'",
@@ -123,7 +123,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER IN (1101, 1107),
+    '  AND CAB.CODTIPOPER IN (1101, 1107)',
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY VENDEDOR'
   ].join('\n');
