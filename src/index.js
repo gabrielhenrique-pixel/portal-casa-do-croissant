@@ -19,6 +19,7 @@ import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
 import { metasVendasPage } from './pages/metas-vendas.js';
+import { listarDre } from './dre-service.js';
 import { drePage } from './pages/dre.js';
 import {
   carregarCadastroMetasPainel,
@@ -414,6 +415,49 @@ if (
   return metasVendasPage({
     podeEditar: !!acesso.permissions.update
   });
+}
+
+      if (
+  url.pathname === '/api/dre' &&
+  request.method === 'GET'
+) {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'DRE'
+  );
+
+  if (!acesso?.permissions.view) {
+    return json({
+      error: 'Acesso não autorizado.'
+    }, 403);
+  }
+
+  try {
+    const resultado = await listarDre(
+      request,
+      env
+    );
+
+    if (resultado.error) {
+      return json(
+        { error: resultado.error },
+        resultado.status || 400
+      );
+    }
+
+    return json(resultado);
+  } catch (error) {
+    console.error(
+      'Erro ao carregar a DRE:',
+      error
+    );
+
+    return json({
+      error: error.message ||
+        'Não foi possível carregar a DRE.'
+    }, 502);
+  }
 }
 
 if (url.pathname === '/api/vendas/metas-painel') {
