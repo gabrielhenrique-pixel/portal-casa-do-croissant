@@ -488,7 +488,7 @@ export async function consultarCaixasVendidas(
       AND CAB.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1
       AND CAB.TIPMOV = 'V'
       AND CAB.STATUSNOTA = 'L'
-      AND CAB.CODTIPOPER = 1101
+      AND CAB.CODTIPOPER IN (1101, 1107)
       AND ITE.CODPROD IN (${ids})
       ${vendedor ? 'AND CAB.CODVEND = ' + Number(vendedor) : ''}
 
