@@ -204,22 +204,26 @@ export async function listarDre(request, env) {
   );
 
   const resultadoLiquido = somarSeries(
+  somarSeries(
     somarSeries(
-      somarSeries(
-        valoresPorNv2.get('receitaBruta'),
-        valoresPorNv2.get('deducoes'),
-        mesesConsulta
-      ),
-      somarSeries(
-        valoresPorNv2.get('custosProducao'),
-        valoresPorNv2.get('despesasGerais'),
-        mesesConsulta
-      ),
+      valoresPorNv2.get('receitaBruta'),
+      valoresPorNv2.get('deducoes'),
       mesesConsulta
     ),
-    valoresPorNv2.get('receitasDespesasFinanceiras'),
+    somarSeries(
+      valoresPorNv2.get('custosProducao'),
+      valoresPorNv2.get('despesasGerais'),
+      mesesConsulta
+    ),
     mesesConsulta
-  );
+  ),
+  somarSeries(
+    valoresPorNv2.get('receitasDespesasFinanceiras'),
+    valoresPorNv2.get('outrasReceitas'),
+    mesesConsulta
+  ),
+  mesesConsulta
+);
 
   const resultadoFinal = criarSerieVazia(
     mesesConsulta
