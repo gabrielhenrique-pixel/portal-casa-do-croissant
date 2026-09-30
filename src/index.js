@@ -40,6 +40,11 @@ import {listarBscVolumeProduto,
 import { dashboardsPage } from './pages/dashboards.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
+import { produtosPainelPage } from './pages/produtos-painel.js';
+import {
+  listarCadastroProdutos,
+  salvarConfiguracaoProduto
+} from './produtos-painel-service.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
 const PASSWORD_ITERATIONS = 100000;
@@ -48,8 +53,8 @@ const LOGIN_JANELA_SEGUNDOS = 15 * 60;
 
 const MODULOS_ACESSO = [
   ['CLIENTES', 'Clientes', 20],
+  ['PRODUTOS', 'Produtos', 21],
   ['INVESTIMENTOS', 'Investimentos', 25],
-
   ['DASHBOARDS', 'Dashboards', 30],
   ['DASHBOARD_RENTABILIDADE', 'Rentabilidade', 31],
   ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
@@ -1397,6 +1402,97 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
 
     return json({
       error: error.message || 'Não foi possível carregar os clientes.'
+    }, 500);
+  }
+}
+
+if (
+  url.pathname === '/produtos' &&
+  request.method === 'GET'
+) {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'PRODUTOS'
+  );
+
+  if (!acesso?.permissions?.view) {
+    return redirectToPortal();
+  }
+
+  return produtosPainelPage({
+    podeEditar: !!acesso.permissions.update
+  });
+}
+
+if (url.pathname === '/api/produtos-painel') {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'PRODUTOS'
+  );
+
+  if (!acesso?.permissions?.view) {
+    return json({
+      error: 'Acesso não autorizado.'
+    }, 403);
+  }
+
+  if (
+    request.method !== 'GET' &&
+    request.method !== 'PUT'
+  ) {
+    return json({
+      error: 'Método não permitido.'
+    }, 405);
+  }
+
+  if (
+    request.method === 'PUT' &&
+    !acesso.permissions.update
+  ) {
+    return json({
+      error: 'É necessário o acesso Alterar em Produtos.'
+    }, 403);
+  }
+
+  try {
+    if (request.method === 'GET') {
+      const cadastro = await listarCadastroProdutos(env);
+
+      return json({
+        ...cadastro,
+        podeEditar: !!acesso.permissions.update
+      });
+    }
+
+    let dados;
+
+    try {
+      dados = await request.json();
+    } catch (_) {
+      return json({
+        error: 'Dados do produto inválidos.'
+      }, 400);
+    }
+
+    const resultado = await salvarConfiguracaoProduto(
+      env,
+      dados,
+      acesso.session.username
+    );
+
+    return json(
+      resultado,
+      resultado.status || 200
+    );
+
+  } catch (erro) {
+    console.error('Falha no cadastro de produtos:', erro);
+
+    return json({
+      error: erro.message ||
+        'Não foi possível processar os produtos.'
     }, 500);
   }
 }
@@ -4272,15 +4368,25 @@ const APP_HTML = `<!doctype html>
   Dashboards
 </button>
 
+            <button
+        id="navClientes"
+        class="nav-btn oculto"
+        type="button"
+        data-view="clientes"
+        data-module="CLIENTES"
+      >
+        Clientes
+      </button>
+
       <button
-  id="navClientes"
-  class="nav-btn oculto"
-  type="button"
-  data-view="clientes"
-  data-module="CLIENTES"
->
-  Clientes
-</button>
+        id="navProdutos"
+        class="nav-btn oculto"
+        type="button"
+        data-view="produtos"
+        data-module="PRODUTOS"
+      >
+        Produtos
+      </button>
 
       <button
         class="nav-btn"
@@ -4593,8 +4699,13 @@ async function carregarPerfilNoMenu() {
       return;
     }
 
-    if (view === 'clientes') {
+        if (view === 'clientes') {
       window.location.href = '/rentabilidade/clientes';
+      return;
+    }
+
+    if (view === 'produtos') {
+      window.location.href = '/produtos';
       return;
     }
 
