@@ -1,3 +1,5 @@
+import { listarProdutosHabilitadosPainel } from './produtos-painel-service.js';
+
 export const PRODUTOS_METAS_CAIXAS = [
   { codigoProduto: '155', grupo: 'Pão Croissant 250g' },
   { codigoProduto: '156', grupo: 'Pão Croissant 250g' },
@@ -138,13 +140,9 @@ export async function carregarCadastroMetasPainel(env) {
 
   const token = await autenticar(env);
 
-  const codigos = PRODUTOS_METAS_CAIXAS
-    .map(p => p.codigoProduto)
-    .join(',');
-
   const [
     linhasVendedores,
-    linhasProdutos,
+    produtos,
     metas,
     empresa,
     caixas
@@ -160,14 +158,7 @@ export async function carregarCadastroMetasPainel(env) {
       `
     ),
 
-    consultar(
-      token,
-      `
-        SELECT CODPROD, DESCRPROD
-        FROM TGFPRO
-        WHERE CODPROD IN (${codigos})
-      `
-    ),
+    listarProdutosHabilitadosPainel(env),
 
     env.DB.prepare(`
       SELECT
@@ -207,13 +198,6 @@ export async function carregarCadastroMetasPainel(env) {
     });
   });
 
-  const nomes = new Map(
-    linhasProdutos.map(linha => [
-      String(linha[0]),
-      String(linha[1] || '').trim()
-    ])
-  );
-
   return {
     metaEmpresa: Number(empresa?.meta) || 0,
 
@@ -221,11 +205,11 @@ export async function carregarCadastroMetasPainel(env) {
       (a, b) => a.vendedor.localeCompare(b.vendedor, 'pt-BR')
     ),
 
-    produtos: PRODUTOS_METAS_CAIXAS.map(produto => ({
-      ...produto,
-      produto:
-        nomes.get(produto.codigoProduto) ||
-        ('Produto ' + produto.codigoProduto)
+    produtos: produtos.map(produto => ({
+      codigoProduto: String(produto.codigoProduto),
+      produto: produto.produto,
+      grupo: produto.grupo,
+      pacotesPorCaixa: produto.pacotesPorCaixa
     })),
 
     metasCaixas: caixas
@@ -287,19 +271,28 @@ export async function salvarMetasPainel(env, dados, usuario) {
       };
     }
 
-    if (
-      !Array.isArray(dados.metasCaixas) ||
-      dados.metasCaixas.length !== PRODUTOS_METAS_CAIXAS.length
-    ) {
+        if (!Array.isArray(dados.metasCaixas)) {
       return {
-        error: 'Informe a meta em caixas de todos os produtos do vendedor.',
+        error: 'Informe as metas em caixas dos produtos.',
         status: 400
       };
     }
 
+    const produtosHabilitados =
+      await listarProdutosHabilitadosPainel(env);
+
     const permitidos = new Set(
-      PRODUTOS_METAS_CAIXAS.map(produto => produto.codigoProduto)
+      produtosHabilitados.map(
+        produto => String(produto.codigoProduto)
+      )
     );
+
+    if (dados.metasCaixas.length !== permitidos.size) {
+      return {
+        error: 'A lista de produtos foi alterada. Recarregue a página de metas antes de salvar.',
+        status: 409
+      };
+    }
 
     for (const item of dados.metasCaixas) {
       if (
@@ -308,15 +301,13 @@ export async function salvarMetasPainel(env, dados, usuario) {
         !valorValido(item.metaCaixas)
       ) {
         return {
-          error: 'Produto repetido, desconhecido ou meta em caixas inválida.',
+          error: 'Produto repetido, não habilitado ou meta inválida. Confira o cadastro e recarregue a página de metas.',
           status: 400
         };
       }
     }
   }
 
-  // Valida todo o formulário antes de gravar.
-  // O lote do D1 é atômico.
   await garantirMetasPainel(env);
 
   const agora = new Date().toISOString();
@@ -433,8 +424,6 @@ export async function consultarCaixasVendidas(
     .map(produto => produto.codigoProduto)
     .join(',');
 
-  // Mesma direção D/M usada no BSC.
-  // Uma conversão por produto/volume/controle, sem duplicar itens.
   const conversao = `
     CASE
       WHEN UPPER(TRIM(ITE.CODVOL)) IN ('CX', 'CAIXA')
