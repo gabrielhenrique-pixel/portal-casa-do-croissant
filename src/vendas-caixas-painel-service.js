@@ -117,7 +117,7 @@ export async function listarCaixasDoPainel(
         AND CAB.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1
         AND CAB.TIPMOV = 'V'
         AND CAB.STATUSNOTA = 'L'
-        AND CAB.CODTIPOPER = 1101
+        AND CAB.CODTIPOPER IN (1101, 1107)
         AND PRO.USOPROD = 'V'
         AND ITE.CODPROD IN (${ids})
         ${vendedor ? 'AND CAB.CODVEND = ' + vendedor : ''}
