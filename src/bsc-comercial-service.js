@@ -83,7 +83,7 @@ export async function listarBscVolumeProduto(request, env) {
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER = 1101',
+    '  AND CAB.CODTIPOPER IN (1101, 1107)',
 
     'GROUP BY ITE.CODPROD, PRO.DESCRPROD',
 
@@ -366,7 +366,7 @@ async function consultarBscFinanceiroProduto(
         "  AND CAB.TIPMOV = 'D'"
       ]
     : [
-        '  AND CAB.CODTIPOPER = 1101',
+        '  AND CAB.CODTIPOPER IN (1101, 1107)',
         "  AND CAB.TIPMOV = 'V'"
       ];
 
@@ -557,7 +557,7 @@ async function consultarBscFinanceiroCliente(
         "  AND CAB.TIPMOV = 'D'"
       ]
     : [
-        '  AND CAB.CODTIPOPER = 1101',
+        '  AND CAB.CODTIPOPER IN (1101, 1107)',
         "  AND CAB.TIPMOV = 'V'"
       ];
 
@@ -803,7 +803,7 @@ async function consultarBscFinanceiroPraca(
         "  AND CAB.TIPMOV = 'D'"
       ]
     : [
-        '  AND CAB.CODTIPOPER = 1101',
+        '  AND CAB.CODTIPOPER IN (1101, 1107)',
         "  AND CAB.TIPMOV = 'V'"
       ];
 
@@ -1041,7 +1041,7 @@ async function consultarBscFinanceiroVendedor(
         "  AND CAB.TIPMOV = 'D'"
       ]
     : [
-        '  AND CAB.CODTIPOPER = 1101',
+        '  AND CAB.CODTIPOPER IN (1101, 1107)',
         "  AND CAB.TIPMOV = 'V'"
       ];
 
@@ -1291,7 +1291,7 @@ export async function listarBscVendedorPorProduto(request, env) {
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER = 1101',
+    '  AND CAB.CODTIPOPER IN (1101, 1107)',
 
     'GROUP BY',
     '  ITE.CODPROD,',
@@ -1601,7 +1601,7 @@ const sqlVendedoresClientes = [
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER = 1101',
+    '  AND CAB.CODTIPOPER IN (1101, 1107)',
     'GROUP BY',
     '  CAB.CODPARC,',
     '  ITE.CODPROD,',
