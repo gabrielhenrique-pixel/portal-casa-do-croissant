@@ -19,6 +19,7 @@ import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
 import { metasVendasPage } from './pages/metas-vendas.js';
+import { drePage } from './pages/dre.js';
 import {
   carregarCadastroMetasPainel,
   salvarMetasPainel
@@ -59,6 +60,7 @@ const MODULOS_ACESSO = [
   ['DASHBOARD_RENTABILIDADE', 'Rentabilidade', 31],
   ['DASHBOARD_VENDAS', 'Monitoramento de vendas', 32],
   ['BSC_COMERCIAL', 'BSC Comercial', 36],
+  ['DRE', 'DRE Financeira', 37],
   ['DEVOLUCOES', 'Painel de devoluções', 33],
   ['MARGEM_REDE', 'Margem por rede', 34],
   ['RENTABILIDADE_SKU', 'Rentabilidade SKU', 35],
@@ -376,6 +378,23 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
   }
 
   return dashboardRentabilidadePage();
+}
+
+      if (
+  url.pathname === '/dre' &&
+  request.method === 'GET'
+) {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'DRE'
+  );
+
+  if (!acesso?.permissions.view) {
+    return redirectToPortal();
+  }
+
+  return drePage();
 }
 
 if (
@@ -4368,6 +4387,16 @@ const APP_HTML = `<!doctype html>
   Dashboards
 </button>
 
+<button
+  id="navDre"
+  class="nav-btn oculto"
+  type="button"
+  data-view="dre"
+  data-module="DRE"
+>
+  DRE
+</button>
+
             <button
         id="navClientes"
         class="nav-btn oculto"
@@ -4698,6 +4727,11 @@ async function carregarPerfilNoMenu() {
       window.location.href = '/dashboards';
       return;
     }
+
+    if (view === 'dre') {
+  window.location.href = '/dre';
+  return;
+}
 
         if (view === 'clientes') {
       window.location.href = '/rentabilidade/clientes';
