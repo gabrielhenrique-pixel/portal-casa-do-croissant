@@ -1,8 +1,6 @@
 import {
-  consultarCaixasVendidas,
-  listarMetasCaixas,
-  agruparMetasCaixas
-} from './vendas-metas-caixas-service.js';
+  listarCaixasDoPainel
+} from './vendas-caixas-painel-service.js';
 
 const META_MAXIMA = 999999999.99;
 
@@ -130,30 +128,29 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     'ORDER BY VENDEDOR'
   ].join('\n');
 
-    const resultados = await Promise.all([
+      const resultados = await Promise.all([
     executarConsultaSankhya(token, sqlVendedores),
-    executarConsultaSankhya(token, sqlProdutos),
+
     executarConsultaSankhya(token, sqlOpcoesVendedores),
+
     listarMetasVendedores(env),
-    listarMetasProdutos(env),
+
     carregarMetaEmpresa(env),
-    consultarCaixasVendidas(
+
+    listarCaixasDoPainel(
+      env,
       token,
       inicio,
       fim,
       vendedorSelecionado
-    ),
-    listarMetasCaixas(env)
+    )
   ]);
 
   const linhasVendedores = resultados[0];
-  const linhasProdutos = resultados[1];
-  const linhasOpcoesVendedores = resultados[2];
-  const metasVendedores = resultados[3];
-  const metasProdutos = resultados[4];
-  const metaEmpresa = numero(resultados[5]);
-  const linhasCaixas = resultados[6];
-  const metasCaixas = resultados[7];
+  const linhasOpcoesVendedores = resultados[1];
+  const metasVendedores = resultados[2];
+  const metaEmpresa = numero(resultados[3]);
+  const gruposCaixas = resultados[4];
 
   const metasPorVendedor = new Map(
     metasVendedores.map((meta) => [
@@ -162,12 +159,6 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     ])
   );
 
-  const metasPorProduto = new Map(
-    metasProdutos.map((meta) => [
-      String(meta.codigoProduto),
-      numero(meta.meta)
-    ])
-  );
 
     const vendedores = linhasVendedores
     .map((linha) => {
@@ -217,23 +208,7 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
       );
     });
 
-  const faturamentoPorGrupo = new Map(
-    linhasProdutos.map((linha) => [
-      String(linha[0] || '').trim(),
-      numero(linha[1])
-    ])
-  );
-
-  const gruposCaixas = agruparMetasCaixas(
-    linhasCaixas,
-    metasCaixas,
-    vendedorSelecionado
-  );
-
-  const produtos = gruposCaixas.map((grupo) => ({
-    ...grupo,
-    faturamento: faturamentoPorGrupo.get(grupo.produto) || 0
-  }));
+    const produtos = gruposCaixas;
 
   const opcoesVendedores = linhasOpcoesVendedores.map((linha) => {
   const codigoVendedor = String(linha[0] || '');
