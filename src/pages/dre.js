@@ -228,6 +228,221 @@ export function drePage() {
       </div>
     </section>
   </main>
+  <script>
+  const dataInicial = document.getElementById('dataInicial');
+  const dataFinal = document.getElementById('dataFinal');
+  const empresa = document.getElementById('empresa');
+  const atualizar = document.getElementById('atualizar');
+  const linhasDre = document.getElementById('linhasDre');
+  const tabela = document.querySelector('table');
+
+  function dataLocal(data) {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  function primeiroDiaDoMes(data) {
+    return new Date(
+      data.getFullYear(),
+      data.getMonth(),
+      1
+    );
+  }
+
+  function formatarMes(mes) {
+    const partes = mes.split('-');
+
+    return `${partes[1]}/${partes[0]}`;
+  }
+
+  function formatarNumero(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(Number(valor || 0));
+  }
+
+  function formatarPercentual(valor) {
+    if (valor === null || valor === undefined) {
+      return '—';
+    }
+
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }).format(Number(valor)) + '%';
+  }
+
+  function montarCabecalho(meses) {
+    const cabecalho = tabela.createTHead();
+
+    cabecalho.innerHTML = `
+      <tr>
+        <th rowspan="2">Grupo DRE</th>
+        ${meses.map((mes) => `
+          <th colspan="3">${formatarMes(mes)}</th>
+        `).join('')}
+      </tr>
+
+      <tr>
+        ${meses.map(() => `
+          <th>Resultado</th>
+          <th>% A.H.</th>
+          <th>% A.V.</th>
+        `).join('')}
+      </tr>
+    `;
+  }
+
+  function montarCelulas(item, meses) {
+    return meses.map((mes) => {
+      const indicador = item.indicadores?.[mes] || {
+        resultado: 0,
+        ah: 0,
+        av: null
+      };
+
+      return `
+        <td>${formatarNumero(indicador.resultado)}</td>
+        <td>${formatarPercentual(indicador.ah)}</td>
+        <td>${formatarPercentual(indicador.av)}</td>
+      `;
+    }).join('');
+  }
+
+  function localizarGrupo(dados, codigo) {
+    return dados.grupos.find(
+      (grupo) => Number(grupo.codigo) === Number(codigo)
+    );
+  }
+
+  function montarLinhas(dados) {
+    const ordem = [
+      { tipo: 'subtotal', chave: 'receitaBruta' },
+      { tipo: 'grupo', codigo: 1 },
+      { tipo: 'grupo', codigo: 2 },
+
+      { tipo: 'subtotal', chave: 'deducoes' },
+      { tipo: 'grupo', codigo: 3 },
+      { tipo: 'grupo', codigo: 14 },
+
+      { tipo: 'resultado', chave: 'receitaLiquida' },
+
+      { tipo: 'subtotal', chave: 'custosProducao' },
+      { tipo: 'grupo', codigo: 4 },
+      { tipo: 'grupo', codigo: 5 },
+
+      { tipo: 'resultado', chave: 'resultadoBruto' },
+
+      { tipo: 'subtotal', chave: 'despesasGerais' },
+      { tipo: 'grupo', codigo: 6 },
+      { tipo: 'grupo', codigo: 7 },
+      { tipo: 'grupo', codigo: 8 },
+      { tipo: 'grupo', codigo: 9 },
+      { tipo: 'grupo', codigo: 13 },
+      { tipo: 'grupo', codigo: 17 },
+
+      { tipo: 'resultado', chave: 'resultadoOperacional' },
+
+      { tipo: 'subtotal', chave: 'receitasDespesasFinanceiras' },
+      { tipo: 'grupo', codigo: 10 },
+
+      { tipo: 'subtotal', chave: 'outrasReceitas' },
+      { tipo: 'grupo', codigo: 16 },
+
+      { tipo: 'resultado', chave: 'resultadoLiquido' },
+
+      { tipo: 'subtotal', chave: 'investimentos' },
+      { tipo: 'grupo', codigo: 11 },
+
+      { tipo: 'subtotal', chave: 'emprestimos' },
+      { tipo: 'grupo', codigo: 15 },
+
+      { tipo: 'subtotal', chave: 'impostos' },
+      { tipo: 'grupo', codigo: 12 },
+
+      { tipo: 'resultado', chave: 'resultadoFinal' }
+    ];
+
+    const linhas = [];
+
+    for (const item of ordem) {
+      const registro = item.tipo === 'grupo'
+        ? localizarGrupo(dados, item.codigo)
+        : dados.subtotais[item.chave];
+
+      if (!registro) {
+        continue;
+      }
+
+      const classe = item.tipo === 'resultado'
+        ? 'linha-resultado'
+        : item.tipo === 'subtotal'
+          ? 'linha-grupo'
+          : '';
+
+      linhas.push(`
+        <tr class="${classe}">
+          <td>${registro.nome}</td>
+          ${montarCelulas(registro, dados.meses)}
+        </tr>
+      `);
+    }
+
+    return linhas.join('');
+  }
+
+  async function carregarDre() {
+    const parametros = new URLSearchParams({
+      inicio: dataInicial.value,
+      fim: dataFinal.value
+    });
+
+    if (empresa.value) {
+      parametros.set('empresa', empresa.value);
+    }
+
+    try {
+      const resposta = await fetch(
+        '/api/dre?' + parametros.toString()
+      );
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        throw new Error(
+          dados.error || 'Não foi possível carregar a DRE.'
+        );
+      }
+
+      tabela.querySelector('thead')?.remove();
+      montarCabecalho(dados.meses);
+
+      linhasDre.innerHTML = montarLinhas(dados);
+    } catch (error) {
+      console.error('Erro ao carregar DRE:', error);
+      linhasDre.innerHTML = '';
+    }
+  }
+
+  const hoje = new Date();
+
+  dataInicial.value = dataLocal(
+    primeiroDiaDoMes(hoje)
+  );
+
+  dataFinal.value = dataLocal(hoje);
+
+  atualizar.addEventListener(
+    'click',
+    carregarDre
+  );
+
+  carregarDre();
+</script>
 </body>
 </html>`, {
     headers: {
