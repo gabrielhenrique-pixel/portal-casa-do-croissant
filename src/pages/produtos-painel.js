@@ -313,9 +313,6 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       Adicionar grupo à lista
     </button>
 
-    <span class="ajuda">
-      Depois selecione o grupo em um produto e salve a linha.
-    </span>
   </div>
 
   <p id="estado" role="status" aria-live="polite">
@@ -358,18 +355,6 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
     <p id="contagem">Carregando...</p>
   </section>
 
-  <p class="ajuda">
-    A unidade ERP é a unidade cadastrada no Sankhya.
-    Informe quantos pacotes formam uma caixa, não quantas
-    unidades existem dentro de um pacote. Produtos novos
-    ficam pendentes até serem configurados e habilitados.
-  </p>
-
-  <p class="ajuda">
-    As alterações são salvas somente no portal.
-    Atualizar do Sankhya preserva as configurações salvas.
-    Produtos inativos não podem participar do painel.
-  </p>
 </main>
 
 <script>
