@@ -1025,27 +1025,21 @@ export function dashboardVendasPage() {
     );
   }
 
-  function montarGrupos(produtos) {
-    var porNome = new Map(
-      produtos.map(function (produto) {
-        return [produto.produto, produto];
-      })
-    );
-
-    return GRUPOS.map(function (nome) {
-      var produto = porNome.get(nome) || {};
-
+    function montarGrupos(produtos) {
+    return produtos.map(function (produto) {
       return {
-        nome: nome,
+        nome: produto.produto,
         caixasVendidas: produto.caixasVendidas,
         metaCaixas: numero(produto.metaCaixas),
         semConversao: numero(produto.semConversao),
+
         participacao: produto.percentualMeta == null
           ? null
           : numero(produto.percentualMeta)
       };
     });
   }
+
 
   function render(dados) {
     $('abrirMetas').textContent = dados.podeEditarMetas
@@ -1173,7 +1167,9 @@ export function dashboardVendasPage() {
         );
       }).join('');
 
-    $('estado').textContent = '';
+        $('estado').textContent = grupos.length
+      ? ''
+      : 'Nenhum produto habilitado. Confira o Cadastro de produtos.';
     $('estado').className = 'estado';
   }
 
