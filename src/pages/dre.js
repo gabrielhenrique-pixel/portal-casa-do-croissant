@@ -280,6 +280,10 @@ td.valor-negativo {
   color: #b42318;
 }
 
+.linha-resultado-final td.valor-positivo {
+  color: #16803c;
+}
+
 tbody .linha-resultado td:first-child {
   background: #cfdfee;
 }
@@ -437,9 +441,15 @@ tbody td:nth-child(3n + 2) {
   }
 
   function classeResultado(valor) {
-  return Number(valor) < 0
-    ? 'valor-negativo'
-    : '';
+  if (Number(valor) < 0) {
+    return 'valor-negativo';
+  }
+
+  if (Number(valor) > 0) {
+    return 'valor-positivo';
+  }
+
+  return '';
 }
 
   function montarCelulas(item, meses) {
@@ -471,6 +481,9 @@ function montarLinhaDre(registro, opcoes, meses) {
     opcoes.classe,
     opcoes.pai ? 'linha-filho' : '',
     'linha-nivel-' + opcoes.nivel
+        opcoes.id === 'resultadoFinal'
+      ? 'linha-resultado-final'
+      : '',
   ].filter(Boolean).join(' ');
 
   const atributos =
