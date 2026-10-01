@@ -470,7 +470,7 @@ tbody .linha-resultado td.coluna-total {
             aria-controls="menuExportacao"
             title="Exportar DRE para Excel"
           >
-            ⇩ <strong>XLS</strong>
+            ⇩ <strong>XLSX</strong>
           </button>
 
           <div id="menuExportacao" class="menu-exportar" hidden>
@@ -1042,7 +1042,7 @@ function formatarDataPlanilha(data) {
     : data;
 }
 
-function criarPlanilhaExcel(modo) {
+function criarPlanilhaExcelLegada(modo) {
   const cabecalho = estruturaCabecalhoExcel();
   const quantidadeColunas = 1 + cabecalho.indicadores.length;
   const linhas = Array.from(linhasDre.querySelectorAll('tr'))
@@ -1205,17 +1205,292 @@ function criarPlanilhaExcel(modo) {
   );
 }
 
+function colunaXlsx(numero) {
+  let resultado = '';
+  let atual = numero;
+
+  while (atual > 0) {
+    const resto = (atual - 1) % 26;
+    resultado = String.fromCharCode(65 + resto) + resultado;
+    atual = Math.floor((atual - 1) / 26);
+  }
+
+  return resultado;
+}
+
+function xmlXlsx(valor) {
+  return escaparXml(valor).replace(/\n/g, '&#10;');
+}
+
+function celulaXlsx(referencia, valor, estilo, tipo) {
+  if (tipo === 'numero') {
+    return '<c r="' + referencia + '" s="' + estilo + '"><v>' +
+      valor + '</v></c>';
+  }
+
+  return '<c r="' + referencia + '" s="' + estilo +
+    '" t="inlineStr"><is><t xml:space="preserve">' +
+    xmlXlsx(valor) + '</t></is></c>';
+}
+
+function numeroBrasileiro(valor) {
+  const texto = String(valor || '').trim();
+  const numero = Number(texto.replace(/\./g, '').replace(',', '.'));
+
+  return texto && Number.isFinite(numero) ? numero : null;
+}
+
+function estiloXlsx(linha, coluna, percentual) {
+  const resultado = linha.classList.contains('linha-resultado');
+  const subtotal = linha.classList.contains('linha-grupo');
+
+  if (coluna === 0) {
+    if (resultado) return 11;
+    if (subtotal) return 10;
+    if (linha.classList.contains('linha-nivel-3')) return 9;
+    if (linha.classList.contains('linha-nivel-2')) return 8;
+    if (linha.classList.contains('linha-nivel-1')) return 7;
+    return 6;
+  }
+
+  if (percentual) {
+    if (resultado) return 17;
+    if (subtotal) return 16;
+    return 15;
+  }
+
+  if (resultado) return 14;
+  if (subtotal) return 13;
+  return 12;
+}
+
+function tabelaCrc32Xlsx() {
+  const tabela = new Uint32Array(256);
+
+  for (let indice = 0; indice < 256; indice += 1) {
+    let valor = indice;
+
+    for (let bit = 0; bit < 8; bit += 1) {
+      valor = valor & 1
+        ? 0xedb88320 ^ (valor >>> 1)
+        : valor >>> 1;
+    }
+
+    tabela[indice] = valor >>> 0;
+  }
+
+  return tabela;
+}
+
+const CRC32_XLSX = tabelaCrc32Xlsx();
+
+function crc32Xlsx(dados) {
+  let valor = 0xffffffff;
+
+  for (const byte of dados) {
+    valor = CRC32_XLSX[(valor ^ byte) & 255] ^ (valor >>> 8);
+  }
+
+  return (valor ^ 0xffffffff) >>> 0;
+}
+
+function concatenarBytesXlsx(partes) {
+  const tamanho = partes.reduce(
+    (total, parte) => total + parte.length,
+    0
+  );
+  const resultado = new Uint8Array(tamanho);
+  let inicio = 0;
+
+  for (const parte of partes) {
+    resultado.set(parte, inicio);
+    inicio += parte.length;
+  }
+
+  return resultado;
+}
+
+function criarZipXlsx(arquivos) {
+  const codificador = new TextEncoder();
+  const locais = [];
+  const diretorio = [];
+  let deslocamento = 0;
+
+  for (const [nome, conteudo] of Object.entries(arquivos)) {
+    const nomeBytes = codificador.encode(nome);
+    const dados = codificador.encode(conteudo);
+    const crc = crc32Xlsx(dados);
+    const local = new Uint8Array(30 + nomeBytes.length + dados.length);
+    const visaoLocal = new DataView(local.buffer);
+
+    visaoLocal.setUint32(0, 0x04034b50, true);
+    visaoLocal.setUint16(4, 20, true);
+    visaoLocal.setUint16(8, 0, true);
+    visaoLocal.setUint32(14, crc, true);
+    visaoLocal.setUint32(18, dados.length, true);
+    visaoLocal.setUint32(22, dados.length, true);
+    visaoLocal.setUint16(26, nomeBytes.length, true);
+    local.set(nomeBytes, 30);
+    local.set(dados, 30 + nomeBytes.length);
+    locais.push(local);
+
+    const central = new Uint8Array(46 + nomeBytes.length);
+    const visaoCentral = new DataView(central.buffer);
+
+    visaoCentral.setUint32(0, 0x02014b50, true);
+    visaoCentral.setUint16(4, 20, true);
+    visaoCentral.setUint16(6, 20, true);
+    visaoCentral.setUint32(16, crc, true);
+    visaoCentral.setUint32(20, dados.length, true);
+    visaoCentral.setUint32(24, dados.length, true);
+    visaoCentral.setUint16(28, nomeBytes.length, true);
+    visaoCentral.setUint32(42, deslocamento, true);
+    central.set(nomeBytes, 46);
+    diretorio.push(central);
+    deslocamento += local.length;
+  }
+
+  const dadosDiretorio = concatenarBytesXlsx(diretorio);
+  const fim = new Uint8Array(22);
+  const visaoFim = new DataView(fim.buffer);
+
+  visaoFim.setUint32(0, 0x06054b50, true);
+  visaoFim.setUint16(8, arquivos ? Object.keys(arquivos).length : 0, true);
+  visaoFim.setUint16(10, Object.keys(arquivos).length, true);
+  visaoFim.setUint32(12, dadosDiretorio.length, true);
+  visaoFim.setUint32(16, deslocamento, true);
+
+  return concatenarBytesXlsx([
+    ...locais,
+    dadosDiretorio,
+    fim
+  ]);
+}
+
+function estilosXlsx() {
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0.00;[Red]-#,##0.00"/>' +
+      '<numFmt numFmtId="165" formatCode="0.0%;[Red]-0.0%"/></numFmts>' +
+      '<fonts count="3"><font><sz val="10"/><color rgb="FF163A5A"/><name val="Arial"/></font>' +
+      '<font><b/><sz val="10"/><color rgb="FF163A5A"/><name val="Arial"/></font>' +
+      '<font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts>' +
+      '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FF163A5A"/></patternFill></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFE8F0F6"/></patternFill></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFEEF3F8"/></patternFill></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFCFDFEE"/></patternFill></fill></fills>' +
+      '<borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs>' +
+      '<cellXfs count="18">' +
+      '<xf xfId="0"/><xf fontId="2" fillId="2" applyFont="1" applyFill="1"/><xf xfId="0"/>' +
+      '<xf fontId="1" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+      '<xf fontId="1" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+      '<xf fontId="1" fillId="3" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+      '<xf applyAlignment="1"><alignment horizontal="left"/></xf><xf applyAlignment="1"><alignment horizontal="left" indent="1"/></xf>' +
+      '<xf applyAlignment="1"><alignment horizontal="left" indent="2"/></xf><xf applyAlignment="1"><alignment horizontal="left" indent="3"/></xf>' +
+      '<xf fontId="1" fillId="4" applyFont="1" applyFill="1"/><xf fontId="1" fillId="5" applyFont="1" applyFill="1"/>' +
+      '<xf numFmtId="164" applyNumberFormat="1"/><xf fontId="1" fillId="4" numFmtId="164" applyFont="1" applyFill="1" applyNumberFormat="1"/>' +
+      '<xf fontId="1" fillId="5" numFmtId="164" applyFont="1" applyFill="1" applyNumberFormat="1"/>' +
+      '<xf numFmtId="165" applyNumberFormat="1"/><xf fontId="1" fillId="4" numFmtId="165" applyFont="1" applyFill="1" applyNumberFormat="1"/>' +
+      '<xf fontId="1" fillId="5" numFmtId="165" applyFont="1" applyFill="1" applyNumberFormat="1"/>' +
+      '</cellXfs></styleSheet>';
+}
+
+function criarPlanilhaExcel(modo) {
+  const cabecalho = estruturaCabecalhoExcel();
+  const quantidadeColunas = 1 + cabecalho.indicadores.length;
+  const ultimaColuna = colunaXlsx(quantidadeColunas);
+  const linhas = Array.from(linhasDre.querySelectorAll('tr'))
+    .filter((linha) => linhaDeveSerExportada(linha, modo));
+  const mesclas = ['A1:' + ultimaColuna + '1', 'A2:' + ultimaColuna + '2', 'A4:A5'];
+  const linhasXml = [];
+
+  linhasXml.push('<row r="1" ht="26" customHeight="1">' +
+    celulaXlsx('A1', 'DRE - Demonstração do Resultado do Exercício', 1) + '</row>');
+  linhasXml.push('<row r="2">' + celulaXlsx('A2',
+    'Período: ' + formatarDataPlanilha(dataInicial.value) + ' a ' +
+    formatarDataPlanilha(dataFinal.value) + ' | Visualização: ' +
+    nomeModoExportacao(modo), 2) + '</row>');
+  linhasXml.push('<row r="3"/>');
+
+  let colunaPeriodo = 2;
+  let periodosXml = celulaXlsx('A4', cabecalho.grupo, 3);
+
+  for (const periodo of cabecalho.periodos) {
+    const inicio = colunaXlsx(colunaPeriodo);
+    const fim = colunaXlsx(colunaPeriodo + periodo.colunas - 1);
+
+    periodosXml += celulaXlsx(inicio + '4', periodo.nome, 4);
+    mesclas.push(inicio + '4:' + fim + '4');
+    colunaPeriodo += periodo.colunas;
+  }
+
+  linhasXml.push('<row r="4" ht="22" customHeight="1">' + periodosXml + '</row>');
+  linhasXml.push('<row r="5" ht="20" customHeight="1">' +
+    cabecalho.indicadores.map((indicador, indice) =>
+      celulaXlsx(colunaXlsx(indice + 2) + '5', indicador, 5)
+    ).join('') + '</row>');
+
+  linhas.forEach((linha, indice) => {
+    const numeroLinha = indice + 6;
+    const valores = Array.from(linha.cells).map(textoCelula);
+    const celulas = Array.from({ length: quantidadeColunas }, (_, coluna) => {
+      const valor = valores[coluna] || '';
+      const percentual = coluna > 0 && valor.includes('%');
+      const numero = percentual
+        ? numeroBrasileiro(valor.replace('%', '')) / 100
+        : numeroBrasileiro(valor);
+      const estilo = estiloXlsx(linha, coluna, percentual);
+
+      return numero === null
+        ? celulaXlsx(colunaXlsx(coluna + 1) + numeroLinha, valor, estilo)
+        : celulaXlsx(
+          colunaXlsx(coluna + 1) + numeroLinha,
+          numero,
+          estilo,
+          'numero'
+        );
+    }).join('');
+
+    linhasXml.push('<row r="' + numeroLinha + '">' + celulas + '</row>');
+  });
+
+  const colunasXml = '<col min="1" max="1" width="38" customWidth="1"/>' +
+    cabecalho.indicadores.map((_, indice) =>
+      '<col min="' + (indice + 2) + '" max="' + (indice + 2) +
+      '" width="' + (indice % 3 === 0 ? '15' : '10') +
+      '" customWidth="1"/>'
+    ).join('');
+  const planilha = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<dimension ref="A1:' + ultimaColuna + (linhas.length + 5) + '"/>' +
+    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+    '<sheetFormatPr defaultRowHeight="15"/><cols>' + colunasXml + '</cols><sheetData>' +
+    linhasXml.join('') + '</sheetData><mergeCells count="' + mesclas.length + '">' +
+    mesclas.map((mescla) => '<mergeCell ref="' + mescla + '"/>').join('') +
+    '</mergeCells></worksheet>';
+
+  return criarZipXlsx({
+    '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>',
+    '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+    'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="DRE" sheetId="1" r:id="rId1"/></sheets></workbook>',
+    'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+    'xl/styles.xml': estilosXlsx(),
+    'xl/worksheets/sheet1.xml': planilha
+  });
+}
+
 function exportarExcel(modo) {
   const planilha = criarPlanilhaExcel(modo);
   const arquivo = new Blob([planilha], {
-    type: 'application/vnd.ms-excel;charset=utf-8'
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   });
   const link = document.createElement('a');
   const urlArquivo = URL.createObjectURL(arquivo);
   const periodo = dataInicial.value + '_a_' + dataFinal.value;
 
   link.href = urlArquivo;
-  link.download = 'DRE_' + periodo + '_' + modo + '.xls';
+  link.download = 'DRE_' + periodo + '_' + modo + '.xlsx';
   document.body.appendChild(link);
   link.click();
   link.remove();
