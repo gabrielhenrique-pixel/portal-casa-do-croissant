@@ -250,7 +250,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       }
 
       table {
-        min-width:850px;
+        min-width:980px;
       }
     }
   </style>
@@ -326,13 +326,14 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       <table>
         <colgroup>
           <col style="width:6%">
-          <col style="width:29%">
+          <col style="width:26%">
           <col style="width:7%">
-          <col style="width:10%">
-          <col style="width:20%">
-          <col style="width:7%">
-          <col style="width:13%">
-          <col style="width:8%">
+          <col style="width:9%">
+          <col style="width:11%">
+          <col style="width:17%">
+          <col style="width:6%">
+          <col style="width:12%">
+          <col style="width:6%">
         </colgroup>
 
         <thead>
@@ -341,6 +342,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
             <th>Produto</th>
             <th>Unidade ERP</th>
             <th>Pacotes por caixa</th>
+            <th>CMV (R$)</th>
             <th>Grupo do velocímetro</th>
             <th class="centro">Usar no painel</th>
             <th>Situação</th>
@@ -392,6 +394,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
 
     linhas.forEach(function (linha) {
       linha.pacotes.disabled = ocupado || !podeEditar;
+      linha.cmv.disabled = ocupado || !podeEditar;
       linha.grupo.disabled = ocupado || !podeEditar;
 
       linha.usar.disabled =
@@ -463,6 +466,10 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       ? ''
       : produto.pacotesPorCaixa;
 
+    linha.cmv.value = produto.cmv == null
+      ? ''
+      : produto.cmv;
+
     preencherGrupos(linha.grupo, produto.grupo);
 
     linha.usar.checked = !!produto.habilitado;
@@ -505,6 +512,19 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
 
       celula().appendChild(pacotes);
 
+      var cmv = document.createElement('input');
+      cmv.type = 'number';
+      cmv.min = '0';
+      cmv.max = '1000000000';
+      cmv.step = '0.01';
+
+      cmv.setAttribute(
+        'aria-label',
+        'CMV de ' + produto.produto
+      );
+
+      celula().appendChild(cmv);
+
       var grupo = document.createElement('select');
 
       grupo.setAttribute(
@@ -544,6 +564,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
         tr: tr,
         produto: produto,
         pacotes: pacotes,
+        cmv: cmv,
         grupo: grupo,
         usar: usar,
         situacao: situacao,
@@ -553,6 +574,10 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       preencherLinha(linha, produto);
 
       pacotes.addEventListener('input', function () {
+        marcar(linha);
+      });
+
+      cmv.addEventListener('input', function () {
         marcar(linha);
       });
 
@@ -646,14 +671,19 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
   async function salvarLinha(linha) {
     if (ocupado || !podeEditar) return;
 
-    if (!linha.pacotes.checkValidity()) {
-      linha.pacotes.reportValidity();
+    if (!linha.pacotes.checkValidity() || !linha.cmv.checkValidity()) {
+      (linha.pacotes.validity.valid ? linha.cmv : linha.pacotes)
+        .reportValidity();
       return;
     }
 
     var pacotes = linha.pacotes.value === ''
       ? null
       : Number(linha.pacotes.value);
+
+    var cmv = linha.cmv.value === ''
+      ? null
+      : Number(linha.cmv.value);
 
     if (
       linha.usar.checked &&
@@ -680,6 +710,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
         body: JSON.stringify({
           codigoProduto: linha.produto.codigoProduto,
           pacotesPorCaixa: pacotes,
+          cmv: cmv,
           grupo: linha.grupo.value,
           habilitado: linha.usar.checked
         })

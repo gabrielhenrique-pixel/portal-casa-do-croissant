@@ -12,6 +12,7 @@ export async function garantirCadastroProdutos(env) {
     CREATE TABLE IF NOT EXISTS produtos_painel_config (
       codigo_produto TEXT PRIMARY KEY,
       pacotes_por_caixa INTEGER,
+      cmv REAL,
       grupo TEXT NOT NULL DEFAULT '',
       habilitado INTEGER NOT NULL DEFAULT 0,
       unidade_sankhya TEXT NOT NULL DEFAULT '',
@@ -19,6 +20,20 @@ export async function garantirCadastroProdutos(env) {
       atualizado_por TEXT NOT NULL
     )
   `).run();
+
+  const colunas = await env.DB.prepare(
+    'PRAGMA table_info(produtos_painel_config)'
+  ).all();
+
+  const possuiCmv = (colunas.results || []).some(coluna =>
+    String(coluna.name || '').toLowerCase() === 'cmv'
+  );
+
+  if (!possuiCmv) {
+    await env.DB.prepare(
+      'ALTER TABLE produtos_painel_config ADD COLUMN cmv REAL'
+    ).run();
+  }
 }
 
 async function consultarProdutosSankhya(env, codigo = '') {
@@ -117,6 +132,9 @@ async function consultarProdutosSankhya(env, codigo = '') {
 
 function juntarConfiguracao(produto, configuracao) {
   const pacotes = Number(configuracao?.pacotes_por_caixa);
+  const cmv = configuracao?.cmv == null
+    ? null
+    : Number(configuracao.cmv);
   const grupo = String(configuracao?.grupo || '').trim();
 
   const unidadeConfirmada =
@@ -147,6 +165,7 @@ function juntarConfiguracao(produto, configuracao) {
   return {
     ...produto,
     pacotesPorCaixa: pacotes > 0 ? pacotes : null,
+    cmv: Number.isFinite(cmv) && cmv >= 0 ? cmv : null,
     grupo,
     habilitado,
     configurado,
@@ -235,6 +254,7 @@ export async function salvarConfiguracaoProduto(
 
   let grupo = dados.grupo.trim().replace(/\s+/g, ' ');
   const pacotes = dados.pacotesPorCaixa;
+  const cmv = dados.cmv;
 
   if (
     pacotes !== null &&
@@ -247,6 +267,20 @@ export async function salvarConfiguracaoProduto(
   ) {
     return invalido(
       'Informe uma quantidade inteira de pacotes por caixa, maior que zero.'
+    );
+  }
+
+  if (
+    cmv !== null &&
+    (
+      typeof cmv !== 'number' ||
+      !Number.isFinite(cmv) ||
+      cmv < 0 ||
+      cmv > 1000000000
+    )
+  ) {
+    return invalido(
+      'Informe um CMV válido, igual ou maior que zero.'
     );
   }
 
@@ -297,6 +331,7 @@ export async function salvarConfiguracaoProduto(
   const registro = {
     codigo_produto: produto.codigoProduto,
     pacotes_por_caixa: pacotes,
+    cmv,
     grupo,
     habilitado: dados.habilitado ? 1 : 0,
     unidade_sankhya: produto.unidadeSankhya,
@@ -310,16 +345,18 @@ export async function salvarConfiguracaoProduto(
       INSERT INTO produtos_painel_config (
         codigo_produto,
         pacotes_por_caixa,
+        cmv,
         grupo,
         habilitado,
         unidade_sankhya,
         atualizado_em,
         atualizado_por
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
       ON CONFLICT(codigo_produto) DO UPDATE SET
         pacotes_por_caixa = excluded.pacotes_por_caixa,
+        cmv = excluded.cmv,
         grupo = excluded.grupo,
         habilitado = excluded.habilitado,
         unidade_sankhya = excluded.unidade_sankhya,
@@ -328,6 +365,7 @@ export async function salvarConfiguracaoProduto(
     `).bind(
       registro.codigo_produto,
       pacotes,
+      cmv,
       grupo,
       registro.habilitado,
       produto.unidadeSankhya,
