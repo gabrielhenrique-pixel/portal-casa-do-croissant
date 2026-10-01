@@ -1372,9 +1372,10 @@ function estilosXlsx() {
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
       '<numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0.00;[Red]-#,##0.00"/>' +
       '<numFmt numFmtId="165" formatCode="0.0%;[Red]-0.0%"/></numFmts>' +
-      '<fonts count="3"><font><sz val="10"/><color rgb="FF163A5A"/><name val="Arial"/></font>' +
+      '<fonts count="4"><font><sz val="10"/><color rgb="FF163A5A"/><name val="Arial"/></font>' +
       '<font><b/><sz val="10"/><color rgb="FF163A5A"/><name val="Arial"/></font>' +
-      '<font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts>' +
+      '<font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>' +
+      '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts>' +
       '<fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
       '<fill><patternFill patternType="solid"><fgColor rgb="FF163A5A"/></patternFill></fill>' +
       '<fill><patternFill patternType="solid"><fgColor rgb="FFE8F0F6"/></patternFill></fill>' +
@@ -1383,8 +1384,8 @@ function estilosXlsx() {
       '<borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs>' +
       '<cellXfs count="18">' +
       '<xf xfId="0"/><xf fontId="2" fillId="2" applyFont="1" applyFill="1"/><xf xfId="0"/>' +
-      '<xf fontId="1" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
-      '<xf fontId="1" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+      '<xf fontId="3" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+      '<xf fontId="3" fillId="2" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
       '<xf fontId="1" fillId="3" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
       '<xf applyAlignment="1"><alignment horizontal="left"/></xf><xf applyAlignment="1"><alignment horizontal="left" indent="1"/></xf>' +
       '<xf applyAlignment="1"><alignment horizontal="left" indent="2"/></xf><xf applyAlignment="1"><alignment horizontal="left" indent="3"/></xf>' +
@@ -1458,13 +1459,13 @@ function criarPlanilhaExcel(modo) {
   const colunasXml = '<col min="1" max="1" width="38" customWidth="1"/>' +
     cabecalho.indicadores.map((_, indice) =>
       '<col min="' + (indice + 2) + '" max="' + (indice + 2) +
-      '" width="' + (indice % 3 === 0 ? '15' : '10') +
+      '" width="' + (indice % 3 === 0 ? '17' : '11') +
       '" customWidth="1"/>'
     ).join('');
   const planilha = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
     '<dimension ref="A1:' + ultimaColuna + (linhas.length + 5) + '"/>' +
-    '<sheetViews><sheetView workbookViewId="0"><pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+    '<sheetViews><sheetView workbookViewId="0"><pane xSplit="1" ySplit="5" topLeftCell="B6" activePane="bottomRight" state="frozen"/></sheetView></sheetViews>' +
     '<sheetFormatPr defaultRowHeight="15"/><cols>' + colunasXml + '</cols><sheetData>' +
     linhasXml.join('') + '</sheetData><mergeCells count="' + mesclas.length + '">' +
     mesclas.map((mescla) => '<mergeCell ref="' + mescla + '"/>').join('') +
