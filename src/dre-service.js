@@ -281,27 +281,20 @@ detalhe.valores.set(
   mesesConsulta
 );
 
-const grupos = Array.from(
-  valoresPorGrupo.entries()
-).map(([codigo, valores]) => {
-  const detalhes = Array.from(
-    detalhesPorGrupo.get(codigo).values()
-  ).sort((primeiro, segundo) =>
-    primeiro.codigo.localeCompare(
-      segundo.codigo,
-      'pt-BR',
-      { numeric: true }
-    )
-  ).map((detalhe) => ({
-    codigo: detalhe.codigo,
-    nome: detalhe.nome,
-    indicadores: calcularIndicadores(
-      detalhe.valores,
-      meses,
-      receitaBruta
-    )
-  }));
-
+}).map((detalhe) => ({
+  codigo: detalhe.codigo,
+  nome: detalhe.nome,
+  indicadores: calcularIndicadores(
+    detalhe.valores,
+    meses,
+    receitaBruta
+  ),
+  total: calcularTotalIndicadores(
+    detalhe.valores,
+    meses,
+    receitaBruta
+  )
+}));
   return {
     codigo,
     nome: DRE_GRUPOS[codigo].nome,
@@ -311,6 +304,11 @@ const grupos = Array.from(
       meses,
       receitaBruta
     ),
+        total: calcularTotalIndicadores(
+      valores,
+      meses,
+      receitaBruta
+    ),  
     detalhes
   };
 });
@@ -319,34 +317,50 @@ const grupos = Array.from(
 
   for (const [chave, valores] of valoresPorNv2.entries()) {
     subtotais[chave] = {
-      nome: DRE_NV2[chave].nome,
-      valores: valoresVisiveis(valores, meses),
-      indicadores: calcularIndicadores(
-        valores,
-        meses,
-        receitaBrutaSerie(
-          valoresPorNv2.get('receitaBruta'),
-          mesesConsulta
-        )
-      )
-    };
+  nome: DRE_NV2[chave].nome,
+  valores: valoresVisiveis(valores, meses),
+  indicadores: calcularIndicadores(
+    valores,
+    meses,
+    receitaBrutaSerie(
+      valoresPorNv2.get('receitaBruta'),
+      mesesConsulta
+    )
+  ),
+  total: calcularTotalIndicadores(
+    valores,
+    meses,
+    receitaBrutaSerie(
+      valoresPorNv2.get('receitaBruta'),
+      mesesConsulta
+    )
+  )
+};
   }
 
   for (const [chave, valores] of Object.entries(
     seriesCalculadas
   )) {
     subtotais[chave] = {
-      nome: nomeResultado(chave),
-      valores: valoresVisiveis(valores, meses),
-      indicadores: calcularIndicadores(
-        valores,
-        meses,
-        receitaBrutaSerie(
-          valoresPorNv2.get('receitaBruta'),
-          mesesConsulta
-        )
-      )
-    };
+  nome: nomeResultado(chave),
+  valores: valoresVisiveis(valores, meses),
+  indicadores: calcularIndicadores(
+    valores,
+    meses,
+    receitaBrutaSerie(
+      valoresPorNv2.get('receitaBruta'),
+      mesesConsulta
+    )
+  ),
+  total: calcularTotalIndicadores(
+    valores,
+    meses,
+    receitaBrutaSerie(
+      valoresPorNv2.get('receitaBruta'),
+      mesesConsulta
+    )
+  )
+};
   }
 
   return {
@@ -406,6 +420,43 @@ function nomeResultado(chave) {
   };
 
   return nomes[chave] || chave;
+}
+
+function calcularTotalIndicadores(
+  valores,
+  meses,
+  receitaBruta
+) {
+  let resultado = 0;
+  let anoAnterior = 0;
+  let baseReceita = 0;
+
+  for (const mes of meses) {
+    resultado += valores.get(mes) || 0;
+
+    anoAnterior += valores.get(
+      subtrairUmAno(mes)
+    ) || 0;
+
+    baseReceita += receitaBruta.get(mes) || 0;
+  }
+
+  let ah = 0;
+
+  if (anoAnterior === 0 && resultado !== 0) {
+    ah = 100;
+  } else if (anoAnterior !== 0) {
+    ah = (resultado / anoAnterior - 1) * 100;
+  }
+
+  return {
+    resultado,
+    anoAnterior,
+    ah,
+    av: baseReceita === 0
+      ? null
+      : Math.abs(resultado / baseReceita * 100)
+  };
 }
 
 function calcularIndicadores(
