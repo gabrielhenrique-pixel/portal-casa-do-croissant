@@ -68,11 +68,65 @@ export function drePage() {
     }
 
     .titulo-painel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       padding: 15px 20px;
       background: #163a5a;
       color: #fff;
       font-size: 16px;
       font-weight: bold;
+    }
+
+    .acoes-titulo {
+      position: relative;
+    }
+
+    .exportar-excel {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 30px;
+      padding: 0 9px;
+      border: 1px solid #9db8cd;
+      border-radius: 7px;
+      background: #fff;
+      color: #163a5a;
+      font-size: 10px;
+    }
+
+    .exportar-excel strong {
+      font-size: 9px;
+    }
+
+    .menu-exportar {
+      position: absolute;
+      z-index: 10;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 230px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: #fff;
+      box-shadow: 0 8px 20px #17305233;
+    }
+
+    .menu-exportar button {
+      width: 100%;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 0;
+      background: #fff;
+      color: #315a78;
+      text-align: left;
+      font-size: 12px;
+      font-weight: normal;
+    }
+
+    .menu-exportar button:hover {
+      background: #eef3f8;
     }
 
     .filtros {
@@ -404,7 +458,34 @@ tbody .linha-resultado td.coluna-total {
     </section>
 
     <section class="painel">
-      <div class="titulo-painel">Resultado por período</div>
+      <div class="titulo-painel">
+        <span>Resultado por período</span>
+
+        <div class="acoes-titulo">
+          <button
+            id="abrirExportacao"
+            class="exportar-excel"
+            type="button"
+            aria-expanded="false"
+            aria-controls="menuExportacao"
+            title="Exportar DRE para Excel"
+          >
+            ⇩ <strong>XLS</strong>
+          </button>
+
+          <div id="menuExportacao" class="menu-exportar" hidden>
+            <button type="button" data-exportar="expandido">
+              Exportar com níveis expandidos
+            </button>
+            <button type="button" data-exportar="retraido">
+              Exportar com níveis retraídos
+            </button>
+            <button type="button" data-exportar="atual">
+              Exportar como está
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div class="tabela-wrap">
         <table>
@@ -433,6 +514,8 @@ tbody .linha-resultado td.coluna-total {
   const atualizar = document.getElementById('atualizar');
   const linhasDre = document.getElementById('linhasDre');
   const tabela = document.querySelector('table');
+  const abrirExportacao = document.getElementById('abrirExportacao');
+  const menuExportacao = document.getElementById('menuExportacao');
 
   function dataLocal(data) {
   const ano = data.getFullYear();
@@ -812,6 +895,177 @@ function escaparHtml(valor) {
   elemento.textContent = String(valor || '');
   return elemento.innerHTML;
 }
+
+function escaparXml(valor) {
+  return String(valor || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function textoCelula(celula) {
+  const copia = celula.cloneNode(true);
+
+  copia.querySelectorAll(
+    '.expandir-dre, .espaco-expansao'
+  ).forEach((elemento) => elemento.remove());
+
+  return copia.textContent.replace(/\s+/g, ' ').trim();
+}
+
+function cabecalhosExcel() {
+  const linhas = tabela.querySelectorAll('thead tr');
+
+  if (linhas.length < 2) {
+    return [];
+  }
+
+  const periodos = Array.from(linhas[0].cells)
+    .slice(1)
+    .flatMap((celula) => Array(
+      Number(celula.getAttribute('colspan') || 1)
+    ).fill(textoCelula(celula)));
+
+  const indicadores = Array.from(linhas[1].cells)
+    .map((celula) => textoCelula(celula));
+
+  return [
+    textoCelula(linhas[0].cells[0]),
+    ...indicadores.map((indicador, indice) =>
+      periodos[indice] + ' - ' + indicador
+    )
+  ];
+}
+
+function linhaDeveSerExportada(linha, modo) {
+  if (modo === 'expandido') {
+    return true;
+  }
+
+  if (modo === 'retraido') {
+    return !linha.dataset.pai;
+  }
+
+  return getComputedStyle(linha).display !== 'none';
+}
+
+function celulaExcel(texto, indice) {
+  const valor = String(texto || '').trim();
+
+  if (indice > 0 && !valor.includes('%')) {
+    const numero = Number(
+      valor.replace(/\./g, '').replace(',', '.')
+    );
+
+    if (valor && Number.isFinite(numero)) {
+      return (
+        '<Cell ss:StyleID="numero">' +
+          '<Data ss:Type="Number">' + numero + '</Data>' +
+        '</Cell>'
+      );
+    }
+  }
+
+  return (
+    '<Cell><Data ss:Type="String">' +
+      escaparXml(valor) +
+    '</Data></Cell>'
+  );
+}
+
+function criarPlanilhaExcel(modo) {
+  const cabecalhos = cabecalhosExcel();
+  const linhas = Array.from(linhasDre.querySelectorAll('tr'))
+    .filter((linha) => linhaDeveSerExportada(linha, modo))
+    .map((linha) => Array.from(linha.cells)
+      .map((celula) => textoCelula(celula))
+    );
+
+  const linhasXml = [cabecalhos, ...linhas]
+    .map((linha, indice) => (
+      '<Row' + (indice === 0 ? ' ss:StyleID="cabecalho"' : '') + '>' +
+        cabecalhos.map((_, coluna) =>
+          celulaExcel(linha[coluna] || '', coluna)
+        ).join('') +
+      '</Row>'
+    ))
+    .join('');
+
+  return (
+    '<?xml version="1.0"?>' +
+    '<?mso-application progid="Excel.Sheet"?>' +
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ' +
+      'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+      '<Styles>' +
+        '<Style ss:ID="cabecalho">' +
+          '<Font ss:Bold="1" ss:Color="#FFFFFF" />' +
+          '<Interior ss:Color="#163A5A" ss:Pattern="Solid" />' +
+        '</Style>' +
+        '<Style ss:ID="numero">' +
+          '<NumberFormat ss:Format="#.##0,00" />' +
+        '</Style>' +
+      '</Styles>' +
+      '<Worksheet ss:Name="DRE">' +
+        '<Table ss:ExpandedColumnCount="' + cabecalhos.length +
+          '" ss:ExpandedRowCount="' + (linhas.length + 1) + '">' +
+          linhasXml +
+        '</Table>' +
+      '</Worksheet>' +
+    '</Workbook>'
+  );
+}
+
+function exportarExcel(modo) {
+  const planilha = criarPlanilhaExcel(modo);
+  const arquivo = new Blob([planilha], {
+    type: 'application/vnd.ms-excel;charset=utf-8'
+  });
+  const link = document.createElement('a');
+  const urlArquivo = URL.createObjectURL(arquivo);
+  const periodo = dataInicial.value + '_a_' + dataFinal.value;
+
+  link.href = urlArquivo;
+  link.download = 'DRE_' + periodo + '_' + modo + '.xls';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => {
+    URL.revokeObjectURL(urlArquivo);
+  }, 0);
+}
+
+abrirExportacao.addEventListener('click', () => {
+  const aberto = !menuExportacao.hidden;
+
+  menuExportacao.hidden = aberto;
+  abrirExportacao.setAttribute(
+    'aria-expanded',
+    String(!aberto)
+  );
+});
+
+menuExportacao.addEventListener('click', (event) => {
+  const botao = event.target.closest('[data-exportar]');
+
+  if (!botao) {
+    return;
+  }
+
+  exportarExcel(botao.dataset.exportar);
+  menuExportacao.hidden = true;
+  abrirExportacao.setAttribute('aria-expanded', 'false');
+});
+
+document.addEventListener('click', (event) => {
+  if (event.target.closest('.acoes-titulo')) {
+    return;
+  }
+
+  menuExportacao.hidden = true;
+  abrirExportacao.setAttribute('aria-expanded', 'false');
+});
 
 function montarCelulasLancamento(lancamento, meses) {
   const celulasMensais = meses.map((mes) => {
