@@ -201,9 +201,17 @@ export function drePage() {
 
 .tabela-wrap {
   max-width: 100%;
-  overflow-x: auto;
+  max-height: 70vh;
+  overflow: auto;
   border: 1px solid #d6e3ed;
   border-radius: 10px;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  box-shadow: 0 2px 5px rgba(22, 58, 90, 0.16);
 }
 
 table {
