@@ -462,6 +462,149 @@ function montarSqlDre(inicio, fim, empresa) {
   ].filter(Boolean).join('\n');
 }
 
+export async function listarAuditoriaDre(request, env) {
+  const url = new URL(request.url);
+  const hoje = new Date();
+  const primeiroDiaMes = new Date(
+    Date.UTC(
+      hoje.getUTCFullYear(),
+      hoje.getUTCMonth(),
+      1
+    )
+  );
+
+  const inicio = dataValida(
+    url.searchParams.get('inicio'),
+    primeiroDiaMes
+  );
+  const fim = dataValida(
+    url.searchParams.get('fim'),
+    hoje
+  );
+  const empresa = String(
+    url.searchParams.get('empresa') || ''
+  ).trim();
+  const natureza = String(
+    url.searchParams.get('natureza') || ''
+  ).trim();
+
+  if (inicio > fim) {
+    return {
+      error: 'A data inicial não pode ser maior que a data final.',
+      status: 400
+    };
+  }
+
+  if (empresa && !/^\d+$/.test(empresa)) {
+    return { error: 'Empresa inválida.', status: 400 };
+  }
+
+  if (!/^\d+$/.test(natureza)) {
+    return { error: 'Natureza inválida.', status: 400 };
+  }
+
+  if (
+    !env.SANKHYA_CLIENT_ID ||
+    !env.SANKHYA_CLIENT_SECRET ||
+    !env.SANKHYA_X_TOKEN
+  ) {
+    return {
+      error: 'A integração com o Sankhya ainda não foi configurada.',
+      status: 503
+    };
+  }
+
+  const token = await obterTokenSankhya(env);
+  const linhas = await executarConsultaSankhya(
+    token,
+    montarSqlAuditoriaDre(inicio, fim, empresa, natureza)
+  );
+
+  return {
+    natureza,
+    meses: listarMeses(inicio, fim),
+    lancamentos: linhas.map((linha) => ({
+      mes: String(linha[0] || ''),
+      data: String(linha[1] || ''),
+      documento: String(linha[2] || ''),
+      parceiro: String(linha[3] || 'Sem parceiro'),
+      origem: String(linha[4] || 'Financeiro'),
+      valor: numero(linha[5])
+    }))
+  };
+}
+
+function montarSqlAuditoriaDre(inicio, fim, empresa, natureza) {
+  const codigoNatureza = Number(natureza);
+
+  if (codigoNatureza === 1010000) {
+    const filtroEmpresa = empresa
+      ? `  AND CAB.CODEMP = ${Number(empresa)}`
+      : '';
+
+    return [
+      'SELECT',
+      "  TO_CHAR(TRUNC(CAB.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
+      "  TO_CHAR(CAB.DTNEG, 'DD/MM/YYYY') AS DATA,",
+      '  CAB.NUNOTA AS DOCUMENTO,',
+      "  NVL(PAR.NOMEPARC, 'Sem parceiro') AS PARCEIRO,",
+      "  'Venda' AS ORIGEM,",
+      '  SUM(',
+      '    (NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) +',
+      '    NVL(ITE.VLRSUBST, 0)',
+      '  ) AS VALOR',
+      'FROM TGFCAB CAB',
+      'INNER JOIN TGFITE ITE',
+      '  ON ITE.NUNOTA = CAB.NUNOTA',
+      'LEFT JOIN TGFPAR PAR',
+      '  ON PAR.CODPARC = CAB.CODPARC',
+      `WHERE CAB.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
+      `  AND CAB.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
+      "  AND CAB.TIPMOV = 'V'",
+      "  AND CAB.STATUSNOTA = 'L'",
+      '  AND CAB.CODTIPOPER IN (1101, 1107)',
+      filtroEmpresa,
+      'GROUP BY',
+      "  TO_CHAR(TRUNC(CAB.DTNEG, 'MM'), 'YYYY-MM'),",
+      "  TO_CHAR(CAB.DTNEG, 'DD/MM/YYYY'),",
+      '  CAB.NUNOTA,',
+      '  PAR.NOMEPARC',
+    ].filter(Boolean).join('\n');
+  }
+
+  const filtroEmpresa = empresa
+    ? `  AND FIN.CODEMP = ${Number(empresa)}`
+    : '';
+
+  return [
+    'SELECT',
+    "  TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
+    "  TO_CHAR(TFIN.DTNEG, 'DD/MM/YYYY') AS DATA,",
+    '  FIN.NUFIN AS DOCUMENTO,',
+    "  NVL(PAR.NOMEPARC, 'Sem parceiro') AS PARCEIRO,",
+    "  'Financeiro' AS ORIGEM,",
+    '  SUM(',
+    '    NVL(FIN.VLRDESDOB, 0) *',
+    '    NVL(FIN.RECDESP, 0)',
+    '  ) AS VALOR',
+    'FROM TGFFIN TFIN',
+    'LEFT JOIN VGFFINRAT FIN',
+    '  ON FIN.NUFIN = TFIN.NUFIN',
+    'LEFT JOIN TGFPAR PAR',
+    '  ON PAR.CODPARC = TFIN.CODPARC',
+    "WHERE FIN.PROVISAO = 'N'",
+    `  AND TFIN.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
+    `  AND TFIN.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
+    `  AND FIN.CODNAT = ${codigoNatureza}`,
+    filtroEmpresa,
+    'GROUP BY',
+    "  TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM'),",
+    "  TO_CHAR(TFIN.DTNEG, 'DD/MM/YYYY'),",
+    '  FIN.NUFIN,',
+    '  PAR.NOMEPARC',
+  ].filter(Boolean).join('\n');
+}
+
 function nomeResultado(chave) {
   const nomes = {
     receitaLiquida: 'Receita Líquida Operacional',

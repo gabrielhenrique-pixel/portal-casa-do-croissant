@@ -171,6 +171,26 @@ export function drePage() {
   font-size: 11px;
 }
 
+.linha-nivel-3 td:first-child {
+  padding-left: 88px;
+  color: #607a91;
+  font-size: 11px;
+}
+
+.linha-auditoria td {
+  background: #f8fbfd;
+  color: #45667f;
+  font-size: 11px;
+}
+
+.auditoria-meta {
+  display: block;
+  margin-top: 3px;
+  color: #71889b;
+  font-size: 10px;
+  font-weight: normal;
+}
+
 .expandir-dre {
   display: inline-flex;
   align-items: center;
@@ -556,7 +576,8 @@ function montarLinhaDre(registro, opcoes, meses) {
       '<td>' +
         controleExpansao(
           opcoes.id,
-          opcoes.possuiFilhos
+          opcoes.possuiFilhos,
+          opcoes.auditoria
         ) +
         registro.nome +
       '</td>' +
@@ -665,6 +686,9 @@ function montarLinhas(dados) {
     }
 
     for (const detalhe of registro.detalhes || []) {
+      const possuiAuditoria =
+        Number(detalhe.total?.resultado || 0) !== 0;
+
       linhas.push(
         montarLinhaDre(
           detalhe,
@@ -674,7 +698,10 @@ function montarLinhas(dados) {
               detalhe.codigo,
             pai: id,
             nivel: 2,
-            possuiFilhos: false,
+            possuiFilhos: possuiAuditoria,
+            auditoria: possuiAuditoria
+              ? detalhe.codigo
+              : '',
             classe: ''
           },
           dados.meses
@@ -754,10 +781,18 @@ linhasDre.addEventListener('click', (event) => {
     return;
   }
 
+  if (botao.dataset.auditoria) {
+    carregarLancamentos(
+      botao.dataset.toggle,
+      botao.dataset.auditoria
+    );
+    return;
+  }
+
   alternarLinhaDre(botao.dataset.toggle);
 });
 
- function controleExpansao(id, possuiFilhos) {
+ function controleExpansao(id, possuiFilhos, auditoria) {
   if (!possuiFilhos) {
     return '<span class="espaco-expansao"></span>';
   }
@@ -765,8 +800,138 @@ linhasDre.addEventListener('click', (event) => {
   return (
     '<button type="button" class="expandir-dre" ' +
       'data-toggle="' + id + '" ' +
+      (auditoria
+        ? 'data-auditoria="' + auditoria + '" '
+        : '') +
       'aria-expanded="false">+</button>'
   );
+}
+
+function escaparHtml(valor) {
+  const elemento = document.createElement('span');
+  elemento.textContent = String(valor || '');
+  return elemento.innerHTML;
+}
+
+function montarCelulasLancamento(lancamento, meses) {
+  const celulasMensais = meses.map((mes) => {
+    const pertenceAoMes = lancamento.mes === mes;
+    const valor = pertenceAoMes
+      ? formatarNumero(lancamento.valor)
+      : '';
+
+    return (
+      '<td class="' +
+        (pertenceAoMes
+          ? classeResultado(lancamento.valor)
+          : '') +
+      '">' + valor + '</td>' +
+      '<td></td><td></td>'
+    );
+  }).join('');
+
+  return (
+    celulasMensais +
+    '<td class="coluna-total ' +
+      classeResultado(lancamento.valor) +
+    '">' + formatarNumero(lancamento.valor) +
+    '</td><td></td><td></td>'
+  );
+}
+
+function montarLinhasLancamentos(id, lancamentos, meses) {
+  if (!lancamentos.length) {
+    return (
+      '<tr class="linha-filho linha-nivel-3 linha-auditoria" ' +
+        'data-linha="vazio-' + id + '" data-pai="' + id + '">' +
+        '<td colspan="' + (1 + meses.length * 3 + 3) + '">' +
+          'Nenhum lançamento encontrado para esta natureza.' +
+        '</td></tr>'
+    );
+  }
+
+  return lancamentos.map((lancamento, indice) => {
+    const titulo = lancamento.origem === 'Venda'
+      ? 'Nota ' + lancamento.documento
+      : 'NUFIN ' + lancamento.documento;
+
+    return (
+      '<tr class="linha-filho linha-nivel-3 linha-auditoria" ' +
+        'data-linha="lancamento-' + id + '-' + indice + '" ' +
+        'data-pai="' + id + '">' +
+        '<td><strong>' + escaparHtml(titulo) + '</strong>' +
+          '<span class="auditoria-meta">' +
+            escaparHtml(lancamento.data) + ' · ' +
+            escaparHtml(lancamento.parceiro) +
+          '</span></td>' +
+        montarCelulasLancamento(lancamento, meses) +
+      '</tr>'
+    );
+  }).join('');
+}
+
+async function carregarLancamentos(id, natureza) {
+  const linha = linhasDre.querySelector(
+    '[data-linha="' + id + '"]'
+  );
+
+  if (!linha) {
+    return;
+  }
+
+  if (linha.dataset.carregado === 'true') {
+    alternarLinhaDre(id);
+    return;
+  }
+
+  const botao = linha.querySelector('.expandir-dre');
+
+  if (botao) {
+    botao.disabled = true;
+    botao.textContent = '…';
+  }
+
+  const parametros = new URLSearchParams({
+    inicio: dataInicial.value,
+    fim: dataFinal.value,
+    natureza: natureza
+  });
+
+  if (empresa.value) {
+    parametros.set('empresa', empresa.value);
+  }
+
+  try {
+    const resposta = await fetch(
+      '/api/dre/auditoria?' + parametros.toString()
+    );
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.error || 'Não foi possível carregar os lançamentos.'
+      );
+    }
+
+    linha.insertAdjacentHTML(
+      'afterend',
+      montarLinhasLancamentos(
+        id,
+        dados.lancamentos || [],
+        dados.meses || []
+      )
+    );
+
+    linha.dataset.carregado = 'true';
+    alternarLinhaDre(id);
+  } catch (error) {
+    window.alert(error.message || 'Não foi possível carregar os lançamentos.');
+  } finally {
+    if (botao) {
+      botao.disabled = false;
+      atualizarBotaoExpansao(linha);
+    }
+  }
 }
 
   async function carregarDre() {
