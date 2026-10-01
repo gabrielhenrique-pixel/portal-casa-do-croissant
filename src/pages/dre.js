@@ -1075,8 +1075,10 @@ function criarPlanilhaExcel(modo) {
   )).join('');
 
   const cabecalhoIndicadorXml = cabecalho.indicadores.map(
-    (indicador) => (
-      '<Cell ss:StyleID="cabecalhoIndicador">' +
+    (indicador, indice) => (
+      '<Cell ' +
+        (indice === 0 ? 'ss:Index="2" ' : '') +
+        'ss:StyleID="cabecalhoIndicador">' +
         '<Data ss:Type="String">' +
           escaparXml(indicador) +
         '</Data></Cell>'
