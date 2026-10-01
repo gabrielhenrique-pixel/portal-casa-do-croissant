@@ -281,20 +281,32 @@ detalhe.valores.set(
   mesesConsulta
 );
 
-}).map((detalhe) => ({
-  codigo: detalhe.codigo,
-  nome: detalhe.nome,
-  indicadores: calcularIndicadores(
-    detalhe.valores,
-    meses,
-    receitaBruta
-  ),
-  total: calcularTotalIndicadores(
-    detalhe.valores,
-    meses,
-    receitaBruta
-  )
-}));
+const grupos = Array.from(
+  valoresPorGrupo.entries()
+).map(([codigo, valores]) => {
+  const detalhes = Array.from(
+    detalhesPorGrupo.get(codigo).values()
+  ).sort((primeiro, segundo) =>
+    primeiro.codigo.localeCompare(
+      segundo.codigo,
+      'pt-BR',
+      { numeric: true }
+    )
+  ).map((detalhe) => ({
+    codigo: detalhe.codigo,
+    nome: detalhe.nome,
+    indicadores: calcularIndicadores(
+      detalhe.valores,
+      meses,
+      receitaBruta
+    ),
+    total: calcularTotalIndicadores(
+      detalhe.valores,
+      meses,
+      receitaBruta
+    )
+  }));
+
   return {
     codigo,
     nome: DRE_GRUPOS[codigo].nome,
@@ -304,11 +316,11 @@ detalhe.valores.set(
       meses,
       receitaBruta
     ),
-        total: calcularTotalIndicadores(
+    total: calcularTotalIndicadores(
       valores,
       meses,
       receitaBruta
-    ),  
+    ),
     detalhes
   };
 });
