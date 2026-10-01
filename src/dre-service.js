@@ -390,32 +390,72 @@ const grupos = Array.from(
 }
 
 function montarSqlDre(inicio, fim, empresa) {
-  const filtroEmpresa = empresa
+  const filtroEmpresaFinanceiro = empresa
     ? `  AND FIN.CODEMP = ${Number(empresa)}`
+    : '';
+
+  const filtroEmpresaVendas = empresa
+    ? `  AND CAB.CODEMP = ${Number(empresa)}`
     : '';
 
   return [
     'SELECT',
-    "  TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
-    '  FIN.CODNAT AS CODIGO_NATUREZA,',
-    '  NAT.DESCRNAT AS NOME_NATUREZA,',
-    '  SUM(',
-    '    NVL(FIN.VLRDESDOB, 0) *',
-    '    NVL(FIN.RECDESP, 0)',
-    '  ) AS VALOR',
-    'FROM TGFFIN TFIN',
-    'LEFT JOIN VGFFINRAT FIN',
-    '  ON FIN.NUFIN = TFIN.NUFIN',
-    'LEFT JOIN TGFNAT NAT',
-    '  ON NAT.CODNAT = FIN.CODNAT',
-    "WHERE FIN.PROVISAO = 'N'",
-    `  AND TFIN.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
-    `  AND TFIN.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
-    filtroEmpresa,
+    '  MES,',
+    '  CODIGO_NATUREZA,',
+    '  NOME_NATUREZA,',
+    '  SUM(VALOR) AS VALOR',
+    'FROM (',
+
+    '  SELECT',
+    "    TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
+    '    FIN.CODNAT AS CODIGO_NATUREZA,',
+    '    NAT.DESCRNAT AS NOME_NATUREZA,',
+    '    SUM(',
+    '      NVL(FIN.VLRDESDOB, 0) *',
+    '      NVL(FIN.RECDESP, 0)',
+    '    ) AS VALOR',
+    '  FROM TGFFIN TFIN',
+    '  LEFT JOIN VGFFINRAT FIN',
+    '    ON FIN.NUFIN = TFIN.NUFIN',
+    '  LEFT JOIN TGFNAT NAT',
+    '    ON NAT.CODNAT = FIN.CODNAT',
+    "  WHERE FIN.PROVISAO = 'N'",
+    `    AND TFIN.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
+    `    AND TFIN.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
+    '    AND NVL(FIN.CODNAT, 0) <> 1010000',
+    filtroEmpresaFinanceiro,
+    '  GROUP BY',
+    "    TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM'),",
+    '    FIN.CODNAT,',
+    '    NAT.DESCRNAT',
+
+    '  UNION ALL',
+
+    '  SELECT',
+    "    TO_CHAR(TRUNC(CAB.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
+    "    '1010000' AS CODIGO_NATUREZA,",
+    "    'Receita de Vendas' AS NOME_NATUREZA,",
+    '    SUM(',
+    '      (NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) +',
+    '      NVL(ITE.VLRSUBST, 0)',
+    '    ) AS VALOR',
+    '  FROM TGFCAB CAB',
+    '  INNER JOIN TGFITE ITE',
+    '    ON ITE.NUNOTA = CAB.NUNOTA',
+    `  WHERE CAB.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
+    `    AND CAB.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
+    "    AND CAB.TIPMOV = 'V'",
+    "    AND CAB.STATUSNOTA = 'L'",
+    '    AND CAB.CODTIPOPER IN (1101, 1107)',
+    filtroEmpresaVendas,
+    '  GROUP BY',
+    "    TO_CHAR(TRUNC(CAB.DTNEG, 'MM'), 'YYYY-MM')",
+
+    ')',
     'GROUP BY',
-    "  TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM'),",
-    '  FIN.CODNAT,',
-    '  NAT.DESCRNAT',
+    '  MES,',
+    '  CODIGO_NATUREZA,',
+    '  NOME_NATUREZA',
     'ORDER BY',
     '  MES,',
     '  CODIGO_NATUREZA'
