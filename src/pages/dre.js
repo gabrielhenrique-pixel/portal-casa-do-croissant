@@ -478,13 +478,13 @@ tbody td:nth-child(3n + 2) {
 
 function montarLinhaDre(registro, opcoes, meses) {
   const classes = [
-    opcoes.classe,
-    opcoes.pai ? 'linha-filho' : '',
-    'linha-nivel-' + opcoes.nivel
-        opcoes.id === 'resultadoFinal'
-      ? 'linha-resultado-final'
-      : '',
-  ].filter(Boolean).join(' ');
+  opcoes.classe,
+  opcoes.pai ? 'linha-filho' : '',
+  'linha-nivel-' + opcoes.nivel,
+  opcoes.id === 'resultadoFinal'
+    ? 'linha-resultado-final'
+    : '',
+].filter(Boolean).join(' ');
 
   const atributos =
     ' data-linha="' + opcoes.id + '"' +
