@@ -6,7 +6,7 @@ import {
 const DRE_NV2 = Object.freeze({
   receitaBruta: {
     nome: 'Receita Bruta',
-    grupos: [1, 2]
+    grupos: [1, 2] 
   },
   deducoes: {
     nome: 'Deduções Sobre Receitas',
