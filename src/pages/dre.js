@@ -199,6 +199,69 @@ export function drePage() {
   width: 32px;
 }
 
+.tabela-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #d6e3ed;
+  border-radius: 10px;
+}
+
+table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  min-width: 92px;
+  white-space: nowrap;
+}
+
+th:first-child,
+td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
+  white-space: normal;
+  box-shadow: 2px 0 0 #dce6ee;
+}
+
+thead th:first-child {
+  z-index: 3;
+  background: #e8f0f6;
+}
+
+tbody td:first-child {
+  background: #fff;
+}
+
+tbody .linha-grupo td:first-child {
+  background: #eef3f8;
+}
+
+tbody .linha-resultado td:first-child {
+  background: #dce8f3;
+}
+
+thead tr:first-child th:not(:first-child) {
+  text-align: center;
+  background: #d5e2ed;
+  border-left: 2px solid #b8cce0;
+}
+
+thead tr:nth-child(2) th:nth-child(3n + 1) {
+  border-left: 2px solid #b8cce0;
+}
+
+tbody td:nth-child(3n + 2) {
+  border-left: 2px solid #b8cce0;
+}
+
     .vazio {
       padding: 28px;
       color: #607a91;
