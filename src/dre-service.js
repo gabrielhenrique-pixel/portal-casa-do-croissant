@@ -433,7 +433,7 @@ function montarSqlDre(inicio, fim, empresa) {
 
     '  SELECT',
     "    TO_CHAR(TRUNC(CAB.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
-    "    '1010000' AS CODIGO_NATUREZA,",
+    '    1010000 AS CODIGO_NATUREZA,',
     "    'Receita de Vendas' AS NOME_NATUREZA,",
     '    SUM(',
     '      (NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0)) +',
