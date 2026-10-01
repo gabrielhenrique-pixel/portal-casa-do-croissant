@@ -237,12 +237,12 @@ export function drePage() {
   const tabela = document.querySelector('table');
 
   function dataLocal(data) {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const dia = String(data.getDate()).padStart(2, '0');
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
 
-    return `${ano}-${mes}-${dia}`;
-  }
+  return ano + '-' + mes + '-' + dia;
+}
 
   function primeiroDiaDoMes(data) {
     return new Date(
@@ -253,10 +253,10 @@ export function drePage() {
   }
 
   function formatarMes(mes) {
-    const partes = mes.split('-');
+  const partes = mes.split('-');
 
-    return `${partes[1]}/${partes[0]}`;
-  }
+  return partes[1] + '/' + partes[0];
+}
 
   function formatarNumero(valor) {
     return new Intl.NumberFormat('pt-BR', {
@@ -279,22 +279,20 @@ export function drePage() {
   function montarCabecalho(meses) {
     const cabecalho = tabela.createTHead();
 
-    cabecalho.innerHTML = `
-      <tr>
-        <th rowspan="2">Grupo DRE</th>
-        ${meses.map((mes) => `
-          <th colspan="3">${formatarMes(mes)}</th>
-        `).join('')}
-      </tr>
-
-      <tr>
-        ${meses.map(() => `
-          <th>Resultado</th>
-          <th>% A.H.</th>
-          <th>% A.V.</th>
-        `).join('')}
-      </tr>
-    `;
+    cabecalho.innerHTML =
+  '<tr>' +
+    '<th rowspan="2">Grupo DRE</th>' +
+    meses.map((mes) =>
+      '<th colspan="3">' + formatarMes(mes) + '</th>'
+    ).join('') +
+  '</tr>' +
+  '<tr>' +
+    meses.map(() =>
+      '<th>Resultado</th>' +
+      '<th>% A.H.</th>' +
+      '<th>% A.V.</th>'
+    ).join('') +
+  '</tr>';
   }
 
   function montarCelulas(item, meses) {
@@ -305,11 +303,11 @@ export function drePage() {
         av: null
       };
 
-      return `
-        <td>${formatarNumero(indicador.resultado)}</td>
-        <td>${formatarPercentual(indicador.ah)}</td>
-        <td>${formatarPercentual(indicador.av)}</td>
-      `;
+      return (
+  '<td>' + formatarNumero(indicador.resultado) + '</td>' +
+  '<td>' + formatarPercentual(indicador.ah) + '</td>' +
+  '<td>' + formatarPercentual(indicador.av) + '</td>'
+);
     }).join('');
   }
 
@@ -384,12 +382,12 @@ export function drePage() {
           ? 'linha-grupo'
           : '';
 
-      linhas.push(`
-        <tr class="${classe}">
-          <td>${registro.nome}</td>
-          ${montarCelulas(registro, dados.meses)}
-        </tr>
-      `);
+        linhas.push(
+    '<tr class="' + classe + '">' +
+      '<td>' + registro.nome + '</td>' +
+      montarCelulas(registro, dados.meses) +
+    '</tr>'
+  );
     }
 
     return linhas.join('');
