@@ -223,7 +223,9 @@ export function margemRedePage() {
     .alertas.visivel { display:block; }
 
     .tabela-area {
-      overflow-x:auto;
+      max-width:100%;
+      max-height:70vh;
+      overflow:auto;
       border:1px solid var(--borda);
       border-radius:8px;
       background:#fff;
@@ -231,16 +233,17 @@ export function margemRedePage() {
     }
 
     table {
-      width:100%;
+      width:max-content;
       min-width:2180px;
-      border-collapse:collapse;
+      border-collapse:separate;
+      border-spacing:0;
       font-size:13px;
     }
 
     th {
       position:sticky;
       top:0;
-      z-index:1;
+      z-index:3;
       min-height:30px;
       border:1px solid var(--borda);
       padding:7px 8px;
@@ -251,6 +254,7 @@ export function margemRedePage() {
       line-height:1.15;
       text-align:center;
       white-space:normal;
+      box-shadow:0 2px 5px rgba(22,58,90,.16);
     }
 
     td {
@@ -268,12 +272,33 @@ export function margemRedePage() {
       font-weight:700;
     }
 
+    th:first-child,
+    td:first-child {
+      position:sticky;
+      left:0;
+      width:220px;
+      min-width:220px;
+      max-width:220px;
+      text-align:left;
+      box-shadow:2px 0 0 #c7d8e5;
+    }
+
+    th:first-child {
+      z-index:5;
+      background:var(--azul);
+    }
+
+    tbody td:first-child {
+      z-index:1;
+    }
+
     td.devolucao, td.negativo { color:var(--vermelho); }
     td.margem-critica { background:#f4cccc; color:var(--vermelho); font-weight:700; }
     td.margem-alerta { background:#fff2cc; color:var(--amarelo); font-weight:700; }
     td.margem-boa { background:#e2f0d9; color:var(--verde); font-weight:700; }
     td.vazio { color:#66746d; }
     tbody tr:hover td:not(.rede) { background:#f7faf8; }
+    tbody tr:hover td.rede { background:#c9e0f1; }
     tbody tr:hover td.margem-critica { background:#f0bbbb; }
     tbody tr:hover td.margem-alerta { background:#ffebac; }
     tbody tr:hover td.margem-boa { background:#d6ebc9; }
