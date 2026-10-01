@@ -2295,7 +2295,7 @@ renderizar(dados, dadosDevolucoes);
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
           '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
           '<dimension ref="A1:' + ultimaColuna + aba.linhas.length + '"/>' +
-          '<sheetViews><sheetView workbookViewId="0"><pane xSplit="2" ySplit="4" topLeftCell="C5" activePane="bottomRight" state="frozen"/></sheetView></sheetViews>' +
+          '<sheetViews><sheetView workbookViewId="0"/></sheetViews>' +
           '<sheetFormatPr defaultRowHeight="15"/><cols>' + colunas + '</cols><sheetData>' +
           xmlLinhas.join('') + '</sheetData><mergeCells count="' + mesclas.length + '">' +
           mesclas.map(function(mescla) { return '<mergeCell ref="' + mescla + '"/>'; }).join('') +
