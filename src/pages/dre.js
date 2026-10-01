@@ -207,11 +207,22 @@ export function drePage() {
   border-radius: 10px;
 }
 
-thead {
+thead th {
   position: sticky;
-  top: 0;
   z-index: 4;
   box-shadow: 0 2px 5px rgba(22, 58, 90, 0.16);
+}
+
+thead tr:first-child th {
+  top: 0;
+}
+
+thead tr:nth-child(2) th {
+  top: 39px;
+}
+
+thead tr:first-child th:first-child {
+  z-index: 6;
 }
 
 table {
