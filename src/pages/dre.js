@@ -421,9 +421,15 @@ export function drePage() {
 
       linhasDre.innerHTML = montarLinhas(dados);
     } catch (error) {
-      console.error('Erro ao carregar DRE:', error);
-      linhasDre.innerHTML = '';
-    }
+  console.error('Erro ao carregar DRE:', error);
+
+  linhasDre.innerHTML =
+    '<tr>' +
+      '<td class="vazio" colspan="4">' +
+        (error.message || 'Não foi possível carregar a DRE.') +
+      '</td>' +
+    '</tr>';
+}
   }
 
   const hoje = new Date();
