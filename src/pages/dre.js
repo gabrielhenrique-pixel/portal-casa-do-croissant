@@ -315,6 +315,30 @@ tbody td:nth-child(3n + 2) {
 tbody tr:hover td:first-child {
   background: #eaf4ff;
 }
+
+.cabecalho-total {
+  background: #c7dbea !important;
+  border-left: 2px solid #789bb7 !important;
+}
+
+thead tr:nth-child(2) th.coluna-total {
+  border-left: 2px solid #789bb7;
+  background: #d9e8f3;
+}
+
+td.coluna-total {
+  background: #eef5fa;
+  font-weight: 700;
+  border-left: 2px solid #789bb7;
+}
+
+tbody .linha-grupo td.coluna-total {
+  background: #e3edf5;
+}
+
+tbody .linha-resultado td.coluna-total {
+  background: #cfdfee;
+}
     
   </style>
 </head>
@@ -431,23 +455,27 @@ tbody tr:hover td:first-child {
   }
 
   function montarCabecalho(meses) {
-    const cabecalho = tabela.createTHead();
+  const cabecalho = tabela.createTHead();
 
-    cabecalho.innerHTML =
-  '<tr>' +
-    '<th rowspan="2">Grupo DRE</th>' +
-    meses.map((mes) =>
-      '<th colspan="3">' + formatarMes(mes) + '</th>'
-    ).join('') +
-  '</tr>' +
-  '<tr>' +
-    meses.map(() =>
-      '<th>Resultado</th>' +
+  cabecalho.innerHTML =
+    '<tr>' +
+      '<th rowspan="2">Grupo DRE</th>' +
+      meses.map((mes) =>
+        '<th colspan="3">' + formatarMes(mes) + '</th>'
+      ).join('') +
+      '<th colspan="3" class="cabecalho-total">Total</th>' +
+    '</tr>' +
+    '<tr>' +
+      meses.map(() =>
+        '<th>Resultado</th>' +
+        '<th>% A.H.</th>' +
+        '<th>% A.V.</th>'
+      ).join('') +
+      '<th class="coluna-total">Resultado</th>' +
       '<th>% A.H.</th>' +
-      '<th>% A.V.</th>'
-    ).join('') +
-  '</tr>';
-  }
+      '<th>% A.V.</th>' +
+    '</tr>';
+}
 
   function classeResultado(valor) {
   if (Number(valor) < 0) {
@@ -462,22 +490,41 @@ tbody tr:hover td:first-child {
 }
 
   function montarCelulas(item, meses) {
-    return meses.map((mes) => {
-      const indicador = item.indicadores?.[mes] || {
-        resultado: 0,
-        ah: 0,
-        av: null
-      };
+  const celulasMensais = meses.map((mes) => {
+    const indicador = item.indicadores?.[mes] || {
+      resultado: 0,
+      ah: 0,
+      av: null
+    };
 
-      return (
-  '<td class="' + classeResultado(indicador.resultado) + '">' +
-   formatarNumero(indicador.resultado) +
-  '</td>' +
-  '<td>' + formatarPercentual(indicador.ah) + '</td>' +
-  '<td>' + formatarPercentual(indicador.av) + '</td>'
-);
-    }).join('');
-  }
+    return (
+      '<td class="' +
+        classeResultado(indicador.resultado) +
+      '">' +
+        formatarNumero(indicador.resultado) +
+      '</td>' +
+      '<td>' + formatarPercentual(indicador.ah) + '</td>' +
+      '<td>' + formatarPercentual(indicador.av) + '</td>'
+    );
+  }).join('');
+
+  const total = item.total || {
+    resultado: 0,
+    ah: 0,
+    av: null
+  };
+
+  return (
+    celulasMensais +
+    '<td class="coluna-total ' +
+      classeResultado(total.resultado) +
+    '">' +
+      formatarNumero(total.resultado) +
+    '</td>' +
+    '<td>' + formatarPercentual(total.ah) + '</td>' +
+    '<td>' + formatarPercentual(total.av) + '</td>'
+  );
+}
 
   function localizarGrupo(dados, codigo) {
     return dados.grupos.find(
