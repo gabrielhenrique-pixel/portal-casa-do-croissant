@@ -915,28 +915,32 @@ function textoCelula(celula) {
   return copia.textContent.replace(/\s+/g, ' ').trim();
 }
 
-function cabecalhosExcel() {
+function estruturaCabecalhoExcel() {
   const linhas = tabela.querySelectorAll('thead tr');
 
   if (linhas.length < 2) {
-    return [];
+    return {
+      grupo: 'Grupo DRE',
+      periodos: [],
+      indicadores: []
+    };
   }
 
   const periodos = Array.from(linhas[0].cells)
     .slice(1)
-    .flatMap((celula) => Array(
-      Number(celula.getAttribute('colspan') || 1)
-    ).fill(textoCelula(celula)));
+    .map((celula) => ({
+      nome: textoCelula(celula),
+      colunas: Number(celula.getAttribute('colspan') || 1)
+    }));
 
   const indicadores = Array.from(linhas[1].cells)
     .map((celula) => textoCelula(celula));
 
-  return [
-    textoCelula(linhas[0].cells[0]),
-    ...indicadores.map((indicador, indice) =>
-      periodos[indice] + ' - ' + indicador
-    )
-  ];
+  return {
+    grupo: textoCelula(linhas[0].cells[0]),
+    periodos,
+    indicadores
+  };
 }
 
 function linhaDeveSerExportada(linha, modo) {
@@ -951,7 +955,46 @@ function linhaDeveSerExportada(linha, modo) {
   return getComputedStyle(linha).display !== 'none';
 }
 
-function celulaExcel(texto, indice) {
+function estiloLinhaExcel(linha, coluna) {
+  const resultado = linha.classList.contains('linha-resultado');
+  const subtotal = linha.classList.contains('linha-grupo');
+
+  if (coluna === 0) {
+    if (resultado) {
+      return 'primeiraResultado';
+    }
+
+    if (subtotal) {
+      return 'primeiraSubtotal';
+    }
+
+    if (linha.classList.contains('linha-nivel-3')) {
+      return 'primeiraNivel3';
+    }
+
+    if (linha.classList.contains('linha-nivel-2')) {
+      return 'primeiraNivel2';
+    }
+
+    if (linha.classList.contains('linha-nivel-1')) {
+      return 'primeiraNivel1';
+    }
+
+    return 'primeira';
+  }
+
+  if (resultado) {
+    return 'resultado';
+  }
+
+  if (subtotal) {
+    return 'subtotal';
+  }
+
+  return 'corpo';
+}
+
+function celulaExcel(texto, indice, estilo) {
   const valor = String(texto || '').trim();
 
   if (indice > 0 && !valor.includes('%')) {
@@ -961,7 +1004,13 @@ function celulaExcel(texto, indice) {
 
     if (valor && Number.isFinite(numero)) {
       return (
-        '<Cell ss:StyleID="numero">' +
+        '<Cell ss:StyleID="numero' +
+          (estilo === 'resultado'
+            ? 'Resultado'
+            : estilo === 'subtotal'
+              ? 'Subtotal'
+              : '') +
+        '">' +
           '<Data ss:Type="Number">' + numero + '</Data>' +
         '</Cell>'
       );
@@ -969,29 +1018,78 @@ function celulaExcel(texto, indice) {
   }
 
   return (
-    '<Cell><Data ss:Type="String">' +
+    '<Cell ss:StyleID="' + estilo + '"><Data ss:Type="String">' +
       escaparXml(valor) +
     '</Data></Cell>'
   );
 }
 
+function nomeModoExportacao(modo) {
+  const nomes = {
+    expandido: 'Níveis expandidos',
+    retraido: 'Níveis retraídos',
+    atual: 'Como está na tela'
+  };
+
+  return nomes[modo] || nomes.atual;
+}
+
+function formatarDataPlanilha(data) {
+  const partes = String(data || '').split('-');
+
+  return partes.length === 3
+    ? partes[2] + '/' + partes[1] + '/' + partes[0]
+    : data;
+}
+
 function criarPlanilhaExcel(modo) {
-  const cabecalhos = cabecalhosExcel();
+  const cabecalho = estruturaCabecalhoExcel();
+  const quantidadeColunas = 1 + cabecalho.indicadores.length;
   const linhas = Array.from(linhasDre.querySelectorAll('tr'))
     .filter((linha) => linhaDeveSerExportada(linha, modo))
-    .map((linha) => Array.from(linha.cells)
-      .map((celula) => textoCelula(celula))
-    );
+    .map((linha) => ({
+      valores: Array.from(linha.cells)
+        .map((celula) => textoCelula(celula)),
+      elemento: linha
+    }));
 
-  const linhasXml = [cabecalhos, ...linhas]
-    .map((linha, indice) => (
-      '<Row' + (indice === 0 ? ' ss:StyleID="cabecalho"' : '') + '>' +
-        cabecalhos.map((_, coluna) =>
-          celulaExcel(linha[coluna] || '', coluna)
+  const linhasDadosXml = linhas
+    .map((linha) => (
+      '<Row>' +
+        Array.from({ length: quantidadeColunas }, (_, coluna) =>
+          celulaExcel(
+            linha.valores[coluna] || '',
+            coluna,
+            estiloLinhaExcel(linha.elemento, coluna)
+          )
         ).join('') +
       '</Row>'
     ))
     .join('');
+
+  const cabecalhoPeriodoXml = cabecalho.periodos.map((periodo) => (
+    '<Cell ss:StyleID="cabecalhoPeriodo" ss:MergeAcross="' +
+      (periodo.colunas - 1) + '"><Data ss:Type="String">' +
+      escaparXml(periodo.nome) +
+    '</Data></Cell>'
+  )).join('');
+
+  const cabecalhoIndicadorXml = cabecalho.indicadores.map(
+    (indicador) => (
+      '<Cell ss:StyleID="cabecalhoIndicador">' +
+        '<Data ss:Type="String">' +
+          escaparXml(indicador) +
+        '</Data></Cell>'
+    )
+  ).join('');
+
+  const colunasXml =
+    '<Column ss:Width="245" />' +
+    cabecalho.indicadores.map((_, indice) =>
+      '<Column ss:Width="' +
+        (indice % 3 === 0 ? '105' : '68') +
+      '" />'
+    ).join('');
 
   return (
     '<?xml version="1.0"?>' +
@@ -999,19 +1097,107 @@ function criarPlanilhaExcel(modo) {
     '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ' +
       'xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
       '<Styles>' +
-        '<Style ss:ID="cabecalho">' +
-          '<Font ss:Bold="1" ss:Color="#FFFFFF" />' +
+        '<Style ss:ID="Default" ss:Name="Normal">' +
+          '<Font ss:FontName="Arial" ss:Size="10" ss:Color="#163A5A" />' +
+          '<Alignment ss:Vertical="Center" />' +
+        '</Style>' +
+        '<Style ss:ID="titulo">' +
+          '<Font ss:Bold="1" ss:Size="16" ss:Color="#FFFFFF" />' +
           '<Interior ss:Color="#163A5A" ss:Pattern="Solid" />' +
         '</Style>' +
+        '<Style ss:ID="informacao">' +
+          '<Font ss:Italic="1" ss:Color="#607A91" />' +
+        '</Style>' +
+        '<Style ss:ID="cabecalhoGrupo">' +
+          '<Font ss:Bold="1" ss:Color="#FFFFFF" />' +
+          '<Interior ss:Color="#163A5A" ss:Pattern="Solid" />' +
+          '<Alignment ss:Vertical="Center" ss:Horizontal="Left" />' +
+        '</Style>' +
+        '<Style ss:ID="cabecalhoPeriodo">' +
+          '<Font ss:Bold="1" ss:Color="#FFFFFF" />' +
+          '<Interior ss:Color="#163A5A" ss:Pattern="Solid" />' +
+          '<Alignment ss:Horizontal="Center" ss:Vertical="Center" />' +
+        '</Style>' +
+        '<Style ss:ID="cabecalhoIndicador">' +
+          '<Font ss:Bold="1" ss:Color="#315A78" />' +
+          '<Interior ss:Color="#E8F0F6" ss:Pattern="Solid" />' +
+          '<Alignment ss:Horizontal="Center" ss:Vertical="Center" />' +
+        '</Style>' +
+        '<Style ss:ID="primeira"><Alignment ss:Horizontal="Left" /></Style>' +
+        '<Style ss:ID="primeiraNivel1">' +
+          '<Alignment ss:Horizontal="Left" ss:Indent="1" />' +
+        '</Style>' +
+        '<Style ss:ID="primeiraNivel2">' +
+          '<Alignment ss:Horizontal="Left" ss:Indent="2" />' +
+        '</Style>' +
+        '<Style ss:ID="primeiraNivel3">' +
+          '<Alignment ss:Horizontal="Left" ss:Indent="3" />' +
+        '</Style>' +
+        '<Style ss:ID="primeiraSubtotal">' +
+          '<Font ss:Bold="1" />' +
+          '<Interior ss:Color="#EEF3F8" ss:Pattern="Solid" />' +
+        '</Style>' +
+        '<Style ss:ID="primeiraResultado">' +
+          '<Font ss:Bold="1" />' +
+          '<Interior ss:Color="#CFDFEE" ss:Pattern="Solid" />' +
+        '</Style>' +
+        '<Style ss:ID="corpo"></Style>' +
+        '<Style ss:ID="subtotal">' +
+          '<Font ss:Bold="1" />' +
+          '<Interior ss:Color="#EEF3F8" ss:Pattern="Solid" />' +
+        '</Style>' +
+        '<Style ss:ID="resultado">' +
+          '<Font ss:Bold="1" />' +
+          '<Interior ss:Color="#CFDFEE" ss:Pattern="Solid" />' +
+        '</Style>' +
         '<Style ss:ID="numero">' +
-          '<NumberFormat ss:Format="#.##0,00" />' +
+          '<Alignment ss:Horizontal="Right" />' +
+          '<NumberFormat ss:Format="#,##0.00" />' +
+        '</Style>' +
+        '<Style ss:ID="numeroSubtotal">' +
+          '<Font ss:Bold="1" />' +
+          '<Interior ss:Color="#EEF3F8" ss:Pattern="Solid" />' +
+          '<Alignment ss:Horizontal="Right" />' +
+          '<NumberFormat ss:Format="#,##0.00" />' +
+        '</Style>' +
+        '<Style ss:ID="numeroResultado">' +
+          '<Font ss:Bold="1" />' +
+          '<Interior ss:Color="#CFDFEE" ss:Pattern="Solid" />' +
+          '<Alignment ss:Horizontal="Right" />' +
+          '<NumberFormat ss:Format="#,##0.00" />' +
         '</Style>' +
       '</Styles>' +
       '<Worksheet ss:Name="DRE">' +
-        '<Table ss:ExpandedColumnCount="' + cabecalhos.length +
-          '" ss:ExpandedRowCount="' + (linhas.length + 1) + '">' +
-          linhasXml +
+        '<Table ss:ExpandedColumnCount="' + quantidadeColunas +
+          '" ss:ExpandedRowCount="' + (linhas.length + 5) + '">' +
+          colunasXml +
+          '<Row ss:Height="26"><Cell ss:StyleID="titulo" ss:MergeAcross="' +
+            (quantidadeColunas - 1) + '"><Data ss:Type="String">' +
+            'DRE — Demonstração do Resultado do Exercício' +
+          '</Data></Cell></Row>' +
+          '<Row><Cell ss:StyleID="informacao" ss:MergeAcross="' +
+            (quantidadeColunas - 1) + '"><Data ss:Type="String">' +
+            'Período: ' + formatarDataPlanilha(dataInicial.value) +
+            ' a ' + formatarDataPlanilha(dataFinal.value) +
+            ' | Visualização: ' + nomeModoExportacao(modo) +
+          '</Data></Cell></Row>' +
+          '<Row></Row>' +
+          '<Row ss:Height="22">' +
+            '<Cell ss:StyleID="cabecalhoGrupo" ss:MergeDown="1">' +
+              '<Data ss:Type="String">' +
+                escaparXml(cabecalho.grupo) +
+              '</Data></Cell>' +
+            cabecalhoPeriodoXml +
+          '</Row>' +
+          '<Row ss:Height="20">' + cabecalhoIndicadorXml + '</Row>' +
+          linhasDadosXml +
         '</Table>' +
+        '<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">' +
+          '<FreezePanes /><FrozenNoSplit />' +
+          '<SplitHorizontal>5</SplitHorizontal>' +
+          '<TopRowBottomPane>5</TopRowBottomPane>' +
+          '<Panes><Pane><Number>3</Number></Pane></Panes>' +
+        '</WorksheetOptions>' +
       '</Worksheet>' +
     '</Workbook>'
   );
