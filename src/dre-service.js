@@ -461,15 +461,22 @@ function listarMeses(inicio, fim) {
 }
 
 function subtrairUmAno(data) {
+  const texto = String(data || '').trim();
+
+  const eMes = /^\d{4}-\d{2}$/.test(texto);
+
   const dataUtc = new Date(
-    `${data}T00:00:00Z`
+    (eMes ? texto + '-01' : texto) + 'T00:00:00Z'
   );
 
   dataUtc.setUTCFullYear(
     dataUtc.getUTCFullYear() - 1
   );
 
-  return dataUtc.toISOString().slice(0, 7);
+  return dataUtc.toISOString().slice(
+    0,
+    eMes ? 7 : 10
+  );
 }
 
 function normalizarCodigo(valor) {
