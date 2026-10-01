@@ -267,6 +267,19 @@ tbody .linha-resultado td:first-child {
   background: #dce8f3;
 }
 
+.linha-resultado td {
+  background: #cfdfee;
+  color: #0d3658;
+  font-size: 14px;
+  font-weight: 700;
+  border-top: 2px solid #789bb7;
+  border-bottom: 1px solid #a9c1d5;
+}
+
+tbody .linha-resultado td:first-child {
+  background: #cfdfee;
+}
+
 thead tr:first-child th:not(:first-child) {
   text-align: center;
   background: #d5e2ed;
