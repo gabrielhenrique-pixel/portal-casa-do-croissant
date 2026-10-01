@@ -172,10 +172,15 @@ export function drePage() {
 }
 
 .expandir-dre {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   width: 24px;
-  min-height: 24px;
+  height: 24px;
+  vertical-align: middle;
+  appearance: none;
+  -webkit-appearance: none;
   margin-right: 8px;
   padding: 0;
   border: 1px solid #9db8cd;
