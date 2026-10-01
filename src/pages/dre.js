@@ -157,6 +157,40 @@ export function drePage() {
       font-weight: bold;
     }
 
+    .linha-filho {
+  display: none;
+}
+
+.linha-nivel-1 td:first-child {
+  padding-left: 34px;
+}
+
+.linha-nivel-2 td:first-child {
+  padding-left: 62px;
+  color: #45667f;
+  font-size: 12px;
+}
+
+.expandir-dre {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  min-height: 24px;
+  margin-right: 8px;
+  padding: 0;
+  border: 1px solid #9db8cd;
+  border-radius: 50%;
+  background: #fff;
+  color: #163a5a;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.espaco-expansao {
+  display: inline-block;
+  width: 32px;
+}
+
     .vazio {
       padding: 28px;
       color: #607a91;
@@ -317,81 +351,239 @@ export function drePage() {
     );
   }
 
-  function montarLinhas(dados) {
-    const ordem = [
-      { tipo: 'subtotal', chave: 'receitaBruta' },
-      { tipo: 'grupo', codigo: 1 },
-      { tipo: 'grupo', codigo: 2 },
+function montarLinhaDre(registro, opcoes, meses) {
+  const classes = [
+    opcoes.classe,
+    opcoes.pai ? 'linha-filho' : '',
+    'linha-nivel-' + opcoes.nivel
+  ].filter(Boolean).join(' ');
 
-      { tipo: 'subtotal', chave: 'deducoes' },
-      { tipo: 'grupo', codigo: 3 },
-      { tipo: 'grupo', codigo: 14 },
+  const atributos =
+    ' data-linha="' + opcoes.id + '"' +
+    (opcoes.pai
+      ? ' data-pai="' + opcoes.pai + '"'
+      : '') +
+    (opcoes.possuiFilhos
+      ? ' data-aberto="false"'
+      : '');
 
-      { tipo: 'resultado', chave: 'receitaLiquida' },
-
-      { tipo: 'subtotal', chave: 'custosProducao' },
-      { tipo: 'grupo', codigo: 4 },
-      { tipo: 'grupo', codigo: 5 },
-
-      { tipo: 'resultado', chave: 'resultadoBruto' },
-
-      { tipo: 'subtotal', chave: 'despesasGerais' },
-      { tipo: 'grupo', codigo: 6 },
-      { tipo: 'grupo', codigo: 7 },
-      { tipo: 'grupo', codigo: 8 },
-      { tipo: 'grupo', codigo: 9 },
-      { tipo: 'grupo', codigo: 13 },
-      { tipo: 'grupo', codigo: 17 },
-
-      { tipo: 'resultado', chave: 'resultadoOperacional' },
-
-      { tipo: 'subtotal', chave: 'receitasDespesasFinanceiras' },
-      { tipo: 'grupo', codigo: 10 },
-
-      { tipo: 'subtotal', chave: 'outrasReceitas' },
-      { tipo: 'grupo', codigo: 16 },
-
-      { tipo: 'resultado', chave: 'resultadoLiquido' },
-
-      { tipo: 'subtotal', chave: 'investimentos' },
-      { tipo: 'grupo', codigo: 11 },
-
-      { tipo: 'subtotal', chave: 'emprestimos' },
-      { tipo: 'grupo', codigo: 15 },
-
-      { tipo: 'subtotal', chave: 'impostos' },
-      { tipo: 'grupo', codigo: 12 },
-
-      { tipo: 'resultado', chave: 'resultadoFinal' }
-    ];
-
-    const linhas = [];
-
-    for (const item of ordem) {
-      const registro = item.tipo === 'grupo'
-        ? localizarGrupo(dados, item.codigo)
-        : dados.subtotais[item.chave];
-
-      if (!registro) {
-        continue;
-      }
-
-      const classe = item.tipo === 'resultado'
-        ? 'linha-resultado'
-        : item.tipo === 'subtotal'
-          ? 'linha-grupo'
-          : '';
-
-        linhas.push(
-    '<tr class="' + classe + '">' +
-      '<td>' + registro.nome + '</td>' +
-      montarCelulas(registro, dados.meses) +
+  return (
+    '<tr class="' + classes + '"' + atributos + '>' +
+      '<td>' +
+        controleExpansao(
+          opcoes.id,
+          opcoes.possuiFilhos
+        ) +
+        registro.nome +
+      '</td>' +
+      montarCelulas(registro, meses) +
     '</tr>'
   );
+}
+
+function montarLinhas(dados) {
+  const ordem = [
+    { tipo: 'subtotal', chave: 'receitaBruta' },
+    { tipo: 'grupo', codigo: 1, pai: 'receitaBruta' },
+    { tipo: 'grupo', codigo: 2, pai: 'receitaBruta' },
+
+    { tipo: 'subtotal', chave: 'deducoes' },
+    { tipo: 'grupo', codigo: 3, pai: 'deducoes' },
+    { tipo: 'grupo', codigo: 14, pai: 'deducoes' },
+
+    { tipo: 'resultado', chave: 'receitaLiquida' },
+
+    { tipo: 'subtotal', chave: 'custosProducao' },
+    { tipo: 'grupo', codigo: 4, pai: 'custosProducao' },
+    { tipo: 'grupo', codigo: 5, pai: 'custosProducao' },
+
+    { tipo: 'resultado', chave: 'resultadoBruto' },
+
+    { tipo: 'subtotal', chave: 'despesasGerais' },
+    { tipo: 'grupo', codigo: 6, pai: 'despesasGerais' },
+    { tipo: 'grupo', codigo: 7, pai: 'despesasGerais' },
+    { tipo: 'grupo', codigo: 8, pai: 'despesasGerais' },
+    { tipo: 'grupo', codigo: 9, pai: 'despesasGerais' },
+    { tipo: 'grupo', codigo: 13, pai: 'despesasGerais' },
+    { tipo: 'grupo', codigo: 17, pai: 'despesasGerais' },
+
+    { tipo: 'resultado', chave: 'resultadoOperacional' },
+
+    {
+      tipo: 'subtotal',
+      chave: 'receitasDespesasFinanceiras'
+    },
+    {
+      tipo: 'grupo',
+      codigo: 10,
+      pai: 'receitasDespesasFinanceiras'
+    },
+
+    { tipo: 'subtotal', chave: 'outrasReceitas' },
+    { tipo: 'grupo', codigo: 16, pai: 'outrasReceitas' },
+
+    { tipo: 'resultado', chave: 'resultadoLiquido' },
+
+    { tipo: 'subtotal', chave: 'investimentos' },
+    { tipo: 'grupo', codigo: 11, pai: 'investimentos' },
+
+    { tipo: 'subtotal', chave: 'emprestimos' },
+    { tipo: 'grupo', codigo: 15, pai: 'emprestimos' },
+
+    { tipo: 'subtotal', chave: 'impostos' },
+    { tipo: 'grupo', codigo: 12, pai: 'impostos' },
+
+    { tipo: 'resultado', chave: 'resultadoFinal' }
+  ];
+
+  const linhas = [];
+
+  for (const item of ordem) {
+    const registro = item.tipo === 'grupo'
+      ? localizarGrupo(dados, item.codigo)
+      : dados.subtotais[item.chave];
+
+    if (!registro) {
+      continue;
     }
 
-    return linhas.join('');
+    const id = item.tipo === 'grupo'
+      ? 'grupo-' + item.codigo
+      : item.chave;
+
+    const possuiFilhos = item.tipo === 'subtotal' ||
+      (
+        item.tipo === 'grupo' &&
+        Array.isArray(registro.detalhes) &&
+        registro.detalhes.length > 0
+      );
+
+    linhas.push(
+      montarLinhaDre(
+        registro,
+        {
+          id,
+          pai: item.pai || '',
+          nivel: item.tipo === 'grupo' ? 1 : 0,
+          possuiFilhos,
+          classe: item.tipo === 'resultado'
+            ? 'linha-resultado'
+            : item.tipo === 'subtotal'
+              ? 'linha-grupo'
+              : ''
+        },
+        dados.meses
+      )
+    );
+
+    if (item.tipo !== 'grupo') {
+      continue;
+    }
+
+    for (const detalhe of registro.detalhes || []) {
+      linhas.push(
+        montarLinhaDre(
+          detalhe,
+          {
+            id: 'natureza-' +
+              item.codigo + '-' +
+              detalhe.codigo,
+            pai: id,
+            nivel: 2,
+            possuiFilhos: false,
+            classe: ''
+          },
+          dados.meses
+        )
+      );
+    }
   }
+
+  return linhas.join('');
+}
+
+function atualizarBotaoExpansao(linha) {
+  const botao = linha.querySelector('.expandir-dre');
+
+  if (!botao) {
+    return;
+  }
+
+  const aberto = linha.dataset.aberto === 'true';
+
+  botao.textContent = aberto ? '−' : '+';
+
+  botao.setAttribute(
+    'aria-expanded',
+    String(aberto)
+  );
+}
+
+function ocultarDescendentes(id) {
+  const filhos = linhasDre.querySelectorAll(
+    '[data-pai="' + id + '"]'
+  );
+
+  filhos.forEach((filho) => {
+    filho.style.display = 'none';
+    filho.dataset.aberto = 'false';
+
+    atualizarBotaoExpansao(filho);
+
+    ocultarDescendentes(filho.dataset.linha);
+  });
+}
+
+function alternarLinhaDre(id) {
+  const linha = linhasDre.querySelector(
+    '[data-linha="' + id + '"]'
+  );
+
+  if (!linha) {
+    return;
+  }
+
+  const aberto = linha.dataset.aberto === 'true';
+
+  linha.dataset.aberto = aberto ? 'false' : 'true';
+
+  atualizarBotaoExpansao(linha);
+
+  if (aberto) {
+    ocultarDescendentes(id);
+    return;
+  }
+
+  const filhos = linhasDre.querySelectorAll(
+    '[data-pai="' + id + '"]'
+  );
+
+  filhos.forEach((filho) => {
+    filho.style.display = 'table-row';
+  });
+}
+
+linhasDre.addEventListener('click', (event) => {
+  const botao = event.target.closest('.expandir-dre');
+
+  if (!botao) {
+    return;
+  }
+
+  alternarLinhaDre(botao.dataset.toggle);
+});
+
+ function controleExpansao(id, possuiFilhos) {
+  if (!possuiFilhos) {
+    return '<span class="espaco-expansao"></span>';
+  }
+
+  return (
+    '<button type="button" class="expandir-dre" ' +
+      'data-toggle="' + id + '" ' +
+      'aria-expanded="false">+</button>'
+  );
+}
 
   async function carregarDre() {
     const parametros = new URLSearchParams({
