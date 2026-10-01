@@ -276,6 +276,10 @@ tbody .linha-resultado td:first-child {
   border-bottom: 1px solid #a9c1d5;
 }
 
+td.valor-negativo {
+  color: #b42318;
+}
+
 tbody .linha-resultado td:first-child {
   background: #cfdfee;
 }
@@ -432,6 +436,12 @@ tbody td:nth-child(3n + 2) {
   '</tr>';
   }
 
+  function classeResultado(valor) {
+  return Number(valor) < 0
+    ? 'valor-negativo'
+    : '';
+}
+
   function montarCelulas(item, meses) {
     return meses.map((mes) => {
       const indicador = item.indicadores?.[mes] || {
@@ -441,7 +451,9 @@ tbody td:nth-child(3n + 2) {
       };
 
       return (
-  '<td>' + formatarNumero(indicador.resultado) + '</td>' +
+  '<td class="' + classeResultado(indicador.resultado) + '">' +
+   formatarNumero(indicador.resultado) +
+  '</td>' +
   '<td>' + formatarPercentual(indicador.ah) + '</td>' +
   '<td>' + formatarPercentual(indicador.av) + '</td>'
 );
