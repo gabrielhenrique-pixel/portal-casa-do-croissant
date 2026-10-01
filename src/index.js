@@ -4093,133 +4093,216 @@ const APP_HTML = `<!doctype html>
       color: #52665d;
     }
 
-    .inicio-institucional {
-      position: relative;
+    .inicio-corporativo {
+      max-width: 1080px;
+    }
+
+    .inicio-corporativo__cabecalho {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 258px;
-      overflow: hidden;
-      padding: 42px 46px;
-      border-radius: 20px;
-      background: linear-gradient(125deg, #123d2d 0%, #1b5940 100%);
-      box-shadow: 0 14px 30px rgba(18, 61, 45, .15);
+      padding: 0 2px 17px;
+      border-bottom: 1px solid #dce6e0;
     }
 
-    .inicio-institucional::before,
-    .inicio-institucional::after {
-      position: absolute;
-      border: 1px solid rgba(255, 255, 255, .13);
-      border-radius: 50%;
-      content: '';
-    }
-
-    .inicio-institucional::before {
-      right: -125px;
-      bottom: -155px;
-      width: 390px;
-      height: 390px;
-    }
-
-    .inicio-institucional::after {
-      right: -31px;
-      bottom: -65px;
-      width: 250px;
-      height: 250px;
-    }
-
-    .inicio-institucional__texto {
-      position: relative;
-      z-index: 1;
-      max-width: 570px;
-    }
-
-    .inicio-institucional__texto > span {
-      color: #bde1cd;
-      font-size: 11px;
+    .inicio-corporativo__cabecalho > div:first-child > span,
+    .inicio-corporativo__sobretitulo {
+      color: #638075;
+      font-size: 10px;
       font-weight: 800;
-      letter-spacing: .1em;
+      letter-spacing: .09em;
     }
 
-    .inicio-institucional h2 {
-      margin: 18px 0 10px;
-      color: #fff;
-      font-size: clamp(28px, 4vw, 39px);
-      line-height: 1.12;
+    .inicio-corporativo__cabecalho h2 {
+      margin: 5px 0 0;
+      color: #17382a;
+      font-size: 22px;
     }
 
-    .inicio-institucional p {
-      max-width: 480px;
-      margin: 0;
-      color: #d8e9df;
-      font-size: 15px;
-      line-height: 1.6;
-    }
-
-    .inicio-institucional__selo {
-      position: relative;
-      z-index: 1;
-      display: grid;
-      width: 108px;
-      height: 108px;
-      flex: 0 0 108px;
-      place-items: center;
-      margin-left: 36px;
-      border: 1px solid rgba(255, 255, 255, .32);
-      border-radius: 50%;
-      background: rgba(255, 255, 255, .09);
-      color: #fff;
-    }
-
-    .inicio-institucional__selo strong {
-      margin-top: 21px;
-      font-size: 31px;
-      letter-spacing: -.08em;
-    }
-
-    .inicio-institucional__selo small {
-      margin-top: -28px;
-      color: #bedfcd;
-      font-size: 11px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .inicio-orientacao {
-      display: flex;
+    .inicio-corporativo__status {
+      display: inline-flex;
       align-items: center;
-      gap: 15px;
-      margin-top: 18px;
-      padding: 20px 22px;
-      border: 1px solid #d9e6de;
-      border-radius: 14px;
-      background: #fff;
-    }
-
-    .inicio-orientacao__icone {
-      display: grid;
-      width: 38px;
-      height: 38px;
-      flex: 0 0 38px;
-      place-items: center;
-      border-radius: 11px;
-      background: #e8f4ed;
-      color: #176144;
-      font-size: 20px;
+      gap: 7px;
+      padding: 7px 10px;
+      border: 1px solid #d5e8dc;
+      border-radius: 6px;
+      background: #f7fbf8;
+      color: #226748;
+      font-size: 12px;
       font-weight: 700;
     }
 
-    .inicio-orientacao strong {
+    .inicio-corporativo__status i,
+    .inicio-corporativo__legenda i {
       display: block;
-      color: #244136;
-      font-size: 14px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #2c9b61;
     }
 
-    .inicio-orientacao p {
+    .inicio-corporativo__boas-vindas {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 25px;
+      margin-top: 18px;
+      padding: 31px 34px;
+      border: 1px solid #dce7e1;
+      border-left: 5px solid #21714d;
+      border-radius: 9px;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(18, 61, 45, .035);
+    }
+
+    .inicio-corporativo__boas-vindas h3 {
+      margin: 7px 0 9px;
+      color: #163a2b;
+      font-size: 25px;
+    }
+
+    .inicio-corporativo__boas-vindas p {
+      max-width: 600px;
+      margin: 0;
+      color: #667a70;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .inicio-corporativo__identidade {
+      display: flex;
+      align-items: center;
+      min-width: 155px;
+      padding-left: 20px;
+      border-left: 1px solid #e2ebe5;
+      color: #315846;
+    }
+
+    .inicio-corporativo__identidade strong {
+      margin-right: 11px;
+      color: #176143;
+      font-size: 30px;
+      letter-spacing: -.08em;
+    }
+
+    .inicio-corporativo__identidade span {
+      color: #668074;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+
+    .inicio-corporativo__grade {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(240px, .85fr);
+      gap: 16px;
+      margin-top: 17px;
+    }
+
+    .inicio-corporativo__bloco {
+      padding: 24px;
+      border: 1px solid #dce7e1;
+      border-radius: 9px;
+      background: #fff;
+    }
+
+    .inicio-corporativo__bloco > header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .inicio-corporativo__icone {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 34px;
+      place-items: center;
+      border-radius: 6px;
+      background: #eaf2ed;
+      color: #285e44;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .inicio-corporativo__icone--verde {
+      background: #dff0e6;
+      color: #167146;
+    }
+
+    .inicio-corporativo__bloco h3 {
+      margin: 0;
+      color: #264535;
+      font-size: 15px;
+    }
+
+    .inicio-corporativo__bloco header p,
+    .inicio-corporativo__bloco--apoio > p {
       margin: 4px 0 0;
-      color: #6c7f74;
-      font-size: 13px;
+      color: #74847b;
+      font-size: 12px;
       line-height: 1.45;
+    }
+
+    .inicio-corporativo__lista {
+      display: grid;
+      gap: 0;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .inicio-corporativo__lista li {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      padding: 12px 0;
+      border-top: 1px solid #edf2ef;
+    }
+
+    .inicio-corporativo__lista li > span {
+      min-width: 25px;
+      padding-top: 1px;
+      color: #2b7753;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .inicio-corporativo__lista strong,
+    .inicio-corporativo__lista small {
+      display: block;
+    }
+
+    .inicio-corporativo__lista strong {
+      color: #2c4c3b;
+      font-size: 13px;
+    }
+
+    .inicio-corporativo__lista small {
+      margin-top: 3px;
+      color: #718077;
+      font-size: 12px;
+    }
+
+    .inicio-corporativo__bloco--apoio {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      background: #f7faf8;
+    }
+
+    .inicio-corporativo__bloco--apoio h3 { margin-top: 17px; }
+
+    .inicio-corporativo__legenda {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: auto;
+      padding-top: 22px;
+      color: #5c7669;
+      font-size: 12px;
+      font-weight: 700;
     }
 
     .grade {
@@ -4417,29 +4500,25 @@ const APP_HTML = `<!doctype html>
         align-items: flex-start;
       }
 
-      .inicio-institucional {
-        min-height: 245px;
-        padding: 30px 25px;
+      .inicio-corporativo__cabecalho {
+        align-items: flex-start;
+        gap: 12px;
       }
 
-      .inicio-institucional__selo {
-        position: absolute;
-        right: 22px;
-        bottom: 20px;
-        width: 78px;
-        height: 78px;
-        margin: 0;
-        opacity: .8;
+      .inicio-corporativo__boas-vindas {
+        align-items: flex-start;
+        padding: 25px 22px;
       }
 
-      .inicio-institucional__selo strong { font-size: 24px; }
+      .inicio-corporativo__boas-vindas h3 { font-size: 22px; }
 
-      .inicio-institucional__selo small {
-        margin-top: -21px;
-        font-size: 9px;
+      .inicio-corporativo__identidade {
+        display: none;
       }
 
-      .inicio-institucional__texto { padding-right: 52px; }
+      .inicio-corporativo__grade {
+        grid-template-columns: 1fr;
+      }
 
       .linha-form,
       .grade-dashboards {
