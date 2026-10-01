@@ -178,6 +178,9 @@ export function drePage() {
   box-sizing: border-box;
   width: 24px;
   height: 24px;
+  min-height: 24px;
+  max-height: 24px;
+  flex: 0 0 24px;
   vertical-align: middle;
   appearance: none;
   -webkit-appearance: none;
