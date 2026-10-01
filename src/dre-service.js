@@ -115,13 +115,19 @@ export async function listarDre(request, env) {
   const meses = listarMeses(inicio, fim);
 
   const valoresPorGrupo = new Map();
+const detalhesPorGrupo = new Map();
 
-  for (const grupo of Object.keys(DRE_GRUPOS)) {
-    valoresPorGrupo.set(
-      Number(grupo),
-      criarSerieVazia(mesesConsulta)
-    );
-  }
+for (const grupo of Object.keys(DRE_GRUPOS)) {
+  valoresPorGrupo.set(
+    Number(grupo),
+    criarSerieVazia(mesesConsulta)
+  );
+
+  detalhesPorGrupo.set(
+    Number(grupo),
+    new Map()
+  );
+}
 
   const naoClassificados = criarSerieVazia(
     mesesConsulta
@@ -130,7 +136,10 @@ export async function listarDre(request, env) {
   for (const linha of linhas) {
     const mes = String(linha[0] || '').slice(0, 7);
     const codigoNatureza = normalizarCodigo(linha[1]);
-    const valor = numero(linha[2]);
+    const nomeNatureza = String(
+          linha[2] || 'Sem descrição'
+    ).trim() || 'Sem descrição';
+    const valor = numero(linha[3]);
     const grupo = identificarGrupoDre(codigoNatureza);
 
     if (!mes || !mesesConsulta.includes(mes)) {
@@ -151,6 +160,24 @@ export async function listarDre(request, env) {
       mes,
       (serie.get(mes) || 0) + valor
     );
+
+    const detalhes = detalhesPorGrupo.get(grupo);
+
+if (!detalhes.has(codigoNatureza)) {
+  detalhes.set(codigoNatureza, {
+    codigo: codigoNatureza,
+    nome: nomeNatureza,
+    valores: criarSerieVazia(mesesConsulta)
+  });
+}
+
+    const detalhe = detalhes.get(codigoNatureza);
+
+detalhe.valores.set(
+  mes,
+  (detalhe.valores.get(mes) || 0) + valor
+);
+    
   }
 
   const valoresPorNv2 = new Map();
@@ -249,22 +276,44 @@ export async function listarDre(request, env) {
     resultadoFinal
   };
 
-  const grupos = Array.from(
-    valoresPorGrupo.entries()
-  ).map(([codigo, valores]) => ({
+  const receitaBruta = receitaBrutaSerie(
+  valoresPorNv2.get('receitaBruta'),
+  mesesConsulta
+);
+
+const grupos = Array.from(
+  valoresPorGrupo.entries()
+).map(([codigo, valores]) => {
+  const detalhes = Array.from(
+    detalhesPorGrupo.get(codigo).values()
+  ).sort((primeiro, segundo) =>
+    primeiro.codigo.localeCompare(
+      segundo.codigo,
+      'pt-BR',
+      { numeric: true }
+    )
+  ).map((detalhe) => ({
+    codigo: detalhe.codigo,
+    nome: detalhe.nome,
+    indicadores: calcularIndicadores(
+      detalhe.valores,
+      meses,
+      receitaBruta
+    )
+  }));
+
+  return {
     codigo,
     nome: DRE_GRUPOS[codigo].nome,
     nv2: DRE_GRUPOS[codigo].nv2,
-    valores: valoresVisiveis(valores, meses),
     indicadores: calcularIndicadores(
       valores,
       meses,
-      receitaBrutaSerie(
-        valoresPorNv2.get('receitaBruta'),
-        mesesConsulta
-      )
-    )
-  }));
+      receitaBruta
+    ),
+    detalhes
+  };
+});
 
   const subtotais = {};
 
@@ -323,6 +372,7 @@ function montarSqlDre(inicio, fim, empresa) {
     'SELECT',
     "  TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM') AS MES,",
     '  FIN.CODNAT AS CODIGO_NATUREZA,',
+    '  NAT.DESCRNAT AS NOME_NATUREZA,',
     '  SUM(',
     '    NVL(FIN.VLRDESDOB, 0) *',
     '    NVL(FIN.RECDESP, 0)',
@@ -330,13 +380,16 @@ function montarSqlDre(inicio, fim, empresa) {
     'FROM TGFFIN TFIN',
     'LEFT JOIN VGFFINRAT FIN',
     '  ON FIN.NUFIN = TFIN.NUFIN',
+    'LEFT JOIN TGFNAT NAT',
+    '  ON NAT.CODNAT = FIN.CODNAT',
     "WHERE FIN.PROVISAO = 'N'",
     `  AND TFIN.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
     `  AND TFIN.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
     filtroEmpresa,
     'GROUP BY',
     "  TO_CHAR(TRUNC(TFIN.DTNEG, 'MM'), 'YYYY-MM'),",
-    '  FIN.CODNAT',
+    '  FIN.CODNAT,',
+    '  NAT.DESCRNAT',
     'ORDER BY',
     '  MES,',
     '  CODIGO_NATUREZA'
