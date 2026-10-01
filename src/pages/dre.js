@@ -132,7 +132,7 @@ export function drePage() {
       background: #e8f0f6;
       color: #315a78;
       text-align: right;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     th:first-child,
@@ -144,7 +144,7 @@ export function drePage() {
       padding: 11px 14px;
       border-top: 1px solid #dce6ee;
       text-align: right;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .linha-grupo {
@@ -168,7 +168,7 @@ export function drePage() {
 .linha-nivel-2 td:first-child {
   padding-left: 62px;
   color: #45667f;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .expandir-dre {
