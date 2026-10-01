@@ -1,5 +1,5 @@
 import { carregarClientesRentabilidade } from './clientes-rentabilidade.js';
-import { buscarCmvUnitario } from './produtos-cmv-rentabilidade.js';
+import { listarCmvProdutosConfigurados } from './produtos-painel-service.js';
 
 const IMPOSTOS_PADRAO = 0.12;
 const META_MARGEM = 0.20;
@@ -31,9 +31,10 @@ export async function listarRentabilidadeSkuSankhya(request, env, session) {
   try {
     const accessToken = await obterTokenSankhya(env);
 
-    const [linhas, clientes] = await Promise.all([
+    const [linhas, clientes, cmvPorProduto] = await Promise.all([
       executarConsultaSankhya(accessToken, montarSqlVendas(inicio, fim)),
-      carregarClientesRentabilidade(env)
+      carregarClientesRentabilidade(env),
+      listarCmvProdutosConfigurados(env)
     ]);
 
     const clientesPorCodigo = new Map(
@@ -44,7 +45,11 @@ export async function listarRentabilidadeSkuSankhya(request, env, session) {
     );
 
     const items = linhas.map((linha) =>
-      calcularLinhaRentabilidadeSku(linha, clientesPorCodigo)
+      calcularLinhaRentabilidadeSku(
+        linha,
+        clientesPorCodigo,
+        cmvPorProduto
+      )
     );
 
     return responderJson({
@@ -88,7 +93,11 @@ function montarSqlVendas(inicio, fim) {
   ].join(String.fromCharCode(10));
 }
 
-export function calcularLinhaRentabilidadeSku(linha, clientesPorCodigo) {
+export function calcularLinhaRentabilidadeSku(
+  linha,
+  clientesPorCodigo,
+  cmvPorProduto = new Map()
+) {
   const codigoParceiro = String(linha[2] || '').trim();
   const produto = String(linha[5] || '');
   const quantidade = numeroSankhya(linha[6]);
@@ -102,7 +111,10 @@ export function calcularLinhaRentabilidadeSku(linha, clientesPorCodigo) {
   const impostos = faturamento * IMPOSTOS_PADRAO;
   const acordos = 0;
   const receitaLiquida = faturamento - impostos - acordos - valorSt;
-  const cmvUnitario = buscarCmvUnitario(produto);
+  const codigoProduto = String(linha[4] || '').trim();
+  const cmvUnitario = numeroSankhya(
+    cmvPorProduto.get(codigoProduto)
+  );
   const cmvTotal = quantidade * cmvUnitario;
   const custoPromotoria = faturamento * percentualPromotoria;
   const custoContrato = faturamento * percentualContrato;
@@ -118,7 +130,7 @@ export function calcularLinhaRentabilidadeSku(linha, clientesPorCodigo) {
     numeroNota: String(linha[1] || ''),
     codigoParceiro,
     parceiro: String(linha[3] || ''),
-    codigoProduto: String(linha[4] || ''),
+    codigoProduto,
     produto,
     quantidade,
     valorLiquido,

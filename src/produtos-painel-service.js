@@ -30,9 +30,15 @@ export async function garantirCadastroProdutos(env) {
   );
 
   if (!possuiCmv) {
-    await env.DB.prepare(
-      'ALTER TABLE produtos_painel_config ADD COLUMN cmv REAL'
-    ).run();
+    try {
+      await env.DB.prepare(
+        'ALTER TABLE produtos_painel_config ADD COLUMN cmv REAL'
+      ).run();
+    } catch (erro) {
+      if (!/duplicate column name/i.test(String(erro?.message || erro))) {
+        throw erro;
+      }
+    }
   }
 }
 
@@ -211,6 +217,24 @@ export async function listarCadastroProdutos(env) {
       (a, b) => a.localeCompare(b, 'pt-BR')
     )
   };
+}
+
+export async function listarCmvProdutosConfigurados(env) {
+  await garantirCadastroProdutos(env);
+
+  const cadastro = await env.DB.prepare(`
+    SELECT codigo_produto, cmv
+    FROM produtos_painel_config
+    WHERE cmv IS NOT NULL
+      AND cmv >= 0
+  `).all();
+
+  return new Map(
+    (cadastro.results || []).map(item => [
+      String(item.codigo_produto || '').trim(),
+      Number(item.cmv)
+    ]).filter(([, cmv]) => Number.isFinite(cmv))
+  );
 }
 
 export async function salvarConfiguracaoProduto(

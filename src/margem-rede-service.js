@@ -1,6 +1,7 @@
 import { carregarClientesRentabilidade } from './clientes-rentabilidade.js';
 import { listarInvestimentosDaMargemRede } from './investimentos-rentabilidade.js';
 import { calcularLinhaRentabilidadeSku } from './rentabilidade-sku-service.js';
+import { listarCmvProdutosConfigurados } from './produtos-painel-service.js';
 
 const REDES_MODELO = [
   'ALIMAX', 'ANGELONI', 'ANGELONI SC', 'ARCHER', 'ASSAÍ', 'BAVARESCO',
@@ -42,10 +43,11 @@ export async function listarMargemRedeSankhya(request, env, session) {
   }
 
   try {
-    const [clientes, investimentos, accessToken] = await Promise.all([
+    const [clientes, investimentos, accessToken, cmvPorProduto] = await Promise.all([
   carregarClientesRentabilidade(env),
   listarInvestimentosDaMargemRede(env, inicio, fim),
-  obterTokenSankhya(env)
+  obterTokenSankhya(env),
+  listarCmvProdutosConfigurados(env)
 ]);
 
     const [linhasVendas, linhasDevolucoes, linhasFrete] = await Promise.all([
@@ -91,7 +93,11 @@ clientes.forEach((cliente) => {
       const codigoParceiro = String(valores[2] || '').trim();
       const parceiro = String(valores[3] || '');
       const cadastro = clientesPorCodigo.get(codigoParceiro);
-      const item = calcularLinhaRentabilidadeSku(valores, clientesPorCodigo);
+      const item = calcularLinhaRentabilidadeSku(
+        valores,
+        clientesPorCodigo,
+        cmvPorProduto
+      );
       faturamentoGeral += item.faturamento;
       const resumo = resumoDaRede(resumoPorRede, cadastro?.rede);
 
@@ -107,7 +113,12 @@ clientes.forEach((cliente) => {
 
       resumo.faturamentoBruto += item.faturamento;
       resumo.receitaLiquida += item.receitaLiquida;
-      resumo.resultadoResumo += item.resultado;
+      resumo.quantidade += item.quantidade;
+      resumo.impostos += item.impostos;
+      resumo.cmvTotal += item.cmvTotal;
+      resumo.custoPromotoria += item.custoPromotoria;
+      resumo.custoContrato += item.custoContrato;
+      resumo.custoComissao += item.custoComissao;
       resumo.faturamentoPorParceiro.set(
         codigoParceiro,
         (resumo.faturamentoPorParceiro.get(codigoParceiro) || 0) +
@@ -221,7 +232,12 @@ function novoResumo(rede) {
     faturamentoBruto: 0,
     devolucoes: 0,
     receitaLiquida: 0,
-    resultadoResumo: 0,
+    quantidade: 0,
+    impostos: 0,
+    cmvTotal: 0,
+    custoPromotoria: 0,
+    custoContrato: 0,
+    custoComissao: 0,
     investimentos: 0,
     frete: 0,
     faturamentoPorParceiro: new Map()
@@ -236,13 +252,16 @@ function finalizarResumo(resumo, totalClientes) {
   const receitaLiquida = limparMenosZero(
     resumo.receitaLiquida - resumo.devolucoes
   );
-  const resultadoResumo = limparMenosZero(
-    resumo.resultadoResumo - resumo.devolucoes
-  );
+  const impostos = limparMenosZero(resumo.impostos);
+  const cmvTotal = limparMenosZero(resumo.cmvTotal);
+  const custoPromotoria = limparMenosZero(resumo.custoPromotoria);
+  const custoContrato = limparMenosZero(resumo.custoContrato);
+  const custoComissao = limparMenosZero(resumo.custoComissao);
   const investimentos = limparMenosZero(resumo.investimentos);
   const frete = limparMenosZero(resumo.frete);
   const resultadoFinal = limparMenosZero(
-    resultadoResumo - investimentos - frete
+    receitaLiquida - cmvTotal - custoPromotoria - custoContrato -
+      custoComissao - investimentos - frete
   );
 
   return {
@@ -250,7 +269,23 @@ function finalizarResumo(resumo, totalClientes) {
     faturamentoBruto: limparMenosZero(resumo.faturamentoBruto),
     devolucoes: limparMenosZero(resumo.devolucoes),
     receitaLiquida,
-    resultadoResumo,
+    impostos,
+    cmvUnitario: resumo.quantidade === 0
+      ? null
+      : limparMenosZero(cmvTotal / resumo.quantidade),
+    cmvTotal,
+    percentualPromotoria: resumo.faturamentoBruto === 0
+      ? null
+      : limparMenosZero(custoPromotoria / resumo.faturamentoBruto),
+    custoPromotoria,
+    percentualContrato: resumo.faturamentoBruto === 0
+      ? null
+      : limparMenosZero(custoContrato / resumo.faturamentoBruto),
+    custoContrato,
+    percentualComissao: resumo.faturamentoBruto === 0
+      ? null
+      : limparMenosZero(custoComissao / resumo.faturamentoBruto),
+    custoComissao,
     investimentos,
     frete,
     resultadoFinal,

@@ -232,7 +232,7 @@ export function margemRedePage() {
 
     table {
       width:100%;
-      min-width:1190px;
+      min-width:2180px;
       border-collapse:collapse;
       font-size:13px;
     }
@@ -414,7 +414,15 @@ export function margemRedePage() {
             <th>Fat Bruto</th>
             <th>Devoluções</th>
             <th>Receita Líquida</th>
-            <th>Resultado do resumo</th>
+            <th>Impostos</th>
+            <th>CMV Unit.</th>
+            <th>CMV Total</th>
+            <th>Promotoria (%)</th>
+            <th>Custo Promotoria</th>
+            <th>Contrato (%)</th>
+            <th>Custo Contrato</th>
+            <th>Comissão (%)</th>
+            <th>Custo Comissão</th>
             <th>Investimentos</th>
             <th>Frete</th>
             <th>Resultado Final</th>
@@ -500,7 +508,7 @@ export function margemRedePage() {
           var semDados = document.createElement('tr');
           semDados.className = 'sem-dados';
           var coluna = celula('', 'Nenhuma rede encontrada no período.');
-          coluna.colSpan = 11;
+          coluna.colSpan = 19;
           semDados.appendChild(coluna);
           linhasTabela.appendChild(semDados);
           return;
@@ -512,7 +520,15 @@ export function margemRedePage() {
           linha.appendChild(celula(negativo(rede.faturamentoBruto), moeda(rede.faturamentoBruto)));
           linha.appendChild(celula('devolucao', moeda(rede.devolucoes)));
           linha.appendChild(celula(negativo(rede.receitaLiquida), moeda(rede.receitaLiquida)));
-          linha.appendChild(celula(negativo(rede.resultadoResumo), moeda(rede.resultadoResumo)));
+          linha.appendChild(celula(negativo(rede.impostos), moeda(rede.impostos)));
+          linha.appendChild(celula(negativo(rede.cmvUnitario), moeda(rede.cmvUnitario)));
+          linha.appendChild(celula(negativo(rede.cmvTotal), moeda(rede.cmvTotal)));
+          linha.appendChild(celula('', percentual(rede.percentualPromotoria)));
+          linha.appendChild(celula(negativo(rede.custoPromotoria), moeda(rede.custoPromotoria)));
+          linha.appendChild(celula('', percentual(rede.percentualContrato)));
+          linha.appendChild(celula(negativo(rede.custoContrato), moeda(rede.custoContrato)));
+          linha.appendChild(celula('', percentual(rede.percentualComissao)));
+          linha.appendChild(celula(negativo(rede.custoComissao), moeda(rede.custoComissao)));
           linha.appendChild(celula(negativo(rede.investimentos), moeda(rede.investimentos)));
           linha.appendChild(celula(negativo(rede.frete), moeda(rede.frete)));
           linha.appendChild(celula(negativo(rede.resultadoFinal), moeda(rede.resultadoFinal)));
