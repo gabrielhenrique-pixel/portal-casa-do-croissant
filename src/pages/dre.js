@@ -307,6 +307,15 @@ tbody td:nth-child(3n + 2) {
       color: #607a91;
       text-align: center;
     }
+
+   tbody tr:hover td {
+  background: #eaf4ff;
+}
+
+tbody tr:hover td:first-child {
+  background: #eaf4ff;
+}
+    
   </style>
 </head>
 
