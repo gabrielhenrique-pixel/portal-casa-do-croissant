@@ -316,6 +316,28 @@ tbody tr:hover td:nth-child(2) {
       z-index:1;
     }
 
+    tbody tr.linha-total td {
+  border-top: 2px solid var(--azul);
+  background: #dcebf6;
+  color: #102e49;
+  font-weight: 700;
+}
+
+tbody tr.linha-total td:first-child {
+  z-index: 2;
+  background: var(--azul-escuro);
+  color: #fff;
+}
+
+tbody tr.linha-total td:nth-child(2) {
+  z-index: 2;
+  background: #dcebf6;
+}
+
+tbody tr.linha-total td.negativo {
+  color: var(--vermelho);
+}
+
     td.devolucao, td.negativo { color:var(--vermelho); }
     td.margem-critica { background:#f4cccc; color:var(--vermelho); font-weight:700; }
     td.margem-alerta { background:#fff2cc; color:var(--amarelo); font-weight:700; }
@@ -608,8 +630,95 @@ tbody tr:hover td:nth-child(2) {
           linha.appendChild(celula(negativo(rede.participacao), percentual(rede.participacao)));
           linha.appendChild(celula('', inteiro(rede.clientesPositivados)));
           linhasTabela.appendChild(linha);
-        });
+               });
+
+        adicionarLinhaTotalMargem(redes);
       }
+
+      function numeroTotalMargem(valor) {
+  var numero = Number(valor);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+function adicionarLinhaTotalMargem(redes) {
+  var total = redes.reduce(function(acumulado, rede) {
+    acumulado.quantidade += numeroTotalMargem(rede.quantidade);
+    acumulado.faturamentoBruto += numeroTotalMargem(rede.faturamentoBruto);
+    acumulado.devolucoes += numeroTotalMargem(rede.devolucoes);
+    acumulado.receitaLiquida += numeroTotalMargem(rede.receitaLiquida);
+    acumulado.impostos += numeroTotalMargem(rede.impostos);
+    acumulado.cmvTotal += numeroTotalMargem(rede.cmvTotal);
+    acumulado.custoPromotoria += numeroTotalMargem(rede.custoPromotoria);
+    acumulado.custoContrato += numeroTotalMargem(rede.custoContrato);
+    acumulado.custoComissao += numeroTotalMargem(rede.custoComissao);
+    acumulado.investimentos += numeroTotalMargem(rede.investimentos);
+    acumulado.frete += numeroTotalMargem(rede.frete);
+    acumulado.resultadoFinal += numeroTotalMargem(rede.resultadoFinal);
+    acumulado.participacao += numeroTotalMargem(rede.participacao);
+    acumulado.clientesPositivados += numeroTotalMargem(rede.clientesPositivados);
+    return acumulado;
+  }, {
+    quantidade: 0,
+    faturamentoBruto: 0,
+    devolucoes: 0,
+    receitaLiquida: 0,
+    impostos: 0,
+    cmvTotal: 0,
+    custoPromotoria: 0,
+    custoContrato: 0,
+    custoComissao: 0,
+    investimentos: 0,
+    frete: 0,
+    resultadoFinal: 0,
+    participacao: 0,
+    clientesPositivados: 0
+  });
+
+  var cmvUnitario = total.quantidade
+    ? total.cmvTotal / total.quantidade
+    : null;
+
+  var percentualPromotoria = total.faturamentoBruto
+    ? total.custoPromotoria / total.faturamentoBruto
+    : null;
+
+  var percentualContrato = total.faturamentoBruto
+    ? total.custoContrato / total.faturamentoBruto
+    : null;
+
+  var percentualComissao = total.faturamentoBruto
+    ? total.custoComissao / total.faturamentoBruto
+    : null;
+
+  var margem = total.receitaLiquida
+    ? total.resultadoFinal / Math.abs(total.receitaLiquida)
+    : null;
+
+  var linha = document.createElement('tr');
+  linha.className = 'linha-total';
+
+  linha.appendChild(celula('rede total-titulo', 'TOTAL (' + redes.length + ')'));
+  linha.appendChild(celula(negativo(total.faturamentoBruto), moeda(total.faturamentoBruto)));
+  linha.appendChild(celula('devolucao', moeda(total.devolucoes)));
+  linha.appendChild(celula(negativo(total.receitaLiquida), moeda(total.receitaLiquida)));
+  linha.appendChild(celula(negativo(total.impostos), moeda(total.impostos)));
+  linha.appendChild(celula('', cmvUnitario === null ? '—' : moeda(cmvUnitario)));
+  linha.appendChild(celula(negativo(total.cmvTotal), moeda(total.cmvTotal)));
+  linha.appendChild(celula('', percentual(percentualPromotoria)));
+  linha.appendChild(celula(negativo(total.custoPromotoria), moeda(total.custoPromotoria)));
+  linha.appendChild(celula('', percentual(percentualContrato)));
+  linha.appendChild(celula(negativo(total.custoContrato), moeda(total.custoContrato)));
+  linha.appendChild(celula('', percentual(percentualComissao)));
+  linha.appendChild(celula(negativo(total.custoComissao), moeda(total.custoComissao)));
+  linha.appendChild(celula(negativo(total.investimentos), moeda(total.investimentos)));
+  linha.appendChild(celula(negativo(total.frete), moeda(total.frete)));
+  linha.appendChild(celula(negativo(total.resultadoFinal), moeda(total.resultadoFinal)));
+  linha.appendChild(celula(classeMargem(margem), percentual(margem)));
+  linha.appendChild(celula('', percentual(total.participacao)));
+  linha.appendChild(celula('', inteiro(total.clientesPositivados)));
+
+  linhasTabela.appendChild(linha);
+}
 
       function colunaXlsxMargem(indice) {
         var resultado = '';
