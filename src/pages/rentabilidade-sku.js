@@ -165,10 +165,7 @@ export function rentabilidadeSkuPage() {
       white-space: nowrap;
     }
 
-tfoot td {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
+tbody tr.linha-total td {
   padding: 10px 8px;
   border: 1px solid #a9c6da;
   border-top: 2px solid var(--azul);
@@ -179,32 +176,32 @@ tfoot td {
   white-space: nowrap;
 }
 
-tfoot td.total-titulo {
+tbody tr.linha-total td.total-titulo {
   background: var(--azul-escuro);
   color: #fff;
   text-align: left;
 }
 
-tfoot td.total-vazio {
+tbody tr.linha-total td.total-vazio {
   color: #6a7f8e;
   text-align: center;
 }
 
-tfoot td.negativo {
+tbody tr.linha-total td.negativo {
   color: #c00000;
 }
 
-tfoot td.margem-critica {
+tbody tr.linha-total td.margem-critica {
   background: #f4cccc;
   color: #c00000;
 }
 
-tfoot td.margem-alerta {
+tbody tr.linha-total td.margem-alerta {
   background: #fff2cc;
   color: #8a5b00;
 }
 
-tfoot td.margem-boa {
+tbody tr.linha-total td.margem-boa {
   background: #e2f0d9;
   color: #25713b;
 }
@@ -561,9 +558,6 @@ tfoot td.margem-boa {
           </tr>
         </thead>
         <tbody id="linhasTabela"></tbody>
-        <tfoot>
-         <tr id="totaisTabela"></tr>
-        </tfoot>
       </table>
     </section>
   </main>
@@ -575,7 +569,6 @@ tfoot td.margem-boa {
       var fim = document.getElementById('fim');
       var estado = document.getElementById('estado');
       var linhasTabela = document.getElementById('linhasTabela');
-      var totaisTabela = document.getElementById('totaisTabela');
       var exportarExcel = document.getElementById('exportarExcel');
       var quantidadeColunas = 25;
 
@@ -981,7 +974,8 @@ function renderizarTotais(itens) {
   adicionarCelula(linha, formatarPercentual(metaMargem));
   adicionarCelula(linha, formatarPercentual(gapMargem), classeNegativa(gapMargem));
 
-  totaisTabela.appendChild(linha);
+  linha.classList.add('linha-total');
+  linhasTabela.appendChild(linha);
 }
 
 function aplicarFiltrosTabela() {
