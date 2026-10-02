@@ -98,13 +98,10 @@ async function obterVendedorVinculado(env, userId) {
   await garantirVinculosVendedores(env);
 
   const vinculo = await env.DB.prepare(
-    `SELECT usuarios_vendedores.codigo_vendedor
-     FROM usuarios_vendedores
-     INNER JOIN users ON users.id = usuarios_vendedores.user_id
-     WHERE usuarios_vendedores.user_id = ?
-       AND users.role = 'Vendedor'`
-  ).bind(userId).first();
-
+  `SELECT codigo_vendedor
+   FROM usuarios_vendedores
+   WHERE user_id = ?`
+).bind(userId).first();
   return vinculo?.codigo_vendedor
     ? String(vinculo.codigo_vendedor)
     : '';
@@ -441,7 +438,12 @@ if (
     return redirectToPortal();
   }
 
-  if (acesso.session.role === 'Vendedor') {
+  const vendedorVinculado = await obterVendedorVinculado(
+  env,
+  acesso.session.user_id
+);
+
+if (vendedorVinculado) {
   return redirectToPortal();
 }
 
@@ -549,7 +551,12 @@ if (url.pathname === '/api/vendas/metas-painel') {
     }, 403);
   }
 
-  if (acesso.session.role === 'Vendedor') {
+  const vendedorVinculado = await obterVendedorVinculado(
+  env,
+  acesso.session.user_id
+);
+
+if (vendedorVinculado) {
   return json({
     error: 'Vendedores não podem consultar ou alterar metas.'
   }, 403);
@@ -2561,6 +2568,9 @@ async function createUser(request, env) {
   const password = String(data.password || '');
   const role = String(data.role || 'Colaborador');
   const codigoVendedor = String(data.codigoVendedor || '').trim();
+  const roleBanco = role === 'Vendedor'
+  ? 'Colaborador'
+  : role;
 
   validateAccount(username, email, password);
 
@@ -2598,7 +2608,7 @@ async function createUser(request, env) {
         id,
         username,
         email,
-        role,
+        roleBanco,
         passwordHash,
         salt,
         createdAt
