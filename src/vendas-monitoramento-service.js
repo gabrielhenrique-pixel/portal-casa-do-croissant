@@ -79,10 +79,6 @@ export async function listarMonitoramentoVendasSankhya(
     ? '  AND CAB.CODVEND = ' + Number(vendedorSelecionado)
     : '';
 
-  const filtroVendedorNoRanking = vendedorBloqueado
-  ? filtroVendedor
-  : '';
-
   const sqlVendedores = [
     'SELECT',
     '  CAB.CODVEND AS CODIGO_VENDEDOR,',
@@ -96,7 +92,6 @@ export async function listarMonitoramentoVendasSankhya(
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER IN (1101, 1107)',
-    filtroVendedorNoRanking,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
@@ -143,7 +138,6 @@ export async function listarMonitoramentoVendasSankhya(
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER IN (1101, 1107)',
-    filtroVendedorNoRanking,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY VENDEDOR'
   ].join('\n');
@@ -236,17 +230,22 @@ const devolucoes = {
     .map((linha) => {
       const codigoVendedor = String(linha[0] || '');
       const meta = metasPorVendedor.get(codigoVendedor) || 0;
-      const faturamento = numero(linha[2]);
+      const faturamentoReal = numero(linha[2]);
+const podeVerFaturamento =
+  !vendedorBloqueado ||
+  codigoVendedor === vendedorSelecionado;
 
-      return {
-        codigoVendedor,
-        vendedor: String(linha[1] || 'Sem vendedor').trim(),
-        faturamento,
-        meta,
-        percentualMeta: meta > 0
-          ? faturamento / meta
-          : null
-      };
+return {
+  codigoVendedor,
+  vendedor: String(linha[1] || 'Sem vendedor').trim(),
+  faturamento: podeVerFaturamento
+    ? faturamentoReal
+    : null,
+  meta,
+  percentualMeta: meta > 0
+    ? faturamentoReal / meta
+    : null
+};
     })
     .sort((primeiro, segundo) => {
       const primeiroTemMeta = primeiro.percentualMeta !== null;
