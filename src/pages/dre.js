@@ -413,6 +413,53 @@ tbody .linha-grupo td.coluna-total {
 tbody .linha-resultado td.coluna-total {
   background: #cfdfee;
 }
+
+#atualizar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#atualizar.carregando {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+#atualizar.carregando::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: girarAtualizacaoDre 0.7s linear infinite;
+}
+
+.status-atualizacao-dre {
+  margin: 0 0 18px;
+  padding: 0 20px;
+  color: #173b59;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.status-atualizacao-dre[hidden] {
+  display: none;
+}
+
+@keyframes girarAtualizacaoDre {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #atualizar.carregando::before {
+    animation: none;
+  }
+}
     
   </style>
 </head>
@@ -456,6 +503,16 @@ tbody .linha-resultado td.coluna-total {
         </button>
       </div>
     </section>
+
+    <p
+      id="statusAtualizacaoDre"
+      class="status-atualizacao-dre"
+      role="status"
+      aria-live="polite"
+      hidden
+    >
+      Atualizando DRE...
+    </p>
 
     <section class="painel">
       <div class="titulo-painel">
@@ -1653,6 +1710,18 @@ async function carregarLancamentos(id, natureza) {
 }
 
   async function carregarDre() {
+  if (atualizar.disabled) return;
+
+  const statusAtualizacao = document.getElementById(
+    'statusAtualizacaoDre'
+  );
+
+  atualizar.disabled = true;
+  atualizar.classList.add('carregando');
+  atualizar.setAttribute('aria-busy', 'true');
+  statusAtualizacao.hidden = false;
+
+  try {
     const parametros = new URLSearchParams({
       inicio: dataInicial.value,
       fim: dataFinal.value
@@ -1662,34 +1731,44 @@ async function carregarLancamentos(id, natureza) {
       parametros.set('empresa', empresa.value);
     }
 
-    try {
-      const resposta = await fetch(
-        '/api/dre?' + parametros.toString()
+    const resposta = await fetch(
+      '/api/dre?' + parametros.toString()
+    );
+
+    const dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.error || 'Não foi possível carregar a DRE.'
       );
+    }
 
-      const dados = await resposta.json();
+    tabela.querySelector('thead')?.remove();
+    montarCabecalho(dados.meses);
 
-      if (!resposta.ok) {
-        throw new Error(
-          dados.error || 'Não foi possível carregar a DRE.'
-        );
-      }
+    linhasDre.innerHTML = montarLinhas(dados);
+  } catch (error) {
+    console.error('Erro ao carregar DRE:', error);
 
-      tabela.querySelector('thead')?.remove();
-      montarCabecalho(dados.meses);
+    const linhaErro = document.createElement('tr');
+    const celulaErro = document.createElement('td');
 
-      linhasDre.innerHTML = montarLinhas(dados);
-    } catch (error) {
-  console.error('Erro ao carregar DRE:', error);
+    celulaErro.className = 'vazio';
+    celulaErro.colSpan =
+      tabela.querySelectorAll('thead tr:last-child th').length || 4;
 
-  linhasDre.innerHTML =
-    '<tr>' +
-      '<td class="vazio" colspan="4">' +
-        (error.message || 'Não foi possível carregar a DRE.') +
-      '</td>' +
-    '</tr>';
-}
+    celulaErro.textContent =
+      error.message || 'Não foi possível carregar a DRE.';
+
+    linhaErro.appendChild(celulaErro);
+    linhasDre.replaceChildren(linhaErro);
+  } finally {
+    atualizar.disabled = false;
+    atualizar.classList.remove('carregando');
+    atualizar.removeAttribute('aria-busy');
+    statusAtualizacao.hidden = true;
   }
+}
 
   const hoje = new Date();
 
