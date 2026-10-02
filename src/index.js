@@ -1108,7 +1108,7 @@ if (!acesso?.permissions.view) {
   return json({
     ...resultado,
     podeEditarMetas:
-      !!acesso.permissions.update && !vendedorVinculado,
+      !!acesso.permissions.update && !vendedorVinculado, 
     vendedorBloqueado: Boolean(vendedorVinculado)
   });
   } catch (error) {
