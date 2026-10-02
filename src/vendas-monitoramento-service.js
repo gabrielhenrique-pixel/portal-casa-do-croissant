@@ -4,7 +4,11 @@ import {
 
 const META_MAXIMA = 999999999.99;
 
-export async function listarMonitoramentoVendasSankhya(request, env) {
+export async function listarMonitoramentoVendasSankhya(
+  request,
+  env,
+  vendedorObrigatorio = ''
+) {
   const url = new URL(request.url);
   const hoje = new Date();
 
@@ -24,9 +28,19 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     hoje
   );
 
-  const vendedorSelecionado = String(
+  const vendedorSolicitado = String(
     url.searchParams.get('vendedor') || ''
   ).trim();
+
+  const codigoVendedorObrigatorio = String(
+    vendedorObrigatorio || ''
+  ).trim();
+
+  const vendedorSelecionado =
+    codigoVendedorObrigatorio || vendedorSolicitado;
+
+  const vendedorBloqueado =
+    codigoVendedorObrigatorio !== '';
 
   if (inicio > fim) {
     return {
