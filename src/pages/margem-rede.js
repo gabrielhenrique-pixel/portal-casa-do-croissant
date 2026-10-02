@@ -355,6 +355,22 @@ export function margemRedePage() {
   font-weight:700;
 }
 
+.exportar-excel {
+  flex-shrink:0;
+  min-height:40px;
+  padding:8px 15px;
+  border:1px solid #0d6a3c;
+  border-radius:7px;
+  background:#0d6a3c;
+  color:#fff;
+  font-size:13px;
+  white-space:nowrap;
+}
+
+.exportar-excel:disabled {
+  cursor:not-allowed;
+}
+
 .controles {
   display:flex;
   align-items:end;
@@ -397,6 +413,10 @@ export function margemRedePage() {
       main { padding:12px 10px 24px; }
       .faixa-titulo { padding:16px; }
       .nota { padding:10px 16px; }
+      .topo { flex-wrap:wrap; padding:16px; }
+      .marca { min-width:0; }
+      .marca span { font-size:23px; }
+      .exportar-excel { width:auto; }
       .controles { align-items:stretch; }
       .campo { flex:1 1 135px; }
       button { width:100%; }
@@ -414,6 +434,7 @@ export function margemRedePage() {
   <div class="marca">
     <span>MARGEM POR REDE</span>
   </div>
+  <button id="exportarExcel" class="exportar-excel" type="button" disabled>Exportar Excel</button>
 </header>
 
 <form class="controles" id="formFiltros">
@@ -470,6 +491,8 @@ export function margemRedePage() {
       var estado = document.getElementById('estado');
       var alertas = document.getElementById('alertas');
       var linhasTabela = document.getElementById('linhasTabela');
+      var botaoExportarExcel = document.getElementById('exportarExcel');
+      var dadosAtuais = null;
 
       function dataParaInput(data) {
         return [
@@ -562,6 +585,264 @@ export function margemRedePage() {
           linha.appendChild(celula('', inteiro(rede.clientesPositivados)));
           linhasTabela.appendChild(linha);
         });
+      }
+
+      function colunaXlsxMargem(indice) {
+        var resultado = '';
+        var numero = indice + 1;
+        while (numero > 0) {
+          var resto = (numero - 1) % 26;
+          resultado = String.fromCharCode(65 + resto) + resultado;
+          numero = Math.floor((numero - 1) / 26);
+        }
+        return resultado;
+      }
+
+      function escaparXmlXlsxMargem(valor) {
+        return String(valor === null || valor === undefined ? '' : valor)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      }
+
+      function numeroXlsxMargem(valor) {
+        var numero = Number(valor);
+        return Number.isFinite(numero) ? numero : 0;
+      }
+
+      function celulaXlsxMargem(referencia, valor, tipo) {
+        var estilo = tipo === 'moeda' ? 4 :
+          tipo === 'percentual' ? 5 :
+          tipo === 'inteiro' ? 6 : 0;
+
+        if (tipo === 'texto') {
+          return '<c r="' + referencia + '" s="' + estilo + '" t="inlineStr"><is><t>' +
+            escaparXmlXlsxMargem(valor) + '</t></is></c>';
+        }
+
+        if (valor === null || valor === undefined || valor === '') {
+          return '<c r="' + referencia + '" s="' + estilo + '"/>';
+        }
+
+        return '<c r="' + referencia + '" s="' + estilo + '"><v>' +
+          numeroXlsxMargem(valor) + '</v></c>';
+      }
+
+      function crc32XlsxMargem(bytes) {
+        var tabela = crc32XlsxMargem.tabela;
+        if (!tabela) {
+          tabela = new Uint32Array(256);
+          for (var indice = 0; indice < 256; indice++) {
+            var codigo = indice;
+            for (var bit = 0; bit < 8; bit++) {
+              codigo = (codigo & 1) ? (0xedb88320 ^ (codigo >>> 1)) : (codigo >>> 1);
+            }
+            tabela[indice] = codigo >>> 0;
+          }
+          crc32XlsxMargem.tabela = tabela;
+        }
+
+        var crc = 0xffffffff;
+        for (var posicao = 0; posicao < bytes.length; posicao++) {
+          crc = tabela[(crc ^ bytes[posicao]) & 0xff] ^ (crc >>> 8);
+        }
+        return (crc ^ 0xffffffff) >>> 0;
+      }
+
+      function concatenarBytesXlsxMargem(partes) {
+        var tamanho = partes.reduce(function(total, parte) {
+          return total + parte.length;
+        }, 0);
+        var resultado = new Uint8Array(tamanho);
+        var inicio = 0;
+        partes.forEach(function(parte) {
+          resultado.set(parte, inicio);
+          inicio += parte.length;
+        });
+        return resultado;
+      }
+
+      function criarZipXlsxMargem(arquivos) {
+        var codificador = new TextEncoder();
+        var partes = [];
+        var diretorio = [];
+        var deslocamento = 0;
+
+        arquivos.forEach(function(arquivo) {
+          var nome = codificador.encode(arquivo.nome);
+          var conteudo = codificador.encode(arquivo.conteudo);
+          var crc = crc32XlsxMargem(conteudo);
+          var cabecalho = new Uint8Array(30 + nome.length);
+          var view = new DataView(cabecalho.buffer);
+          view.setUint32(0, 0x04034b50, true);
+          view.setUint16(4, 20, true);
+          view.setUint16(6, 0, true);
+          view.setUint16(8, 0, true);
+          view.setUint32(14, crc, true);
+          view.setUint32(18, conteudo.length, true);
+          view.setUint32(22, conteudo.length, true);
+          view.setUint16(26, nome.length, true);
+          cabecalho.set(nome, 30);
+          partes.push(cabecalho, conteudo);
+
+          diretorio.push({ nome:nome, crc:crc, tamanho:conteudo.length, deslocamento:deslocamento });
+          deslocamento += cabecalho.length + conteudo.length;
+        });
+
+        var inicioDiretorio = deslocamento;
+        diretorio.forEach(function(arquivo) {
+          var cabecalho = new Uint8Array(46 + arquivo.nome.length);
+          var view = new DataView(cabecalho.buffer);
+          view.setUint32(0, 0x02014b50, true);
+          view.setUint16(4, 20, true);
+          view.setUint16(6, 20, true);
+          view.setUint16(8, 0, true);
+          view.setUint16(10, 0, true);
+          view.setUint32(16, arquivo.crc, true);
+          view.setUint32(20, arquivo.tamanho, true);
+          view.setUint32(24, arquivo.tamanho, true);
+          view.setUint16(28, arquivo.nome.length, true);
+          view.setUint32(42, arquivo.deslocamento, true);
+          cabecalho.set(arquivo.nome, 46);
+          partes.push(cabecalho);
+          deslocamento += cabecalho.length;
+        });
+
+        var finalZip = new Uint8Array(22);
+        var viewFinal = new DataView(finalZip.buffer);
+        viewFinal.setUint32(0, 0x06054b50, true);
+        viewFinal.setUint16(8, diretorio.length, true);
+        viewFinal.setUint16(10, diretorio.length, true);
+        viewFinal.setUint32(12, deslocamento - inicioDiretorio, true);
+        viewFinal.setUint32(16, inicioDiretorio, true);
+        partes.push(finalZip);
+
+        return concatenarBytesXlsxMargem(partes);
+      }
+
+      function estilosXlsxMargem() {
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+          '<numFmts count="3">' +
+          '<numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00;[Red]-&quot;R$&quot; #,##0.00"/>' +
+          '<numFmt numFmtId="165" formatCode="0.0%;[Red]-0.0%"/>' +
+          '<numFmt numFmtId="166" formatCode="#,##0"/>' +
+          '</numFmts>' +
+          '<fonts count="3">' +
+          '<font><sz val="10"/><name val="Arial"/></font>' +
+          '<font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>' +
+          '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>' +
+          '</fonts>' +
+          '<fills count="4">' +
+          '<fill><patternFill patternType="none"/></fill>' +
+          '<fill><patternFill patternType="gray125"/></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FF102E49"/><bgColor indexed="64"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E78"/><bgColor indexed="64"/></patternFill></fill>' +
+          '</fills>' +
+          '<borders count="2">' +
+          '<border><left/><right/><top/><bottom/><diagonal/></border>' +
+          '<border><left style="thin"><color rgb="FFD9D2C3"/></left><right style="thin"><color rgb="FFD9D2C3"/></right><top style="thin"><color rgb="FFD9D2C3"/></top><bottom style="thin"><color rgb="FFD9D2C3"/></bottom><diagonal/></border>' +
+          '</borders>' +
+          '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+          '<cellXfs count="7">' +
+          '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
+          '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+          '<xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+          '<xf numFmtId="166" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+          '</cellXfs></styleSheet>';
+      }
+
+      function criarPlanilhaXlsxMargem(redes) {
+        var colunas = [
+          { titulo:'Rede', campo:'rede', tipo:'texto', largura:26 },
+          { titulo:'Faturamento bruto', campo:'faturamentoBruto', tipo:'moeda', largura:18 },
+          { titulo:'Devoluções', campo:'devolucoes', tipo:'moeda', largura:17 },
+          { titulo:'Receita líquida', campo:'receitaLiquida', tipo:'moeda', largura:18 },
+          { titulo:'Impostos', campo:'impostos', tipo:'moeda', largura:16 },
+          { titulo:'CMV unitário', campo:'cmvUnitario', tipo:'moeda', largura:16 },
+          { titulo:'CMV total', campo:'cmvTotal', tipo:'moeda', largura:16 },
+          { titulo:'Promotoria (%)', campo:'percentualPromotoria', tipo:'percentual', largura:15 },
+          { titulo:'Custo promotoria', campo:'custoPromotoria', tipo:'moeda', largura:19 },
+          { titulo:'Contrato (%)', campo:'percentualContrato', tipo:'percentual', largura:15 },
+          { titulo:'Custo contrato', campo:'custoContrato', tipo:'moeda', largura:18 },
+          { titulo:'Comissão (%)', campo:'percentualComissao', tipo:'percentual', largura:15 },
+          { titulo:'Custo comissão', campo:'custoComissao', tipo:'moeda', largura:18 },
+          { titulo:'Investimentos', campo:'investimentos', tipo:'moeda', largura:18 },
+          { titulo:'Frete', campo:'frete', tipo:'moeda', largura:16 },
+          { titulo:'Resultado final', campo:'resultadoFinal', tipo:'moeda', largura:18 },
+          { titulo:'Margem (%)', campo:'margem', tipo:'percentual', largura:14 },
+          { titulo:'Participação (%)', campo:'participacao', tipo:'percentual', largura:17 },
+          { titulo:'Clientes positivados', campo:'clientesPositivados', tipo:'inteiro', largura:20 }
+        ];
+        var ultimaColuna = colunaXlsxMargem(colunas.length - 1);
+        var linhas = [];
+        var titulo = 'MARGEM POR REDE';
+        var periodo = 'Período: ' + inicio.value.split('-').reverse().join('/') + ' a ' + fim.value.split('-').reverse().join('/');
+
+        linhas.push('<row r="1" ht="25" customHeight="1">' +
+          '<c r="A1" s="1" t="inlineStr"><is><t>' + titulo + '</t></is></c></row>');
+        linhas.push('<row r="2" ht="18" customHeight="1">' +
+          '<c r="A2" s="2" t="inlineStr"><is><t>' + escaparXmlXlsxMargem(periodo) + '</t></is></c></row>');
+        linhas.push('<row r="4" ht="30" customHeight="1">' + colunas.map(function(coluna, indice) {
+          return '<c r="' + colunaXlsxMargem(indice) + '4" s="3" t="inlineStr"><is><t>' +
+            escaparXmlXlsxMargem(coluna.titulo) + '</t></is></c>';
+        }).join('') + '</row>');
+
+        redes.forEach(function(rede, indiceLinha) {
+          var numeroLinha = indiceLinha + 5;
+          linhas.push('<row r="' + numeroLinha + '">' + colunas.map(function(coluna, indiceColuna) {
+            return celulaXlsxMargem(
+              colunaXlsxMargem(indiceColuna) + numeroLinha,
+              rede[coluna.campo],
+              coluna.tipo
+            );
+          }).join('') + '</row>');
+        });
+
+        var larguras = colunas.map(function(coluna, indice) {
+          var numero = indice + 1;
+          return '<col min="' + numero + '" max="' + numero + '" width="' + coluna.largura + '" customWidth="1"/>';
+        }).join('');
+        var planilha = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+          '<dimension ref="A1:' + ultimaColuna + Math.max(4, redes.length + 4) + '"/>' +
+          '<sheetViews><sheetView workbookViewId="0"/></sheetViews>' +
+          '<cols>' + larguras + '</cols>' +
+          '<sheetData>' + linhas.join('') + '</sheetData>' +
+          '<mergeCells count="2"><mergeCell ref="A1:' + ultimaColuna + '1"/><mergeCell ref="A2:' + ultimaColuna + '2"/></mergeCells>' +
+          '</worksheet>';
+
+        return criarZipXlsxMargem([
+          { nome:'[Content_Types].xml', conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>' },
+          { nome:'_rels/.rels', conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+          { nome:'xl/workbook.xml', conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Margem por Rede" sheetId="1" r:id="rId1"/></sheets></workbook>' },
+          { nome:'xl/_rels/workbook.xml.rels', conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>' },
+          { nome:'xl/styles.xml', conteudo:estilosXlsxMargem() },
+          { nome:'xl/worksheets/sheet1.xml', conteudo:planilha }
+        ]);
+      }
+
+      function exportarExcelMargem() {
+        if (!dadosAtuais || !Array.isArray(dadosAtuais.redes) || !dadosAtuais.redes.length) return;
+
+        var arquivo = criarPlanilhaXlsxMargem(dadosAtuais.redes);
+        var blob = new Blob([arquivo], {
+          type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'MARGEM_POR_REDE_' + inicio.value + '_a_' + fim.value + '.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function() {
+          URL.revokeObjectURL(link.href);
+        }, 0);
       }
 
       function abrirModalSemCadastro(titulo, itens) {
@@ -674,6 +955,9 @@ function mostrarAlertas(dados) {
         var numeroConsulta = ++consultaAtual;
         if (!inicio.value || !fim.value) return;
 
+        dadosAtuais = null;
+        botaoExportarExcel.disabled = true;
+
         if (fim.value < inicio.value) {
           mostrarEstado('A data final não pode ser anterior à data inicial.', true);
           return;
@@ -698,12 +982,16 @@ function mostrarAlertas(dados) {
             throw new Error(dados.error || 'Não foi possível calcular a Margem_Rede.');
           }
 
+          dadosAtuais = dados;
+          botaoExportarExcel.disabled = !Array.isArray(dados.redes) || dados.redes.length === 0;
           preencherTabela(dados.redes);
           mostrarAlertas(dados.alertas);
           mostrarEstado('Período consultado: ' + inicio.value.split('-').reverse().join('/') +
             ' a ' + fim.value.split('-').reverse().join('/'), false);
                } catch (erro) {
           if (numeroConsulta !== consultaAtual) return;
+          dadosAtuais = null;
+          botaoExportarExcel.disabled = true;
           preencherTabela([]);
           mostrarEstado(
             erro.message || 'Não foi possível calcular a Margem_Rede.',
@@ -717,6 +1005,7 @@ function mostrarAlertas(dados) {
         evento.preventDefault();
         carregar();
       });
+      botaoExportarExcel.addEventListener('click', exportarExcelMargem);
       inicio.addEventListener('change', carregar);
       fim.addEventListener('change', carregar);
 
