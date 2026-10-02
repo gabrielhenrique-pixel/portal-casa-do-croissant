@@ -79,6 +79,10 @@ export async function listarMonitoramentoVendasSankhya(
     ? '  AND CAB.CODVEND = ' + Number(vendedorSelecionado)
     : '';
 
+  const filtroVendedorNoRanking = vendedorBloqueado
+  ? filtroVendedor
+  : '';
+
   const sqlVendedores = [
     'SELECT',
     '  CAB.CODVEND AS CODIGO_VENDEDOR,',
@@ -92,6 +96,7 @@ export async function listarMonitoramentoVendasSankhya(
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER IN (1101, 1107)',
+    filtroVendedorNoRanking,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
@@ -138,6 +143,7 @@ export async function listarMonitoramentoVendasSankhya(
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER IN (1101, 1107)',
+    filtroVendedorNoRanking,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY VENDEDOR'
   ].join('\n');
