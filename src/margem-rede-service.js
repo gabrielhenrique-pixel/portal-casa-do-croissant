@@ -270,6 +270,7 @@ function finalizarResumo(resumo, totalClientes) {
     devolucoes: limparMenosZero(resumo.devolucoes),
     receitaLiquida,
     impostos,
+    quantidade: resumo.quantidade,
     cmvUnitario: resumo.quantidade === 0
       ? null
       : limparMenosZero(cmvTotal / resumo.quantidade),
