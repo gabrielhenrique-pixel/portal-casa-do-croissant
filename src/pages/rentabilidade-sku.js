@@ -890,8 +890,6 @@ function formatarMoedaTotal(valor) {
 }
 
 function renderizarTotais(itens) {
-  totaisTabela.replaceChildren();
-
   var total = itens.reduce(function(acumulado, item) {
     acumulado.quantidade += numero(item.quantidade);
     acumulado.valorLiquido += valorDoItem(item, ['valorLiquido', 'vlrLiquido']);
