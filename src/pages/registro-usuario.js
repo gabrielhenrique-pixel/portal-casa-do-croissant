@@ -45,11 +45,24 @@ export function registroUsuarioPage() {
         <input id="email" type="email" autocomplete="email" required>
 
         <label for="role">Perfil de acesso</label>
-        <select id="role">
-          <option>Colaborador</option>
-          <option>Gestor</option>
-          <option>Administrador</option>
-        </select>
+<select id="role">
+  <option>Colaborador</option>
+  <option>Gestor</option>
+  <option>Administrador</option>
+  <option>Vendedor</option>
+</select>
+
+<label id="rotuloCodigoVendedor" for="codigoVendedor" hidden>
+  Código do vendedor no Sankhya
+</label>
+
+<input
+  id="codigoVendedor"
+  inputmode="numeric"
+  pattern="[0-9]*"
+  placeholder="Ex.: 15"
+  hidden
+>
 
         <label for="password">Senha inicial</label>
         <input id="password" type="password" minlength="8" autocomplete="new-password" required>
@@ -70,6 +83,24 @@ export function registroUsuarioPage() {
   <script>
     const form = document.getElementById('formulario');
     const mensagem = document.getElementById('mensagem');
+
+    const role = document.getElementById('role');
+const rotuloCodigoVendedor =
+  document.getElementById('rotuloCodigoVendedor');
+const codigoVendedor =
+  document.getElementById('codigoVendedor');
+
+function atualizarCampoVendedor() {
+  const vendedor = role.value === 'Vendedor';
+
+  rotuloCodigoVendedor.hidden = !vendedor;
+  codigoVendedor.hidden = !vendedor;
+  codigoVendedor.required = vendedor;
+  codigoVendedor.value = vendedor ? codigoVendedor.value : '';
+}
+
+role.addEventListener('change', atualizarCampoVendedor);
+atualizarCampoVendedor();
 
     function mostrar(texto, erro) {
       mensagem.textContent = texto;
@@ -99,7 +130,8 @@ export function registroUsuarioPage() {
             username: document.getElementById('username').value,
             email: document.getElementById('email').value,
             role: document.getElementById('role').value,
-            password: senha
+            password: senha,
+            codigoVendedor: codigoVendedor.value
           })
         });
 
