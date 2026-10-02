@@ -130,7 +130,8 @@ export function rentabilidadeSkuPage() {
     table {
       width: 100%;
       min-width: 2460px;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       font-size: 12px;
     }
 
@@ -147,21 +148,6 @@ export function rentabilidadeSkuPage() {
   text-align: center;
   text-transform: uppercase;
   white-space: normal;
-}
-
-tfoot td {
-  border: 1px solid #b9cad9;
-  padding: 9px 8px;
-  background: #d9eaf7;
-  color: #102e49;
-  font-weight: 700;
-  text-align: right;
-  white-space: nowrap;
-}
-
-tfoot td.total-label {
-  text-align: left;
-  background: #c7ddea;
 }
 
     th.coluna-vazia {
@@ -188,14 +174,14 @@ tfoot td {
   border-top: 2px solid var(--azul);
   background: #dcebf6;
   color: #102e49;
-  font-weight: bold;
+  font-weight: 700;
   text-align: right;
   white-space: nowrap;
 }
 
 tfoot td.total-titulo {
   background: var(--azul-escuro);
-  color: white;
+  color: #fff;
   text-align: left;
 }
 
@@ -461,67 +447,6 @@ tfoot td.margem-boa {
   border: 1px solid #bdcede;
   background: #fff;
   color: #17375f;
-}
-
-.resumo-totais {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.cartao-total {
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid #c7ddea;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.cartao-total.titulo-total {
-  background: #102e49;
-  color: #fff;
-}
-
-.cartao-total .rotulo-total {
-  display: block;
-  margin-bottom: 5px;
-  color: #52718b;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.cartao-total.titulo-total .rotulo-total {
-  color: #d9eaf7;
-}
-
-.cartao-total .valor-total {
-  display: block;
-  color: #102e49;
-  font-size: 15px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.cartao-total.titulo-total .valor-total {
-  color: #fff;
-}
-
-.cartao-total .valor-total.negativo {
-  color: #c00000;
-}
-
-.cartao-total .valor-total.margem-critica {
-  color: #c00000;
-}
-
-.cartao-total .valor-total.margem-alerta {
-  color: #8a5b00;
-}
-
-.cartao-total .valor-total.margem-boa {
-  color: #25713b;
 }
 
     @media (max-width: 720px) {
@@ -865,282 +790,6 @@ function formatarMoedaTotal(valor) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
-}
-
-function calcularTotais(itens) {
-  var totais = {
-    quantidade: 0,
-    valorLiquido: 0,
-    valorSt: 0,
-    faturamento: 0,
-    impostos: 0,
-    acordos: 0,
-    receitaLiquida: 0,
-    cmvTotal: 0,
-    custoPromotoria: 0,
-    custoContrato: 0,
-    investimentos: 0,
-    custoComissao: 0,
-    resultado: 0
-  };
-
-  itens.forEach(function(item) {
-    totais.quantidade += numero(item.quantidade);
-    totais.valorLiquido += numero(valorDoItem(item, ['valorLiquido', 'vlrLiquido']));
-    totais.valorSt += numero(valorDoItem(item, ['valorSt', 'vlrSt']));
-    totais.faturamento += numero(valorDoItem(item, ['faturamento', 'faturamentoBruto']));
-    totais.impostos += numero(valorDoItem(item, ['impostos']));
-    totais.acordos += numero(valorDoItem(item, ['acordos']));
-    totais.receitaLiquida += numero(valorDoItem(item, ['receitaLiquida']));
-    totais.cmvTotal += numero(valorDoItem(item, ['cmvTotal']));
-    totais.custoPromotoria += numero(valorDoItem(item, ['custoPromotoria']));
-    totais.custoContrato += numero(valorDoItem(item, ['custoContrato']));
-    totais.investimentos += numero(valorDoItem(item, ['investimentos']));
-    totais.custoComissao += numero(valorDoItem(item, ['custoComissao']));
-    totais.resultado += numero(valorDoItem(item, ['resultado']));
-  });
-
-  totais.cmvUnitario = totais.quantidade
-    ? totais.cmvTotal / totais.quantidade
-    : null;
-
-  totais.percentualPromotoria = totais.faturamento
-    ? totais.custoPromotoria / totais.faturamento
-    : null;
-
-  totais.percentualContrato = totais.faturamento
-    ? totais.custoContrato / totais.faturamento
-    : null;
-
-  totais.percentualComissao = totais.faturamento
-    ? totais.custoComissao / totais.faturamento
-    : null;
-
-  totais.margem = totais.receitaLiquida
-    ? totais.resultado / totais.receitaLiquida
-    : null;
-
-  totais.metaMargem = itens.length ? 0.20 : null;
-
-  totais.gapMargem =
-    totais.margem === null || totais.metaMargem === null
-      ? null
-      : totais.margem - totais.metaMargem;
-
-  return totais;
-}
-
-function criarCartaoTotal(titulo, valor, classe, destaque) {
-  var cartao = document.createElement('div');
-  cartao.className = destaque
-    ? 'cartao-total titulo-total'
-    : 'cartao-total';
-
-  var rotulo = document.createElement('span');
-  rotulo.className = 'rotulo-total';
-  rotulo.textContent = titulo;
-
-  var valorExibido = document.createElement('strong');
-  valorExibido.className = 'valor-total';
-
-  if (classe) {
-    classe.split(' ').filter(Boolean).forEach(function(nomeClasse) {
-      valorExibido.classList.add(nomeClasse);
-    });
-  }
-
-  valorExibido.textContent = valor;
-
-  cartao.appendChild(rotulo);
-  cartao.appendChild(valorExibido);
-
-  return cartao;
-}
-
-function renderizarTotais(itens) {
-  totaisTabela.replaceChildren();
-
-  var totais = calcularTotais(itens);
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Linhas filtradas',
-      itens.length.toLocaleString('pt-BR') + ' itens',
-      '',
-      true
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Quantidade',
-      formatarNumeroTotal(totais.quantidade)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Valor líquido',
-      formatarMoedaTotal(totais.valorLiquido),
-      classeNegativa(totais.valorLiquido)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Valor ST',
-      formatarMoedaTotal(totais.valorSt),
-      classeNegativa(totais.valorSt)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Faturamento',
-      formatarMoedaTotal(totais.faturamento),
-      classeNegativa(totais.faturamento)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Impostos',
-      formatarMoedaTotal(totais.impostos),
-      classeNegativa(totais.impostos)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Acordos',
-      formatarMoedaTotal(totais.acordos),
-      classeNegativa(totais.acordos)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Receita líquida',
-      formatarMoedaTotal(totais.receitaLiquida),
-      classeNegativa(totais.receitaLiquida)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'CMV unitário médio',
-      totais.cmvUnitario === null
-        ? '—'
-        : formatarMoedaTotal(totais.cmvUnitario),
-      classeNegativa(totais.cmvUnitario)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'CMV total',
-      formatarMoedaTotal(totais.cmvTotal),
-      classeNegativa(totais.cmvTotal)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Promotoria',
-      totais.percentualPromotoria === null
-        ? '—'
-        : formatarPercentual(totais.percentualPromotoria)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Custo promotoria',
-      formatarMoedaTotal(totais.custoPromotoria),
-      classeNegativa(totais.custoPromotoria)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Contrato',
-      totais.percentualContrato === null
-        ? '—'
-        : formatarPercentual(totais.percentualContrato)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Custo contrato',
-      formatarMoedaTotal(totais.custoContrato),
-      classeNegativa(totais.custoContrato)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Investimentos',
-      formatarMoedaTotal(totais.investimentos),
-      classeNegativa(totais.investimentos)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Comissão',
-      totais.percentualComissao === null
-        ? '—'
-        : formatarPercentual(totais.percentualComissao)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Custo comissão',
-      formatarMoedaTotal(totais.custoComissao),
-      classeNegativa(totais.custoComissao)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Resultado',
-      formatarMoedaTotal(totais.resultado),
-      classeNegativa(totais.resultado),
-      true
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Margem',
-      totais.margem === null
-        ? '—'
-        : formatarPercentual(totais.margem),
-      classeMargem(totais.margem),
-      true
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Meta de margem',
-      totais.metaMargem === null
-        ? '—'
-        : formatarPercentual(totais.metaMargem)
-    )
-  );
-
-  totaisTabela.appendChild(
-    criarCartaoTotal(
-      'Gap de margem',
-      totais.gapMargem === null
-        ? '—'
-        : formatarPercentual(totais.gapMargem),
-      classeNegativa(totais.gapMargem)
-    )
-  );
 }
 
       function renderizarLinhas(itens) {
