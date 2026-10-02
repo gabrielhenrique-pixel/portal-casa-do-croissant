@@ -7,7 +7,7 @@ export function acessosPage() {
   <title>Acessos | Casa do Croissant</title>
   <style>
   :root {
-    --v: #168447;
+    --v: #168447; 
     --e: #0d4b2b;
     --f: #f6f8f7;
     --t: #183128;
