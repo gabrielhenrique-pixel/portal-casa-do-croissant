@@ -119,12 +119,13 @@ export function rentabilidadeSkuPage() {
     }
 
     .tabela-area {
-      overflow-x: auto;
-      border: 1px solid var(--borda);
-      border-radius: 9px;
-      background: white;
-      box-shadow: 0 3px 12px rgba(18, 47, 35, .08);
-    }
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid var(--borda);
+  border-radius: 9px;
+  background: white;
+  box-shadow: 0 3px 12px rgba(18, 47, 35, .08);
+}
 
     table {
       width: 100%;
@@ -134,19 +135,34 @@ export function rentabilidadeSkuPage() {
     }
 
     th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      border: 1px solid #d1dce4;
-      padding: 9px 8px;
-      background: var(--azul);
-      color: white;
-      font-size: 11px;
-      line-height: 1.15;
-      text-align: center;
-      text-transform: uppercase;
-      white-space: normal;
-    }
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border: 1px solid #d1dce4;
+  padding: 9px 8px;
+  background: var(--azul);
+  color: white;
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: normal;
+}
+
+tfoot td {
+  border: 1px solid #b9cad9;
+  padding: 9px 8px;
+  background: #d9eaf7;
+  color: #102e49;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+tfoot td.total-label {
+  text-align: left;
+  background: #c7ddea;
+}
 
     th.coluna-vazia {
       min-width: 68px;
@@ -414,6 +430,15 @@ export function rentabilidadeSkuPage() {
     <span>Data final</span>
     <input id="fim" name="fim" type="date" required>
   </label>
+
+    <button
+    id="exportarExcel"
+    type="button"
+    disabled
+    title="Exportar as linhas atualmente filtradas"
+  >
+    ⇩ Exportar Excel
+  </button>
   
 </form>
 
@@ -451,6 +476,9 @@ export function rentabilidadeSkuPage() {
           </tr>
         </thead>
         <tbody id="linhasTabela"></tbody>
+        <tfoot>
+         <tr id="totaisTabela"></tr>
+        </tfoot>
       </table>
     </section>
   </main>
@@ -462,7 +490,11 @@ export function rentabilidadeSkuPage() {
       var fim = document.getElementById('fim');
       var estado = document.getElementById('estado');
       var linhasTabela = document.getElementById('linhasTabela');
+      var totaisTabela = document.getElementById('totaisTabela');
+      var exportarExcel = document.getElementById('exportarExcel');
       var quantidadeColunas = 25;
+
+var itensVisiveis = [];
 
       var todosItens = [];
 var filtrosColunas = {};
@@ -659,6 +691,163 @@ function valorDaColuna(item, indice) {
         linha.appendChild(celula);
       }
 
+      function formatarNumeroTotal(valor) {
+  return numero(valor).toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatarMoedaTotal(valor) {
+  return numero(valor).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function calcularTotais(itens) {
+  var totais = {
+    quantidade: 0,
+    valorLiquido: 0,
+    valorSt: 0,
+    faturamento: 0,
+    impostos: 0,
+    acordos: 0,
+    receitaLiquida: 0,
+    cmvTotal: 0,
+    custoPromotoria: 0,
+    custoContrato: 0,
+    investimentos: 0,
+    custoComissao: 0,
+    resultado: 0
+  };
+
+  itens.forEach(function(item) {
+    totais.quantidade += numero(item.quantidade);
+    totais.valorLiquido += numero(valorDoItem(item, ['valorLiquido', 'vlrLiquido']));
+    totais.valorSt += numero(valorDoItem(item, ['valorSt', 'vlrSt']));
+    totais.faturamento += numero(valorDoItem(item, ['faturamento', 'faturamentoBruto']));
+    totais.impostos += numero(valorDoItem(item, ['impostos']));
+    totais.acordos += numero(valorDoItem(item, ['acordos']));
+    totais.receitaLiquida += numero(valorDoItem(item, ['receitaLiquida']));
+    totais.cmvTotal += numero(valorDoItem(item, ['cmvTotal']));
+    totais.custoPromotoria += numero(valorDoItem(item, ['custoPromotoria']));
+    totais.custoContrato += numero(valorDoItem(item, ['custoContrato']));
+    totais.investimentos += numero(valorDoItem(item, ['investimentos']));
+    totais.custoComissao += numero(valorDoItem(item, ['custoComissao']));
+    totais.resultado += numero(valorDoItem(item, ['resultado']));
+  });
+
+  totais.cmvUnitario = totais.quantidade
+    ? totais.cmvTotal / totais.quantidade
+    : null;
+
+  totais.percentualPromotoria = totais.faturamento
+    ? totais.custoPromotoria / totais.faturamento
+    : null;
+
+  totais.percentualContrato = totais.faturamento
+    ? totais.custoContrato / totais.faturamento
+    : null;
+
+  totais.percentualComissao = totais.faturamento
+    ? totais.custoComissao / totais.faturamento
+    : null;
+
+  totais.margem = totais.receitaLiquida
+    ? totais.resultado / totais.receitaLiquida
+    : null;
+
+  totais.metaMargem = itens.length ? 0.20 : null;
+
+  totais.gapMargem =
+    totais.margem === null || totais.metaMargem === null
+      ? null
+      : totais.margem - totais.metaMargem;
+
+  return totais;
+}
+
+function adicionarTotal(linha, conteudo, classes) {
+  var celula = document.createElement('td');
+  celula.textContent = conteudo;
+
+  if (classes) {
+    classes.split(' ').filter(Boolean).forEach(function(nomeClasse) {
+      celula.classList.add(nomeClasse);
+    });
+  }
+
+  linha.appendChild(celula);
+}
+
+function renderizarTotais(itens) {
+  totaisTabela.replaceChildren();
+
+  var linha = document.createElement('tr');
+  var totais = calcularTotais(itens);
+
+  adicionarTotal(linha, 'TOTAL (' + itens.length.toLocaleString('pt-BR') + ')', 'total-label');
+  adicionarTotal(linha, '');
+  adicionarTotal(linha, '');
+  adicionarTotal(linha, '');
+  adicionarTotal(linha, formatarNumeroTotal(totais.quantidade));
+  adicionarTotal(linha, formatarMoedaTotal(totais.valorLiquido), classeNegativa(totais.valorLiquido));
+  adicionarTotal(linha, formatarMoedaTotal(totais.valorSt), classeNegativa(totais.valorSt));
+  adicionarTotal(linha, '');
+  adicionarTotal(linha, formatarMoedaTotal(totais.faturamento), classeNegativa(totais.faturamento));
+  adicionarTotal(linha, formatarMoedaTotal(totais.impostos), classeNegativa(totais.impostos));
+  adicionarTotal(linha, formatarMoedaTotal(totais.acordos), classeNegativa(totais.acordos));
+  adicionarTotal(linha, formatarMoedaTotal(totais.receitaLiquida), classeNegativa(totais.receitaLiquida));
+  adicionarTotal(
+    linha,
+    totais.cmvUnitario === null ? '—' : formatarMoedaTotal(totais.cmvUnitario),
+    classeNegativa(totais.cmvUnitario)
+  );
+  adicionarTotal(linha, formatarMoedaTotal(totais.cmvTotal), classeNegativa(totais.cmvTotal));
+  adicionarTotal(
+    linha,
+    totais.percentualPromotoria === null
+      ? '—'
+      : formatarPercentual(totais.percentualPromotoria)
+  );
+  adicionarTotal(linha, formatarMoedaTotal(totais.custoPromotoria), classeNegativa(totais.custoPromotoria));
+  adicionarTotal(
+    linha,
+    totais.percentualContrato === null
+      ? '—'
+      : formatarPercentual(totais.percentualContrato)
+  );
+  adicionarTotal(linha, formatarMoedaTotal(totais.custoContrato), classeNegativa(totais.custoContrato));
+  adicionarTotal(linha, formatarMoedaTotal(totais.investimentos), classeNegativa(totais.investimentos));
+  adicionarTotal(
+    linha,
+    totais.percentualComissao === null
+      ? '—'
+      : formatarPercentual(totais.percentualComissao)
+  );
+  adicionarTotal(linha, formatarMoedaTotal(totais.custoComissao), classeNegativa(totais.custoComissao));
+  adicionarTotal(linha, formatarMoedaTotal(totais.resultado), classeNegativa(totais.resultado));
+  adicionarTotal(
+    linha,
+    totais.margem === null ? '—' : formatarPercentual(totais.margem),
+    classeMargem(totais.margem)
+  );
+  adicionarTotal(
+    linha,
+    totais.metaMargem === null ? '—' : formatarPercentual(totais.metaMargem)
+  );
+  adicionarTotal(
+    linha,
+    totais.gapMargem === null ? '—' : formatarPercentual(totais.gapMargem),
+    classeNegativa(totais.gapMargem)
+  );
+
+  totaisTabela.appendChild(linha);
+}
+
       function renderizarLinhas(itens) {
         linhasTabela.replaceChildren();
 
@@ -748,7 +937,7 @@ function atualizarIndicadoresFiltros() {
 }
 
 function aplicarFiltrosTabela() {
-  var itensFiltrados = todosItens.filter(function(item) {
+  itensVisiveis = todosItens.filter(function(item) {
     return Object.keys(filtrosColunas).every(function(chave) {
       var valoresSelecionados = filtrosColunas[chave];
 
@@ -758,8 +947,11 @@ function aplicarFiltrosTabela() {
     });
   });
 
-  renderizarLinhas(itensFiltrados);
+  renderizarLinhas(itensVisiveis);
+  renderizarTotais(itensVisiveis);
   atualizarIndicadoresFiltros();
+
+  exportarExcel.disabled = itensVisiveis.length === 0;
 }
 
 function renderizarTabela(itens) {
@@ -910,6 +1102,82 @@ function abrirFiltroColuna(indice, botao) {
   desenharOpcoes();
 }
 
+function escaparCsv(valor) {
+  return '"' + String(valor === null || valor === undefined ? '' : valor)
+    .replace(/"/g, '""') + '"';
+}
+
+function exportarExcelFiltrado() {
+  if (!itensVisiveis.length) return;
+
+  var cabecalhos = [
+    'Data',
+    'Código parceiro',
+    'Parceiro',
+    'Produto',
+    'Quantidade',
+    'Valor líquido',
+    'Valor ST',
+    '',
+    'Faturamento',
+    'Impostos',
+    'Acordos',
+    'Receita líquida',
+    'CMV unitário',
+    'CMV total',
+    'Promotoria (%)',
+    'Custo promotoria',
+    'Contrato (%)',
+    'Custo contrato',
+    'Investimentos',
+    'Comissão (%)',
+    'Custo comissão',
+    'Resultado',
+    'Margem (%)',
+    'Meta margem',
+    'Gap margem'
+  ];
+
+  var linhas = [cabecalhos];
+
+  itensVisiveis.forEach(function(item) {
+    var linha = [];
+
+    for (var indice = 0; indice < quantidadeColunas; indice++) {
+      linha.push(valorDaColuna(item, indice));
+    }
+
+    linhas.push(linha);
+  });
+
+  var conteudo = '\ufeff' + linhas.map(function(linha) {
+    return linha.map(escaparCsv).join(';');
+  }).join('\r\n');
+
+  var arquivo = new Blob([conteudo], {
+    type: 'text/csv;charset=utf-8'
+  });
+
+  var link = document.createElement('a');
+  var url = URL.createObjectURL(arquivo);
+
+  link.href = url;
+  link.download =
+    'RENTABILIDADE_SKU_' +
+    inicio.value +
+    '_a_' +
+    fim.value +
+    '.csv';
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(function() {
+    URL.revokeObjectURL(url);
+  }, 0);
+}
+
 function prepararFiltrosColunas() {
   document.querySelectorAll('thead th').forEach(function(cabecalho, indice) {
     if (indice === 7) return;
@@ -991,6 +1259,8 @@ function prepararFiltrosColunas() {
 
       inicio.addEventListener('change', carregarDados);
       fim.addEventListener('change', carregarDados);
+
+      exportarExcel.addEventListener('click', exportarExcelFiltrado);
 
       prepararFiltrosColunas();
       definirPeriodoInicial();
