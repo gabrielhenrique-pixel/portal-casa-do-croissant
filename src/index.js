@@ -1070,22 +1070,30 @@ if (!acesso?.permissions.view) {
 }
 
   try {
-    const resultado = await listarMonitoramentoVendasSankhya(
-      request,
-      env
+  const vendedorVinculado = await obterVendedorVinculado(
+    env,
+    acesso.session.user_id
+  );
+
+  const resultado = await listarMonitoramentoVendasSankhya(
+    request,
+    env,
+    vendedorVinculado
+  );
+
+  if (resultado.error) {
+    return json(
+      { error: resultado.error },
+      resultado.status || 400
     );
+  }
 
-        if (resultado.error) {
-      return json(
-        { error: resultado.error },
-        resultado.status || 400
-      );
-    }
-
-    return json({
-      ...resultado,
-      podeEditarMetas: !!acesso.permissions.update
-    });
+  return json({
+    ...resultado,
+    podeEditarMetas:
+      !!acesso.permissions.update && !vendedorVinculado,
+    vendedorBloqueado: Boolean(vendedorVinculado)
+  });
   } catch (error) {
     console.error('Falha no monitoramento de vendas:', error);
 
