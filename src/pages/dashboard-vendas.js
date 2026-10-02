@@ -824,9 +824,9 @@ export function dashboardVendasPage() {
         <input id="fim" type="date" required>
       </label>
 
-      <label>
-        Vendedor
-        <select id="vendedor">
+      <label id="campoVendedor">
+         Vendedor
+      <select id="vendedor">
           <option value="">Todos</option>
         </select>
       </label>
@@ -1101,6 +1101,14 @@ export function dashboardVendasPage() {
 
     preencherFiltro(opcoesVendedores);
     $('vendedor').value = vendedorSelecionado;
+
+    var vendedorBloqueado = Boolean(dados.vendedorBloqueado);
+
+$('campoVendedor').hidden = vendedorBloqueado;
+
+$('abrirMetas')
+  .closest('.acoes-metas')
+  .hidden = vendedorBloqueado;
 
     $('linhas').innerHTML =
       vendedores.map(function (vendedor, indice) {
