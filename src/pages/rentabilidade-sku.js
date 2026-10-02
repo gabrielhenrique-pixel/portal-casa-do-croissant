@@ -179,6 +179,50 @@ tfoot td.total-label {
       white-space: nowrap;
     }
 
+tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 10px 8px;
+  border: 1px solid #a9c6da;
+  border-top: 2px solid var(--azul);
+  background: #dcebf6;
+  color: #102e49;
+  font-weight: bold;
+  text-align: right;
+  white-space: nowrap;
+}
+
+tfoot td.total-titulo {
+  background: var(--azul-escuro);
+  color: white;
+  text-align: left;
+}
+
+tfoot td.total-vazio {
+  color: #6a7f8e;
+  text-align: center;
+}
+
+tfoot td.negativo {
+  color: #c00000;
+}
+
+tfoot td.margem-critica {
+  background: #f4cccc;
+  color: #c00000;
+}
+
+tfoot td.margem-alerta {
+  background: #fff2cc;
+  color: #8a5b00;
+}
+
+tfoot td.margem-boa {
+  background: #e2f0d9;
+  color: #25713b;
+}
+
     tbody tr:nth-child(even) { background: #f8faf9; }
     tbody tr:hover { background: #edf5f0; }
     td.texto { text-align: left; }
@@ -592,13 +636,11 @@ tfoot td.total-label {
           </tr>
         </thead>
         <tbody id="linhasTabela"></tbody>
+        <tfoot>
+         <tr id="totaisTabela"></tr>
+        </tfoot>
       </table>
     </section>
-    <section
-  id="totaisTabela"
-  class="resumo-totais"
-  aria-label="Totais das linhas filtradas"
-></section>
   </main>
 
   <script>
@@ -1187,6 +1229,110 @@ function atualizarIndicadoresFiltros() {
       filtrosColunas[indice] instanceof Set
     );
   });
+}
+
+function formatarNumeroTotal(valor) {
+  return numero(valor).toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatarMoedaTotal(valor) {
+  return numero(valor).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function renderizarTotais(itens) {
+  totaisTabela.replaceChildren();
+
+  var total = itens.reduce(function(acumulado, item) {
+    acumulado.quantidade += numero(item.quantidade);
+    acumulado.valorLiquido += valorDoItem(item, ['valorLiquido', 'vlrLiquido']);
+    acumulado.valorSt += valorDoItem(item, ['valorSt', 'vlrSt']);
+    acumulado.faturamento += valorDoItem(item, ['faturamento', 'faturamentoBruto']);
+    acumulado.impostos += valorDoItem(item, ['impostos']);
+    acumulado.acordos += valorDoItem(item, ['acordos']);
+    acumulado.receitaLiquida += valorDoItem(item, ['receitaLiquida']);
+    acumulado.cmvTotal += valorDoItem(item, ['cmvTotal']);
+    acumulado.custoPromotoria += valorDoItem(item, ['custoPromotoria']);
+    acumulado.custoContrato += valorDoItem(item, ['custoContrato']);
+    acumulado.investimentos += valorDoItem(item, ['investimentos']);
+    acumulado.custoComissao += valorDoItem(item, ['custoComissao']);
+    acumulado.resultado += valorDoItem(item, ['resultado']);
+    return acumulado;
+  }, {
+    quantidade: 0,
+    valorLiquido: 0,
+    valorSt: 0,
+    faturamento: 0,
+    impostos: 0,
+    acordos: 0,
+    receitaLiquida: 0,
+    cmvTotal: 0,
+    custoPromotoria: 0,
+    custoContrato: 0,
+    investimentos: 0,
+    custoComissao: 0,
+    resultado: 0
+  });
+
+  var cmvUnitario = total.quantidade
+    ? total.cmvTotal / total.quantidade
+    : 0;
+
+  var percentualPromotoria = total.faturamento
+    ? total.custoPromotoria / total.faturamento
+    : 0;
+
+  var percentualContrato = total.faturamento
+    ? total.custoContrato / total.faturamento
+    : 0;
+
+  var percentualComissao = total.faturamento
+    ? total.custoComissao / total.faturamento
+    : 0;
+
+  var margem = total.receitaLiquida
+    ? total.resultado / total.receitaLiquida
+    : 0;
+
+  var metaMargem = 0.20;
+  var gapMargem = margem - metaMargem;
+
+  var linha = document.createElement('tr');
+
+  adicionarCelula(linha, 'TOTAL (' + itens.length + ')', 'total-titulo');
+  adicionarCelula(linha, '—', 'total-vazio');
+  adicionarCelula(linha, '—', 'total-vazio');
+  adicionarCelula(linha, '—', 'total-vazio');
+  adicionarCelula(linha, formatarNumeroTotal(total.quantidade));
+  adicionarCelula(linha, formatarMoedaTotal(total.valorLiquido), classeNegativa(total.valorLiquido));
+  adicionarCelula(linha, formatarMoedaTotal(total.valorSt), classeNegativa(total.valorSt));
+  adicionarCelula(linha, '—', 'total-vazio');
+  adicionarCelula(linha, formatarMoedaTotal(total.faturamento), classeNegativa(total.faturamento));
+  adicionarCelula(linha, formatarMoedaTotal(total.impostos), classeNegativa(total.impostos));
+  adicionarCelula(linha, formatarMoedaTotal(total.acordos), classeNegativa(total.acordos));
+  adicionarCelula(linha, formatarMoedaTotal(total.receitaLiquida), classeNegativa(total.receitaLiquida));
+  adicionarCelula(linha, formatarMoedaTotal(cmvUnitario));
+  adicionarCelula(linha, formatarMoedaTotal(total.cmvTotal), classeNegativa(total.cmvTotal));
+  adicionarCelula(linha, formatarPercentual(percentualPromotoria));
+  adicionarCelula(linha, formatarMoedaTotal(total.custoPromotoria), classeNegativa(total.custoPromotoria));
+  adicionarCelula(linha, formatarPercentual(percentualContrato));
+  adicionarCelula(linha, formatarMoedaTotal(total.custoContrato), classeNegativa(total.custoContrato));
+  adicionarCelula(linha, formatarMoedaTotal(total.investimentos), classeNegativa(total.investimentos));
+  adicionarCelula(linha, formatarPercentual(percentualComissao));
+  adicionarCelula(linha, formatarMoedaTotal(total.custoComissao), classeNegativa(total.custoComissao));
+  adicionarCelula(linha, formatarMoedaTotal(total.resultado), classeNegativa(total.resultado));
+  adicionarCelula(linha, formatarPercentual(margem), classeMargem(margem));
+  adicionarCelula(linha, formatarPercentual(metaMargem));
+  adicionarCelula(linha, formatarPercentual(gapMargem), classeNegativa(gapMargem));
+
+  totaisTabela.appendChild(linha);
 }
 
 function aplicarFiltrosTabela() {
