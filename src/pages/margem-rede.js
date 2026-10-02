@@ -288,6 +288,30 @@ export function margemRedePage() {
       background:var(--azul);
     }
 
+    th:nth-child(2),
+td:nth-child(2) {
+  position:sticky;
+  left:220px;
+  width:155px;
+  min-width:155px;
+  max-width:155px;
+  box-shadow:2px 0 0 #c7d8e5;
+}
+
+th:nth-child(2) {
+  z-index:4;
+  background:var(--azul);
+}
+
+tbody td:nth-child(2) {
+  z-index:1;
+  background:#fff;
+}
+
+tbody tr:hover td:nth-child(2) {
+  background:#f7faf8;
+}
+
     tbody td:first-child {
       z-index:1;
     }
