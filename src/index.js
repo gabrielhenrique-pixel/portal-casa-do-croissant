@@ -84,6 +84,32 @@ async function garantirModulosAcesso(env) {
   );
 }
 
+async function garantirVinculosVendedores(env) {
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS usuarios_vendedores (
+      user_id TEXT PRIMARY KEY,
+      codigo_vendedor TEXT NOT NULL UNIQUE,
+      criado_em TEXT NOT NULL
+    )`
+  ).run();
+}
+
+async function obterVendedorVinculado(env, userId) {
+  await garantirVinculosVendedores(env);
+
+  const vinculo = await env.DB.prepare(
+    `SELECT usuarios_vendedores.codigo_vendedor
+     FROM usuarios_vendedores
+     INNER JOIN users ON users.id = usuarios_vendedores.user_id
+     WHERE usuarios_vendedores.user_id = ?
+       AND users.role = 'Vendedor'`
+  ).bind(userId).first();
+
+  return vinculo?.codigo_vendedor
+    ? String(vinculo.codigo_vendedor)
+    : '';
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -2510,38 +2536,117 @@ async function createUser(request, env) {
     'USUARIOS',
     'create'
   );
+
   const data = await bodyAsJson(request);
   const username = normalizeUsername(data.username);
   const email = normalizeEmail(data.email);
   const password = String(data.password || '');
   const role = String(data.role || 'Colaborador');
+  const codigoVendedor = String(data.codigoVendedor || '').trim();
+
   validateAccount(username, email, password);
-  if (!['Administrador', 'Gestor', 'Colaborador'].includes(role)) {
-    return json({ error: 'Perfil de usuário inválido.' }, 400);
+
+  if (
+    !['Administrador', 'Gestor', 'Colaborador', 'Vendedor']
+      .includes(role)
+  ) {
+    return json({
+      error: 'Perfil de usuário inválido.'
+    }, 400);
   }
+
+  if (role === 'Vendedor' && !/^\d+$/.test(codigoVendedor)) {
+    return json({
+      error: 'Informe o código numérico do vendedor no Sankhya.'
+    }, 400);
+  }
+
+  await garantirModulosAcesso(env);
+  await garantirVinculosVendedores(env);
 
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
   const salt = randomToken(16);
   const passwordHash = await hashPassword(password, salt);
+
   try {
-    await env.DB.batch([
+    const comandos = [
       env.DB.prepare(
         `INSERT INTO users
-         (id, username, email, role, password_hash, password_salt, password_algorithm, created_at)
+         (id, username, email, role, password_hash, password_salt,
+          password_algorithm, created_at)
          VALUES (?, ?, ?, ?, ?, ?, 'pbkdf2-sha256', ?)`
-      ).bind(id, username, email, role, passwordHash, salt, createdAt),
+      ).bind(
+        id,
+        username,
+        email,
+        role,
+        passwordHash,
+        salt,
+        createdAt
+      )
+    ];
+
+    if (role === 'Vendedor') {
+      comandos.push(
+        env.DB.prepare(
+          `INSERT INTO usuarios_vendedores
+            (user_id, codigo_vendedor, criado_em)
+           VALUES (?, ?, ?)`
+        ).bind(id, codigoVendedor, createdAt),
+
+        env.DB.prepare(
+          `INSERT INTO user_module_permissions
+            (user_id, module_id, can_view, can_create, can_update,
+             can_delete, can_configure, updated_at, updated_by)
+           VALUES (?, 'DASHBOARD_VENDAS', 1, 0, 0, 0, 0, ?, ?)
+           ON CONFLICT(user_id, module_id) DO UPDATE SET
+             can_view = 1,
+             can_create = 0,
+             can_update = 0,
+             can_delete = 0,
+             can_configure = 0,
+             updated_at = excluded.updated_at,
+             updated_by = excluded.updated_by`
+        ).bind(id, createdAt, administrator.username)
+      );
+    }
+
+    comandos.push(
       env.DB.prepare(
-        'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
-      ).bind(crypto.randomUUID(), createdAt, administrator.username, 'USUARIO_CRIADO', `Usuário ${username} criado com perfil ${role}.`)
-    ]);
+        `INSERT INTO audit_log
+          (id, created_at, username, action, detail)
+         VALUES (?, ?, ?, ?, ?)`
+      ).bind(
+        crypto.randomUUID(),
+        createdAt,
+        administrator.username,
+        'USUARIO_CRIADO',
+        `Usuário ${username} criado com perfil ${role}.`
+      )
+    );
+
+    await env.DB.batch(comandos);
+
   } catch (error) {
     if (String(error.message || '').includes('UNIQUE constraint failed')) {
-      return json({ error: 'Já existe um usuário com este nome ou e-mail.' }, 409);
+      return json({
+        error: 'Já existe um usuário com este nome, e-mail ou código de vendedor.'
+      }, 409);
     }
+
     throw error;
   }
-  return json({ user: { id, username, email, role, created_at: createdAt } }, 201);
+
+  return json({
+    user: {
+      id,
+      username,
+      email,
+      role,
+      created_at: createdAt
+    }
+  }, 201);
 }
 
 async function userPermissions(request, env, userId) {
@@ -2598,7 +2703,7 @@ async function updateUser(request, env, userId) {
     return json({ error: 'Informe um e-mail válido.' }, 400);
   }
 
-  if (!['Administrador', 'Gestor', 'Colaborador'].includes(role)) {
+  if (!['Administrador', 'Gestor', 'Colaborador', 'Vendedor'].includes(role)) {
     return json({ error: 'Perfil de usuário inválido.' }, 400);
   }
 
