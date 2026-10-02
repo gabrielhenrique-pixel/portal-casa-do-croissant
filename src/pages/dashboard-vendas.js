@@ -418,6 +418,30 @@ export function dashboardVendasPage() {
       text-align:center;
     }
 
+    .totais-secundarios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin: 14px 36px 0;
+  background: #d7e1ed;
+}
+
+.total-operacao {
+  padding: 12px;
+}
+
+.total-operacao small {
+  display: block;
+  margin-top: 5px;
+  color: #60718b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.total-devolucao strong {
+  color: #b42331;
+}
+
     .total span {
       display:block;
       color:#5a7091;
@@ -662,6 +686,10 @@ export function dashboardVendasPage() {
         margin:5px 0;
       }
 
+      .totais-secundarios {
+        margin: 10px 0 0;
+      }
+
       .meta-total,
       .linha-meta {
         grid-template-columns:1fr;
@@ -877,6 +905,19 @@ export function dashboardVendasPage() {
             <strong id="metaTotal">—</strong>
           </div>
         </div>
+        <div class="totais-secundarios">
+  <div class="total total-operacao">
+    <span>Pedidos a faturar</span>
+    <strong id="pedidosAFaturarValor">—</strong>
+    <small id="pedidosAFaturarCaixas">— caixas</small>
+  </div>
+
+  <div class="total total-operacao total-devolucao">
+    <span>Devoluções</span>
+    <strong id="devolucoesValor">—</strong>
+    <small id="devolucoesCaixas">— caixas</small>
+  </div>
+</div>
       </article>
     </section>
 
@@ -1130,6 +1171,23 @@ export function dashboardVendasPage() {
     $('metaTotal').textContent = dados.totalMeta
       ? moeda.format(numero(dados.totalMeta))
       : 'Defina as metas';
+
+      var pedidosAFaturar = dados.pedidosAFaturar || {};
+var devolucoes = dados.devolucoes || {};
+
+$('pedidosAFaturarValor').textContent = moeda.format(
+  numero(pedidosAFaturar.valor)
+);
+
+$('pedidosAFaturarCaixas').textContent =
+  caixas.format(numero(pedidosAFaturar.caixas)) + ' caixas';
+
+$('devolucoesValor').textContent = moeda.format(
+  numero(devolucoes.valor)
+);
+
+$('devolucoesCaixas').textContent =
+  caixas.format(numero(devolucoes.caixas)) + ' caixas';
 
     $('pctTotal').textContent = dados.percentualMeta == null
       ? '—'
