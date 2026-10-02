@@ -441,6 +441,10 @@ if (
     return redirectToPortal();
   }
 
+  if (acesso.session.role === 'Vendedor') {
+  return redirectToPortal();
+}
+
   return metasVendasPage({
     podeEditar: !!acesso.permissions.update
   });
@@ -544,6 +548,12 @@ if (url.pathname === '/api/vendas/metas-painel') {
       error: 'Acesso não autorizado.'
     }, 403);
   }
+
+  if (acesso.session.role === 'Vendedor') {
+  return json({
+    error: 'Vendedores não podem consultar ou alterar metas.'
+  }, 403);
+}
 
   if (
     request.method === 'PUT' &&
