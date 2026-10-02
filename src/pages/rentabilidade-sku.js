@@ -245,6 +245,28 @@ tfoot td.total-label {
   font-weight:700;
 }
 
+.exportar-excel {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 8px 15px;
+  border: 1px solid #0d6a3c;
+  border-radius: 7px;
+  background: #0d6a3c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.exportar-excel:hover:not(:disabled) {
+  background: #09542f;
+}
+
+.exportar-excel:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
 .filtros {
   display:flex;
   align-items:end;
@@ -398,12 +420,45 @@ tfoot td.total-label {
 }
 
     @media (max-width: 720px) {
-      main { padding: 12px 10px 24px; }
-      .cabecalho { align-items: stretch; flex-direction: column; padding: 16px; }
-      .filtros { align-items: stretch; }
-      .campo { flex: 1 1 140px; }
-      button { width: 100%; }
-    }
+  main {
+    padding: 12px 10px 24px;
+  }
+
+  .cabecalho {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .filtros {
+    align-items: stretch;
+  }
+
+  .campo {
+    flex: 1 1 140px;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .topo {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+
+  .marca {
+    min-width: 0;
+  }
+
+  .marca span {
+    font-size: 23px;
+  }
+
+  .exportar-excel {
+    width: auto;
+  }
+}
   </style>
 </head>
 <body>
@@ -415,9 +470,18 @@ tfoot td.total-label {
     <a class="nav-icone" href="/" aria-label="Voltar à página inicial">⌂</a>
   </nav>
 
-  <div class="marca">
+    <div class="marca">
     <span>RENTABILIDADE SKU</span>
   </div>
+
+  <button
+    id="exportarExcel"
+    class="exportar-excel"
+    type="button"
+    disabled
+  >
+    Exportar Excel
+  </button>
 </header>
 
 <form class="filtros" id="formFiltros">
@@ -430,15 +494,6 @@ tfoot td.total-label {
     <span>Data final</span>
     <input id="fim" name="fim" type="date" required>
   </label>
-
-    <button
-    id="exportarExcel"
-    type="button"
-    disabled
-    title="Exportar as linhas atualmente filtradas"
-  >
-    ⇩ Exportar Excel
-  </button>
   
 </form>
 
