@@ -702,13 +702,13 @@ function adicionarLinhaTotalMargem(redes) {
   linha.appendChild(celula('devolucao', moeda(total.devolucoes)));
   linha.appendChild(celula(negativo(total.receitaLiquida), moeda(total.receitaLiquida)));
   linha.appendChild(celula(negativo(total.impostos), moeda(total.impostos)));
-  linha.appendChild(celula('', cmvUnitario === null ? '—' : moeda(cmvUnitario)));
+  linha.appendChild(celula('total-vazio', ''));
   linha.appendChild(celula(negativo(total.cmvTotal), moeda(total.cmvTotal)));
-  linha.appendChild(celula('', percentual(percentualPromotoria)));
+  linha.appendChild(celula('total-vazio', ''));
   linha.appendChild(celula(negativo(total.custoPromotoria), moeda(total.custoPromotoria)));
-  linha.appendChild(celula('', percentual(percentualContrato)));
+  linha.appendChild(celula('total-vazio', ''));
   linha.appendChild(celula(negativo(total.custoContrato), moeda(total.custoContrato)));
-  linha.appendChild(celula('', percentual(percentualComissao)));
+  linha.appendChild(celula('total-vazio', ''));
   linha.appendChild(celula(negativo(total.custoComissao), moeda(total.custoComissao)));
   linha.appendChild(celula(negativo(total.investimentos), moeda(total.investimentos)));
   linha.appendChild(celula(negativo(total.frete), moeda(total.frete)));
