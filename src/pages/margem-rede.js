@@ -674,10 +674,6 @@ function adicionarLinhaTotalMargem(redes) {
     clientesPositivados: 0
   });
 
-  var cmvUnitario = total.quantidade
-    ? total.cmvTotal / total.quantidade
-    : null;
-
   var percentualPromotoria = total.faturamentoBruto
     ? total.custoPromotoria / total.faturamentoBruto
     : null;
