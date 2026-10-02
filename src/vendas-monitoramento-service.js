@@ -128,6 +128,44 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     'ORDER BY VENDEDOR'
   ].join('\n');
 
+    const sqlPedidosAFaturar = [
+    'SELECT',
+    '  NVL(SUM(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0)), 0) AS VALOR,',
+    '  NVL(SUM(CASE',
+    "    WHEN UPPER(TRIM(PRO.CODVOL)) IN ('CX', 'CAIXA') THEN NVL(ITE.QTDNEG, 0)",
+    '    WHEN NVL(PRO.MULTIPVENDA, 0) > 0 THEN NVL(ITE.QTDNEG, 0) / PRO.MULTIPVENDA',
+    '    ELSE 0',
+    '  END), 0) AS CAIXAS',
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+    'INNER JOIN TGFTOP TOP ON TOP.CODTIPOPER = CAB.CODTIPOPER',
+    '  AND TOP.DHALTER = CAB.DHTIPOPER',
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.PENDENTE = 'S'",
+    "  AND UPPER(TRIM(TOP.DESCROPER)) = 'PEDIDO DE VENDA'",
+    filtroVendedor
+  ].filter(Boolean).join('\n');
+
+  const sqlDevolucoes = [
+    'SELECT',
+    '  ABS(NVL(SUM(NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0) + NVL(ITE.VLRSUBST, 0)), 0)) AS VALOR,',
+    '  ABS(NVL(SUM(CASE',
+    "    WHEN UPPER(TRIM(PRO.CODVOL)) IN ('CX', 'CAIXA') THEN NVL(ITE.QTDNEG, 0)",
+    '    WHEN NVL(PRO.MULTIPVENDA, 0) > 0 THEN NVL(ITE.QTDNEG, 0) / PRO.MULTIPVENDA',
+    '    ELSE 0',
+    '  END), 0)) AS CAIXAS',
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.TIPMOV = 'D'",
+    "  AND CAB.STATUSNOTA = 'L'",
+    filtroVendedor
+  ].filter(Boolean).join('\n');
+
       const resultados = await Promise.all([
     executarConsultaSankhya(token, sqlVendedores),
 
@@ -143,7 +181,9 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
       inicio,
       fim,
       vendedorSelecionado
-    )
+    ),
+        executarConsultaSankhya(token, sqlPedidosAFaturar),
+        executarConsultaSankhya(token, sqlDevolucoes)
   ]);
 
   const linhasVendedores = resultados[0];
@@ -151,6 +191,18 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
   const metasVendedores = resultados[2];
   const metaEmpresa = numero(resultados[3]);
   const gruposCaixas = resultados[4];
+  const linhaPedidosAFaturar = resultados[5][0] || [];
+  const linhaDevolucoes = resultados[6][0] || [];
+
+  const pedidosAFaturar = {
+    valor: numero(linhaPedidosAFaturar[0]),
+    caixas: numero(linhaPedidosAFaturar[1])
+};
+
+const devolucoes = {
+  valor: numero(linhaDevolucoes[0]),
+  caixas: numero(linhaDevolucoes[1])
+};
 
   const metasPorVendedor = new Map(
     metasVendedores.map((meta) => [
@@ -243,6 +295,8 @@ export async function listarMonitoramentoVendasSankhya(request, env) {
     opcoesVendedores,
     produtos,
     totalFaturamento,
+    pedidosAFaturar,
+    devolucoes,
     totalMeta,
     percentualMeta: totalMeta > 0
       ? totalFaturamento / totalMeta
