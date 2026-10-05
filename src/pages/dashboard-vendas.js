@@ -864,25 +864,30 @@ export function dashboardVendasPage() {
           grid-template-columns:1fr;
         }
       }
-                  @media (max-width:430px) {
+      @media (max-width:430px) {
         .filtros {
-          grid-template-columns:minmax(0, 1fr);
+          grid-template-columns:1fr;
+          padding:14px;
+        }
+
+        .filtros > label {
           width:100%;
+          min-width:0;
+          padding-right:14px;
+        }
+
+        .filtros > label > input,
+        .filtros > label > select {
+          display:block;
+          width:100%;
+          min-width:0;
           max-width:100%;
           box-sizing:border-box;
         }
 
-        .filtros label {
-          width:auto;
+        .filtros > button {
+          width:calc(100% - 14px);
           min-width:0;
-          max-width:100%;
-        }
-
-        .filtros input,
-        .filtros select,
-        .filtros button {
-          width:100%;
-          max-width:100%;
           box-sizing:border-box;
         }
 
