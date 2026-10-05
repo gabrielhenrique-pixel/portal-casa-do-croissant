@@ -211,12 +211,13 @@ const filtroVendedoresCadastrados =
 
     carregarMetaEmpresa(env),
 
-    listarCaixasDoPainel(
+        listarCaixasDoPainel(
       env,
       token,
       inicio,
       fim,
-      vendedorSelecionado
+      vendedorSelecionado,
+      codigosVendedoresCadastrados
     ),
         executarConsultaSankhya(token, sqlPedidosAFaturar),
         executarConsultaSankhya(token, sqlDevolucoes)
