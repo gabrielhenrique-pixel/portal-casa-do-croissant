@@ -1,6 +1,9 @@
 import {
   listarCaixasDoPainel
 } from './vendas-caixas-painel-service.js';
+import {
+  listarVendedoresCadastrados
+} from './vendas-metas-caixas-service.js';
 
 const META_MAXIMA = 999999999.99;
 
@@ -75,6 +78,21 @@ export async function listarMonitoramentoVendasSankhya(
   
   const token = await obterTokenSankhya(env);
 
+  const vendedoresCadastrados =
+  await listarVendedoresCadastrados(env);
+
+const codigosVendedoresCadastrados =
+  vendedoresCadastrados.map(function(vendedor) {
+    return vendedor.codigoVendedor;
+  });
+
+const filtroVendedoresCadastrados =
+  codigosVendedoresCadastrados.length
+    ? 'WHERE CODVEND IN (' +
+      codigosVendedoresCadastrados.map(Number).join(',') +
+      ')'
+    : 'WHERE 1 = 0';
+
   const filtroVendedor = vendedorSelecionado
     ? '  AND CAB.CODVEND = ' + Number(vendedorSelecionado)
     : '';
@@ -128,19 +146,13 @@ export async function listarMonitoramentoVendasSankhya(
 ].filter(Boolean).join('\n');
 
   const sqlOpcoesVendedores = [
-    'SELECT',
-    '  CAB.CODVEND AS CODIGO_VENDEDOR,',
-    "  NVL(VEN.APELIDO, 'SEM VENDEDOR') AS VENDEDOR",
-    'FROM TGFCAB CAB',
-    'LEFT JOIN TGFVEN VEN ON VEN.CODVEND = CAB.CODVEND',
-    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
-    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
-    "  AND CAB.TIPMOV = 'V'",
-    "  AND CAB.STATUSNOTA = 'L'",
-    '  AND CAB.CODTIPOPER IN (1101, 1107)',
-    'GROUP BY CAB.CODVEND, VEN.APELIDO',
-    'ORDER BY VENDEDOR'
-  ].join('\n');
+  'SELECT',
+  '  CODVEND AS CODIGO_VENDEDOR,',
+  "  NVL(APELIDO, 'SEM VENDEDOR') AS VENDEDOR",
+  'FROM TGFVEN',
+  filtroVendedoresCadastrados,
+  'ORDER BY APELIDO'
+].join('\n');
 
     const sqlPedidosAFaturar = [
     'SELECT',
@@ -226,70 +238,102 @@ const devolucoes = {
   );
 
 
-    const vendedores = linhasVendedores
-    .map((linha) => {
-      const codigoVendedor = String(linha[0] || '');
-      const meta = metasPorVendedor.get(codigoVendedor) || 0;
-      const faturamentoReal = numero(linha[2]);
-const podeVerFaturamento =
-  !vendedorBloqueado ||
-  codigoVendedor === vendedorSelecionado;
+    const nomesPorCodigo = new Map(
+  linhasOpcoesVendedores.map(function(linha) {
+    return [
+      String(linha[0] || '').trim(),
+      String(linha[1] || 'SEM VENDEDOR').trim()
+    ];
+  })
+);
 
-return {
-  codigoVendedor,
-  vendedor: String(linha[1] || 'Sem vendedor').trim(),
-  faturamento: podeVerFaturamento
-    ? faturamentoReal
-    : null,
-  meta,
-  percentualMeta: meta > 0
-    ? faturamentoReal / meta
-    : null
-};
-    })
-    .sort((primeiro, segundo) => {
-      const primeiroTemMeta = primeiro.percentualMeta !== null;
-      const segundoTemMeta = segundo.percentualMeta !== null;
-
-      if (!primeiroTemMeta && !segundoTemMeta) {
-        return primeiro.vendedor.localeCompare(
-          segundo.vendedor,
-          'pt-BR'
-        );
+const vendasPorCodigo = new Map(
+  linhasVendedores.map(function(linha) {
+    return [
+      String(linha[0] || '').trim(),
+      {
+        vendedor: String(
+          linha[1] || 'SEM VENDEDOR'
+        ).trim(),
+        faturamento: numero(linha[2])
       }
+    ];
+  })
+);
 
-      if (!primeiroTemMeta) {
-        return 1;
-      }
+const vendedores = vendedoresCadastrados
+  .map(function(vendedorCadastrado) {
+    const codigoVendedor =
+      vendedorCadastrado.codigoVendedor;
 
-      if (!segundoTemMeta) {
-        return -1;
-      }
+    const venda = vendasPorCodigo.get(codigoVendedor);
+    const meta =
+      metasPorVendedor.get(codigoVendedor) || 0;
 
-      const diferenca =
-        segundo.percentualMeta - primeiro.percentualMeta;
+    const faturamentoReal = venda
+      ? venda.faturamento
+      : 0;
 
-      if (diferenca !== 0) {
-        return diferenca;
-      }
+    const podeVerFaturamento =
+      !vendedorBloqueado ||
+      codigoVendedor === vendedorSelecionado;
 
+    return {
+      codigoVendedor,
+      vendedor:
+        nomesPorCodigo.get(codigoVendedor) ||
+        venda?.vendedor ||
+        vendedorCadastrado.usuario.toUpperCase(),
+      faturamento: podeVerFaturamento
+        ? faturamentoReal
+        : null,
+      meta,
+      percentualMeta: meta > 0
+        ? faturamentoReal / meta
+        : null
+    };
+  })
+  .sort(function(primeiro, segundo) {
+    const primeiroTemMeta =
+      primeiro.percentualMeta !== null;
+
+    const segundoTemMeta =
+      segundo.percentualMeta !== null;
+
+    if (!primeiroTemMeta && !segundoTemMeta) {
       return primeiro.vendedor.localeCompare(
         segundo.vendedor,
         'pt-BR'
       );
-    });
+    }
+
+    if (!primeiroTemMeta) return 1;
+    if (!segundoTemMeta) return -1;
+
+    const diferenca =
+      segundo.percentualMeta - primeiro.percentualMeta;
+
+    if (diferenca !== 0) return diferenca;
+
+    return primeiro.vendedor.localeCompare(
+      segundo.vendedor,
+      'pt-BR'
+    );
+  });
+
+const produtos = gruposCaixas;
 
     const produtos = gruposCaixas;
 
-  const opcoesVendedores = linhasOpcoesVendedores.map((linha) => {
-  const codigoVendedor = String(linha[0] || '');
-
-  return {
-    codigoVendedor,
-    vendedor: String(linha[1] || 'Sem vendedor').trim(),
-    meta: metasPorVendedor.get(codigoVendedor) || 0
-  };
-});
+  const opcoesVendedores = vendedores.map(
+  function(vendedor) {
+    return {
+      codigoVendedor: vendedor.codigoVendedor,
+      vendedor: vendedor.vendedor,
+      meta: vendedor.meta
+    };
+  }
+);
     const vendedorDoFiltro = vendedores.find(
     (vendedor) =>
       String(vendedor.codigoVendedor) === vendedorSelecionado
