@@ -864,6 +864,16 @@ export function dashboardVendasPage() {
           grid-template-columns:1fr;
         }
       }
+            @media (max-width:430px) {
+        .filtros {
+          grid-template-columns:1fr;
+        }
+
+        .filtros label:nth-of-type(3),
+        .filtros button {
+          grid-column:auto;
+        }
+      }
 
      .selecionar-vendedor {
   padding:3px 5px;
