@@ -1,12 +1,3 @@
-const GRUPOS_INICIAIS = [
-  'Croissant TO GO',
-  'Biscoitos',
-  'Amêndoas',
-  'Pão croissant 10un',
-  'Pão Croissant 125g',
-  'Pão Croissant 250g'
-];
-
 export async function garantirCadastroProdutos(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS produtos_painel_config (
@@ -64,6 +55,86 @@ export async function garantirCadastroProdutos(env) {
     GROUP BY TRIM(grupo)
   `).run();
 }
+
+function normalizarNomeGrupo(valor) {
+  return String(valor || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+export async function listarGruposProdutos(env) {
+  await garantirCadastroProdutos(env);
+
+  const resultado = await env.DB.prepare(`
+    SELECT nome
+    FROM grupos_produtos
+    ORDER BY nome COLLATE NOCASE
+  `).all();
+
+  return (resultado.results || []).map(function(grupo) {
+    return String(grupo.nome || '').trim();
+  });
+}
+
+export async function criarGrupoProduto(env, nome, usuario) {
+  const grupo = normalizarNomeGrupo(nome);
+
+  if (!grupo || grupo.length > 80) {
+    return {
+      error:
+        'Informe um nome de grupo entre 1 e 80 caracteres.',
+      status: 400
+    };
+  }
+
+  await garantirCadastroProdutos(env);
+
+  const existente = await env.DB.prepare(`
+    SELECT nome
+    FROM grupos_produtos
+    WHERE nome COLLATE NOCASE = ?
+  `).bind(grupo).first();
+
+  if (existente) {
+    return {
+      error: 'Este grupo já está cadastrado.',
+      status: 409
+    };
+  }
+
+  const agora = new Date().toISOString();
+
+  await env.DB.batch([
+    env.DB.prepare(`
+      INSERT INTO grupos_produtos (
+        nome,
+        criado_em,
+        criado_por
+      )
+      VALUES (?, ?, ?)
+    `).bind(grupo, agora, usuario),
+
+    env.DB.prepare(`
+      INSERT INTO audit_log (
+        id,
+        created_at,
+        username,
+        action,
+        detail
+      )
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(
+      crypto.randomUUID(),
+      agora,
+      usuario,
+      'GRUPO_PRODUTO_CRIADO',
+      JSON.stringify({ grupo })
+    )
+  ]);
+
+  return { grupo };
+}
+
 async function consultarProdutosSankhya(env, codigo = '') {
   if (codigo && !/^\d+$/.test(codigo)) {
     throw new Error('Código de produto inválido.');
@@ -101,8 +172,6 @@ async function consultarProdutosSankhya(env, codigo = '') {
     throw new Error('Autenticação Sankhya recusada.');
   }
 
-  // V = Venda (fabricação própria).
-  // Não existe lista fixa de códigos de produtos.
   const sql = `
     SELECT
       PRO.CODPROD,
@@ -205,13 +274,19 @@ function juntarConfiguracao(produto, configuracao) {
 export async function listarCadastroProdutos(env) {
   await garantirCadastroProdutos(env);
 
-  const [produtos, cadastro] = await Promise.all([
+    const [
+    produtos,
+    cadastro,
+    grupos
+  ] = await Promise.all([
     consultarProdutosSankhya(env),
 
     env.DB.prepare(`
       SELECT *
       FROM produtos_painel_config
-    `).all()
+    `).all(),
+
+    listarGruposProdutos(env)
   ]);
 
   const configuracoes = new Map(
@@ -221,23 +296,13 @@ export async function listarCadastroProdutos(env) {
     ])
   );
 
-  const grupos = new Set(GRUPOS_INICIAIS);
-
-  (cadastro.results || []).forEach(item => {
-    if (item.grupo) {
-      grupos.add(item.grupo);
-    }
-  });
-
   return {
     produtos: produtos.map(produto => juntarConfiguracao(
       produto,
       configuracoes.get(produto.codigoProduto)
     )),
 
-    grupos: Array.from(grupos).sort(
-      (a, b) => a.localeCompare(b, 'pt-BR')
-    )
+        grupos
   };
 }
 
@@ -336,7 +401,6 @@ export async function salvarConfiguracaoProduto(
     );
   }
 
-  // Confirma no Sankhya se o produto pertence ao filtro permitido.
   const [produto] = await consultarProdutosSankhya(
     env,
     codigo
@@ -354,23 +418,20 @@ export async function salvarConfiguracaoProduto(
     );
   }
 
-  await garantirCadastroProdutos(env);
+    const grupos = await listarGruposProdutos(env);
 
-  const existentes = await env.DB.prepare(`
-    SELECT DISTINCT grupo
-    FROM produtos_painel_config
-    WHERE grupo <> ''
-  `).all();
+  const grupoCadastrado = grupos.find(function(nome) {
+    return nome.toLocaleLowerCase('pt-BR') ===
+      grupo.toLocaleLowerCase('pt-BR');
+  });
 
-  const nomes = GRUPOS_INICIAIS.concat(
-    (existentes.results || []).map(item => item.grupo)
-  );
+  if (grupo && !grupoCadastrado) {
+    return invalido(
+      'Cadastre o grupo global antes de vinculá-lo ao produto.'
+    );
+  }
 
-  // Evita duplicar grupos apenas por diferença de maiúsculas.
-  grupo = nomes.find(nome =>
-    nome.toLocaleLowerCase('pt-BR') ===
-    grupo.toLocaleLowerCase('pt-BR')
-  ) || grupo;
+  grupo = grupoCadastrado || '';
 
   const agora = new Date().toISOString();
 
