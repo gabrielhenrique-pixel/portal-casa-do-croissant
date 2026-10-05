@@ -647,54 +647,211 @@ export function dashboardVendasPage() {
       }
     }
 
-    @media (max-width:650px) {
-      main {
-        padding:10px;
-      }
+          @media (max-width:650px) {
+        main {
+          padding:8px 10px 24px;
+        }
 
-      .cabecalho {
-        gap:12px;
-        padding:16px;
-      }
+        .cabecalho {
+          gap:10px;
+          padding:14px;
+          border-radius:14px;
+        }
 
-      .nav-icone {
-        width:42px;
-        height:42px;
-        font-size:22px;
-      }
+        .navegacao-topo {
+          gap:6px;
+        }
 
-      h1 {
-        font-size:23px;
-      }
+        .nav-icone {
+          width:40px;
+          height:40px;
+          font-size:21px;
+        }
 
-      .filtros {
-        padding:14px;
-      }
+        h1 {
+          font-size:20px;
+          line-height:1.15;
+        }
 
-      label,
-      input,
-      select {
-        width:100%;
-      }
+        .filtros {
+          display:grid;
+          grid-template-columns:1fr;
+          gap:12px;
+          padding:14px;
+          border-radius:14px;
+        }
 
+        .filtros label,
+        .filtros button,
+        .filtros input,
+        .filtros select {
+          width:100%;
+          min-width:0;
+        }
 
-      .cards-grupos {
-        grid-template-columns:1fr;
-      }
+        .filtros button {
+          min-height:44px;
+        }
 
-      .totais {
-        margin:5px 0;
-      }
+        .estado {
+          margin:10px 2px 0;
+          font-size:12px;
+        }
 
-      .totais-secundarios {
-        margin: 10px 0 0;
-      }
+        .grade-principal {
+          gap:12px;
+          margin-top:12px;
+        }
 
-      .meta-total,
-      .linha-meta {
-        grid-template-columns:1fr;
+        .painel {
+          padding:14px 10px;
+          border-radius:14px;
+        }
+
+        .painel h2,
+        .painel-ranking h2 {
+          margin:0 4px 10px;
+          font-size:18px;
+        }
+
+        .ranking-tabela {
+          width:100%;
+          table-layout:fixed;
+          border-spacing:0 5px;
+        }
+
+        .ranking-tabela th {
+          padding:0 6px 4px;
+          font-size:9px;
+        }
+
+        .ranking-tabela td {
+          padding:7px 6px;
+          font-size:11px;
+        }
+
+        .ranking-tabela td:first-child {
+          width:46%;
+        }
+
+        .ranking-tabela td:nth-child(2) {
+          width:29%;
+        }
+
+        .ranking-tabela td:last-child {
+          width:25%;
+        }
+
+        .ranking-vendedor {
+          white-space:normal;
+          overflow-wrap:anywhere;
+        }
+
+        .ranking-vendedor .ranking-posicao {
+          margin-right:5px;
+        }
+
+        .ranking-primeiro td {
+          padding:8px 6px;
+          font-size:12px;
+        }
+
+        .ranking-primeiro .ranking-posicao {
+          width:27px;
+          height:22px;
+          margin-right:5px;
+        }
+
+        .ranking-primeiro .ranking-meta {
+          min-width:52px;
+          height:23px;
+          padding:0 5px;
+          font-size:10px;
+        }
+
+        .ranking-meta {
+          min-width:48px;
+          height:21px;
+          padding:0 5px;
+          font-size:10px;
+        }
+
+        .gauge-total {
+          min-height:228px;
+        }
+
+        .gauge {
+          width:min(100%,340px);
+          height:180px;
+        }
+
+        .ponteiro {
+          bottom:28px;
+          height:88px;
+        }
+
+        .pino {
+          bottom:22px;
+        }
+
+        .gauge strong {
+          bottom:-24px;
+          font-size:29px;
+        }
+
+        .gauge span {
+          bottom:-43px;
+          font-size:13px;
+        }
+
+        .totais,
+        .totais-secundarios {
+          margin:12px 0 0;
+        }
+
+        .total,
+        .total-operacao {
+          padding:10px 6px;
+        }
+
+        .total span {
+          font-size:11px;
+        }
+
+        .total strong {
+          font-size:17px;
+        }
+
+        .total-operacao small {
+          margin-top:3px;
+          font-size:10px;
+        }
+
+        .cards-grupos {
+          grid-template-columns:1fr;
+          gap:10px;
+          margin-top:12px;
+        }
+
+        .grupo-card {
+          min-height:195px;
+          border-radius:20px;
+        }
+
+        .acoes-metas {
+          margin-top:14px;
+        }
+
+        .botao-metas {
+          width:100%;
+          min-height:44px;
+        }
+
+        .meta-total,
+        .linha-meta {
+          grid-template-columns:1fr;
+        }
       }
-    }
 
      .selecionar-vendedor {
   padding:3px 5px;
