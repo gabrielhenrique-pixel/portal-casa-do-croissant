@@ -673,26 +673,38 @@ export function dashboardVendasPage() {
           line-height:1.15;
         }
 
-        .filtros {
+                 .filtros {
           display:grid;
-          grid-template-columns:1fr;
-          gap:12px;
+          grid-template-columns:repeat(2, minmax(0, 1fr));
+          gap:10px;
           padding:14px;
           border-radius:14px;
         }
 
-        .filtros label,
-        .filtros button,
+        .filtros label {
+          width:100%;
+          min-width:0;
+        }
+
+        .filtros label:nth-of-type(3),
+        .filtros button {
+          grid-column:1 / -1;
+        }
+
         .filtros input,
         .filtros select {
           width:100%;
           min-width:0;
         }
 
+        .filtros input[type="date"] {
+          padding:0 7px;
+          font-size:12px;
+        }
+
         .filtros button {
           min-height:44px;
         }
-
         .estado {
           margin:10px 2px 0;
           font-size:12px;
@@ -970,7 +982,7 @@ export function dashboardVendasPage() {
       <h1>PAINEL MONITORAMENTO DE VENDAS</h1>
     </header>
 
-    <form id="filtros" class="filtros">
+    <form id="filtros" class="filtros filtros-datas">
       <label>
         Data inicial
         <input id="inicio" type="date" required>
