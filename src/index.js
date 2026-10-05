@@ -4487,57 +4487,107 @@ const APP_HTML = `<!doctype html>
       }
     }
 
-    @media (max-width: 700px) {
-      .painel {
-        display: block;
-      }
+         @media (max-width: 700px) {
+       .painel {
+         display:block;
+       }
 
-      .menu {
-        width: 100%;
-        min-height: auto;
-        padding: 16px;
-      }
+       .menu {
+         display:grid;
+         grid-template-columns:auto minmax(0, 1fr);
+         gap:12px;
+         align-items:center;
+         width:100%;
+         min-height:auto;
+         padding:14px;
+       }
 
-      .marca-portal {
-        padding: 4px 8px 12px;
-      }
+       .perfil-menu {
+         margin:0;
+         gap:8px;
+       }
 
-      .menu nav {
-        display: flex;
-        gap: 4px;
-        overflow: auto;
-      }
+       .avatar-menu {
+         width:44px;
+         height:44px;
+         flex-basis:44px;
+         font-size:23px;
+       }
 
-      .nav-btn {
-        width: auto;
-        margin: 0;
-        white-space: nowrap;
-      }
+       .perfil-menu strong {
+         font-size:14px;
+       }
 
-      .nav-btn--sair {
-        margin-top: 0;
-        padding-top: 13px;
-        border-top: 0;
-      }
+       .perfil-menu small {
+         margin-top:2px;
+         font-size:11px;
+       }
 
-      .conteudo {
-        padding: 22px;
-      }
+       .marca-portal {
+         min-width:0;
+         padding:0;
+         font-size:18px;
+       }
 
-      .topo {
-        flex-direction: column;
-        align-items: flex-start;
-      }
+       .marca-portal small {
+         margin-top:3px;
+         font-size:11px;
+       }
 
-      .linha-form,
-      .grade-dashboards {
-        grid-template-columns: 1fr;
-      }
+       .menu nav {
+         display:flex;
+         grid-column:1 / -1;
+         gap:6px;
+         width:100%;
+         overflow-x:auto;
+         padding-bottom:2px;
+         scrollbar-width:none;
+       }
 
-      .cartao {
-        padding: 26px;
-      }
-    }
+       .menu nav::-webkit-scrollbar {
+         display:none;
+       }
+
+       .nav-btn {
+         flex:0 0 auto;
+         width:auto;
+         margin:0;
+         padding:10px 12px;
+         white-space:nowrap;
+         font-size:12px;
+       }
+
+       .nav-btn--sair {
+         margin:0 0 0 6px;
+         padding-top:10px;
+         border-top:0;
+         border-left:1px solid rgba(255,255,255,.18);
+         border-radius:0;
+       }
+
+       .conteudo {
+         padding:22px 16px 32px;
+       }
+
+       .topo {
+         flex-direction:column;
+         align-items:flex-start;
+         gap:10px;
+       }
+
+       .visao {
+         margin-top:24px;
+       }
+
+       .linha-form,
+       .grade-dashboards {
+         grid-template-columns:1fr;
+       }
+
+       .cartao {
+         padding:24px;
+       }
+     }
   .nav-btn--com-contador {
   display:flex;
   align-items:center;
