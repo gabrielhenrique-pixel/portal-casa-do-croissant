@@ -48,7 +48,9 @@ import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 import { produtosPainelPage } from './pages/produtos-painel.js';
 import {
   listarCadastroProdutos,
-  salvarConfiguracaoProduto
+  salvarConfiguracaoProduto,
+  listarGruposProdutos,
+  criarGrupoProduto
 } from './produtos-painel-service.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -1583,6 +1585,79 @@ if (
   return produtosPainelPage({
     podeEditar: !!acesso.permissions.update
   });
+}
+
+      if (url.pathname === '/api/grupos-produtos') {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'PRODUTOS'
+  );
+
+  if (!acesso?.permissions?.view) {
+    return json({
+      error: 'Acesso não autorizado.'
+    }, 403);
+  }
+
+  if (request.method === 'GET') {
+    try {
+      const grupos = await listarGruposProdutos(env);
+
+      return json({
+        grupos,
+        podeEditar: !!acesso.permissions.update
+      });
+    } catch (erro) {
+      return json({
+        error:
+          erro.message ||
+          'Não foi possível carregar os grupos de produtos.'
+      }, 500);
+    }
+  }
+
+  if (request.method !== 'POST') {
+    return json({
+      error: 'Método não permitido.'
+    }, 405);
+  }
+
+  if (!acesso.permissions.update) {
+    return json({
+      error:
+        'É necessário o acesso Alterar em Produtos.'
+    }, 403);
+  }
+
+  let dados;
+
+  try {
+    dados = await request.json();
+  } catch (_) {
+    return json({
+      error: 'Dados do grupo inválidos.'
+    }, 400);
+  }
+
+  try {
+    const resultado = await criarGrupoProduto(
+      env,
+      dados.nome,
+      acesso.session.username
+    );
+
+    return json(
+      resultado,
+      resultado.status || 201
+    );
+  } catch (erro) {
+    return json({
+      error:
+        erro.message ||
+        'Não foi possível criar o grupo de produto.'
+    }, 500);
+  }
 }
 
 if (url.pathname === '/api/produtos-painel') {
