@@ -864,9 +864,26 @@ export function dashboardVendasPage() {
           grid-template-columns:1fr;
         }
       }
-            @media (max-width:430px) {
+                  @media (max-width:430px) {
         .filtros {
-          grid-template-columns:1fr;
+          grid-template-columns:minmax(0, 1fr);
+          width:100%;
+          max-width:100%;
+          box-sizing:border-box;
+        }
+
+        .filtros label {
+          width:auto;
+          min-width:0;
+          max-width:100%;
+        }
+
+        .filtros input,
+        .filtros select,
+        .filtros button {
+          width:100%;
+          max-width:100%;
+          box-sizing:border-box;
         }
 
         .filtros label:nth-of-type(3),
