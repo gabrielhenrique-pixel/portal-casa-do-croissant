@@ -135,6 +135,31 @@ async function autenticar(env) {
   return dados.access_token;
 }
 
+export async function listarVendedoresCadastrados(env) {
+  const resultado = await env.DB.prepare(`
+    SELECT
+      uv.codigo_vendedor AS codigoVendedor,
+      u.username AS usuario
+    FROM usuarios_vendedores uv
+    INNER JOIN users u
+      ON u.id = uv.user_id
+    ORDER BY u.username
+  `).all();
+
+  return (resultado.results || [])
+    .map(function(vendedor) {
+      return {
+        codigoVendedor: String(
+          vendedor.codigoVendedor || ''
+        ).trim(),
+        usuario: String(vendedor.usuario || '').trim()
+      };
+    })
+    .filter(function(vendedor) {
+      return /^\d+$/.test(vendedor.codigoVendedor);
+    });
+}
+
 export async function carregarCadastroMetasPainel(env) {
   await garantirMetasPainel(env);
 
