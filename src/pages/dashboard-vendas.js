@@ -1104,11 +1104,13 @@ export function dashboardVendasPage() {
 
     var vendedorBloqueado = Boolean(dados.vendedorBloqueado);
 
-$('campoVendedor').hidden = vendedorBloqueado;
+var campoVendedor = $('campoVendedor');
+campoVendedor.hidden = vendedorBloqueado;
+campoVendedor.style.display = vendedorBloqueado ? 'none' : '';
 
-$('abrirMetas')
-  .closest('.acoes-metas')
-  .hidden = vendedorBloqueado;
+var acoesMetas = $('abrirMetas').closest('.acoes-metas');
+acoesMetas.hidden = vendedorBloqueado;
+acoesMetas.style.display = vendedorBloqueado ? 'none' : '';
 
     $('linhas').innerHTML =
       vendedores.map(function (vendedor, indice) {
