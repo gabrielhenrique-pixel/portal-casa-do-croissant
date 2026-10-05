@@ -92,6 +92,12 @@ const filtroVendedoresCadastrados =
       codigosVendedoresCadastrados.map(Number).join(',') +
       ')'
     : 'WHERE 1 = 0';
+  const filtroCabVendedoresCadastrados =
+  codigosVendedoresCadastrados.length
+    ? '  AND CAB.CODVEND IN (' +
+      codigosVendedoresCadastrados.map(Number).join(',') +
+      ')'
+    : '  AND 1 = 0';
 
   const filtroVendedor = vendedorSelecionado
     ? '  AND CAB.CODVEND = ' + Number(vendedorSelecionado)
@@ -110,6 +116,7 @@ const filtroVendedoresCadastrados =
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER IN (1101, 1107)',
+      filtroCabVendedoresCadastrados,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
@@ -138,7 +145,8 @@ const filtroVendedoresCadastrados =
   "    AND CAB.TIPMOV = 'V'",
   "    AND CAB.STATUSNOTA = 'L'",
   '  AND CAB.CODTIPOPER IN (1101, 1107)',
-  filtroVendedor,
+    filtroCabVendedoresCadastrados,
+    filtroVendedor,
   ')',
   "WHERE GRUPO <> 'OUTROS'",
   'GROUP BY GRUPO',
@@ -171,8 +179,9 @@ const filtroVendedoresCadastrados =
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.PENDENTE = 'S'",
     "  AND UPPER(TRIM(TOP.DESCROPER)) = 'PEDIDO DE VENDA'",
-    filtroVendedor
-  ].filter(Boolean).join('\n');
+     filtroCabVendedoresCadastrados,
+     filtroVendedor
+    ].filter(Boolean).join('\n');
 
   const sqlDevolucoes = [
     'SELECT',
@@ -189,7 +198,8 @@ const filtroVendedoresCadastrados =
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'D'",
     "  AND CAB.STATUSNOTA = 'L'",
-    filtroVendedor
+       filtroCabVendedoresCadastrados,
+       filtroVendedor
   ].filter(Boolean).join('\n');
 
       const resultados = await Promise.all([
