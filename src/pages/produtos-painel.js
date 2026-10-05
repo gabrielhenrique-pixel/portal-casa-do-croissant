@@ -297,6 +297,25 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
     <button id="sincronizar" type="button" disabled>
       Atualizar do Sankhya
     </button>
+
+        <button
+      id="editarProdutos"
+      type="button"
+      title="Editar produtos"
+      aria-label="Editar produtos"
+      hidden
+    >
+      ✎ Editar
+    </button>
+
+    <button
+      id="salvarTodos"
+      type="button"
+      hidden
+      disabled
+    >
+      Salvar alterações
+    </button>
   </div>
 
   <div id="barraGrupo" class="barra" hidden>
@@ -333,7 +352,6 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
           <col style="width:17%">
           <col style="width:6%">
           <col style="width:12%">
-          <col style="width:6%">
         </colgroup>
 
         <thead>
@@ -346,7 +364,6 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
             <th>Grupo de produtos</th>
             <th class="centro">Usar no painel</th>
             <th>Situação</th>
-            <th>Ação</th>
           </tr>
         </thead>
 
@@ -373,6 +390,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
   var grupos = [];
   var linhas = new Map();
   var alterados = new Set();
+  var editando = false;
 
   function aviso(texto, classe) {
     $('estado').textContent = texto;
@@ -386,28 +404,47 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       .toLowerCase();
   }
 
-  function controles() {
-    $('sincronizar').disabled = ocupado;
-    $('barraGrupo').hidden = !podeEditar;
-    $('adicionarGrupo').disabled = ocupado || !podeEditar;
-    $('novoGrupo').disabled = ocupado || !podeEditar;
+    function controles() {
+    $('sincronizar').disabled = ocupado || editando;
 
-    linhas.forEach(function (linha) {
-      linha.pacotes.disabled = ocupado || !podeEditar;
-      linha.cmv.disabled = ocupado || !podeEditar;
-      linha.grupo.disabled = ocupado || !podeEditar;
+    $('editarProdutos').hidden =
+      !podeEditar || editando;
+
+    $('editarProdutos').disabled =
+      ocupado || !podeEditar;
+
+    $('salvarTodos').hidden =
+      !podeEditar || !editando;
+
+    $('salvarTodos').disabled =
+      ocupado ||
+      !editando ||
+      alterados.size === 0;
+
+    $('barraGrupo').hidden =
+      !podeEditar || !editando;
+
+    $('adicionarGrupo').disabled =
+      ocupado || !podeEditar || !editando;
+
+    $('novoGrupo').disabled =
+      ocupado || !podeEditar || !editando;
+
+    linhas.forEach(function(linha) {
+      linha.pacotes.disabled =
+        ocupado || !podeEditar || !editando;
+
+      linha.cmv.disabled =
+        ocupado || !podeEditar || !editando;
+
+      linha.grupo.disabled =
+        ocupado || !podeEditar || !editando;
 
       linha.usar.disabled =
         ocupado ||
         !podeEditar ||
+        !editando ||
         !linha.produto.ativoSankhya;
-
-      linha.salvar.hidden = !podeEditar;
-
-      linha.salvar.disabled =
-        ocupado ||
-        !podeEditar ||
-        !alterados.has(linha.produto.codigoProduto);
     });
   }
 
@@ -548,18 +585,6 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
 
       var situacao = celula();
 
-      var salvar = document.createElement('button');
-      salvar.type = 'button';
-      salvar.className = 'salvar';
-      salvar.textContent = 'Salvar';
-
-      salvar.setAttribute(
-        'aria-label',
-        'Salvar ' + produto.produto
-      );
-
-      celula().appendChild(salvar);
-
       var linha = {
         tr: tr,
         produto: produto,
@@ -567,8 +592,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
         cmv: cmv,
         grupo: grupo,
         usar: usar,
-        situacao: situacao,
-        salvar: salvar
+            situacao: situacao
       };
 
       preencherLinha(linha, produto);
@@ -587,10 +611,6 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
 
       usar.addEventListener('change', function () {
         marcar(linha);
-      });
-
-      salvar.addEventListener('click', function () {
-        salvarLinha(linha);
       });
 
       linhas.set(produto.codigoProduto, linha);
@@ -657,7 +677,8 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       podeEditar = permissaoPagina && !!dados.podeEditar;
       grupos = dados.grupos || [];
 
-      alterados.clear();
+            alterados.clear();
+      editando = false;
       montar(dados.produtos || []);
 
       aviso(
@@ -754,7 +775,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
     $('adicionarGrupo').addEventListener(
     'click',
     async function () {
-      if (!podeEditar || ocupado) return;
+      if (!podeEditar || ocupado || !editando) return;
 
       var nome = $('novoGrupo').value
         .trim()
