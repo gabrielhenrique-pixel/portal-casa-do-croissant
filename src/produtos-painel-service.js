@@ -29,7 +29,7 @@ export async function garantirCadastroProdutos(env) {
     String(coluna.name || '').toLowerCase() === 'cmv'
   );
 
-  if (!possuiCmv) {
+    if (!possuiCmv) {
     try {
       await env.DB.prepare(
         'ALTER TABLE produtos_painel_config ADD COLUMN cmv REAL'
@@ -40,8 +40,30 @@ export async function garantirCadastroProdutos(env) {
       }
     }
   }
-}
 
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS grupos_produtos (
+      nome TEXT PRIMARY KEY COLLATE NOCASE,
+      criado_em TEXT NOT NULL,
+      criado_por TEXT NOT NULL
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    INSERT OR IGNORE INTO grupos_produtos (
+      nome,
+      criado_em,
+      criado_por
+    )
+    SELECT
+      TRIM(grupo),
+      datetime('now'),
+      'MIGRACAO'
+    FROM produtos_painel_config
+    WHERE TRIM(grupo) <> ''
+    GROUP BY TRIM(grupo)
+  `).run();
+}
 async function consultarProdutosSankhya(env, codigo = '') {
   if (codigo && !/^\d+$/.test(codigo)) {
     throw new Error('Código de produto inválido.');
