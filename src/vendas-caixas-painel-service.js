@@ -26,18 +26,50 @@ export async function listarCaixasDoPainel(
   token,
   inicio,
   fim,
-  vendedor = ''
+  vendedor = '',
+  codigosVendedoresCadastrados = []
 ) {
   vendedor = String(vendedor ?? '').trim();
+
+    vendedor = String(vendedor ?? '').trim();
+
+  const codigosVendedores = Array.from(
+    new Set(
+      (Array.isArray(codigosVendedoresCadastrados)
+        ? codigosVendedoresCadastrados
+        : []
+      ).map(function(codigoVendedor) {
+        return String(codigoVendedor ?? '').trim();
+      })
+    )
+  );
 
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(inicio) ||
     !/^\d{4}-\d{2}-\d{2}$/.test(fim) ||
     inicio > fim ||
-    (vendedor && !/^\d+$/.test(vendedor))
+    (vendedor && !/^\d+$/.test(vendedor)) ||
+    codigosVendedores.some(function(codigoVendedor) {
+      return !/^\d+$/.test(codigoVendedor);
+    })
   ) {
     throw new Error('Filtro de vendas inválido.');
   }
+
+  const codigosVendedoresSet = new Set(
+    codigosVendedores
+  );
+
+  const filtroVendedoresCadastrados =
+    codigosVendedores.length
+      ? 'AND CAB.CODVEND IN (' +
+        codigosVendedores.map(Number).join(',') +
+        ')'
+      : 'AND 1 = 0';
+
+  const filtroVendedor = vendedor
+    ? 'AND CAB.CODVEND = ' + Number(vendedor)
+    : '';
 
   const [produtos, metas] = await Promise.all([
     listarProdutosHabilitadosPainel(env),
@@ -75,10 +107,18 @@ export async function listarCaixasDoPainel(
     }
   });
 
-  metas.forEach(meta => {
+    metas.forEach(meta => {
+    const codigoVendedor = String(
+      meta.codigoVendedor
+    );
+
+    if (!codigosVendedoresSet.has(codigoVendedor)) {
+      return;
+    }
+
     if (
       vendedor &&
-      String(meta.codigoVendedor) !== vendedor
+      codigoVendedor !== vendedor
     ) {
       return;
     }
@@ -120,7 +160,8 @@ export async function listarCaixasDoPainel(
         AND CAB.CODTIPOPER IN (1101, 1107)
         AND PRO.USOPROD = 'V'
         AND ITE.CODPROD IN (${ids})
-        ${vendedor ? 'AND CAB.CODVEND = ' + vendedor : ''}
+        ${filtroVendedoresCadastrados}
+        ${filtroVendedor}
 
       GROUP BY
         ITE.CODPROD,
