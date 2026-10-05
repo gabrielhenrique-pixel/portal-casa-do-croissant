@@ -694,38 +694,85 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
     }
   }
 
-  async function salvarLinha(linha) {
-    if (ocupado || !podeEditar) return;
+    function lerConfiguracoesAlteradas() {
+    var configuracoes = [];
 
-    if (!linha.pacotes.checkValidity() || !linha.cmv.checkValidity()) {
-      (linha.pacotes.validity.valid ? linha.cmv : linha.pacotes)
-        .reportValidity();
+    for (const codigoProduto of alterados) {
+      var linha = linhas.get(codigoProduto);
+
+      if (!linha) {
+        continue;
+      }
+
+      if (
+        !linha.pacotes.checkValidity() ||
+        !linha.cmv.checkValidity()
+      ) {
+        (
+          linha.pacotes.validity.valid
+            ? linha.cmv
+            : linha.pacotes
+        ).reportValidity();
+
+        return null;
+      }
+
+      var pacotes = linha.pacotes.value === ''
+        ? null
+        : Number(linha.pacotes.value);
+
+      var cmv = linha.cmv.value === ''
+        ? null
+        : Number(linha.cmv.value);
+
+      if (
+        linha.usar.checked &&
+        (!pacotes || !linha.grupo.value)
+      ) {
+        aviso(
+          'Preencha pacotes por caixa e grupo antes de habilitar o produto.',
+          'erro'
+        );
+
+        return null;
+      }
+
+      configuracoes.push({
+        codigoProduto: linha.produto.codigoProduto,
+        pacotesPorCaixa: pacotes,
+        cmv: cmv,
+        grupo: linha.grupo.value,
+        habilitado: linha.usar.checked
+      });
+    }
+
+    return configuracoes;
+  }
+
+  async function salvarAlteracoes() {
+    if (
+      ocupado ||
+      !podeEditar ||
+      !editando ||
+      !alterados.size
+    ) {
       return;
     }
 
-    var pacotes = linha.pacotes.value === ''
-      ? null
-      : Number(linha.pacotes.value);
+    var configuracoes = lerConfiguracoesAlteradas();
 
-    var cmv = linha.cmv.value === ''
-      ? null
-      : Number(linha.cmv.value);
-
-    if (
-      linha.usar.checked &&
-      (!pacotes || !linha.grupo.value)
-    ) {
-      aviso(
-        'Preencha pacotes por caixa e grupo antes de habilitar o produto.',
-        'erro'
-      );
+    if (!configuracoes) {
       return;
     }
 
     ocupado = true;
     controles();
 
-    aviso('Salvando ' + linha.produto.produto + '...');
+    aviso(
+      'Salvando ' +
+      configuracoes.length +
+      ' alteração(ões)...'
+    );
 
     try {
       var dados = await requisicao({
@@ -733,35 +780,41 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          codigoProduto: linha.produto.codigoProduto,
-          pacotesPorCaixa: pacotes,
-          cmv: cmv,
-          grupo: linha.grupo.value,
-          habilitado: linha.usar.checked
-        })
+        body: JSON.stringify({ configuracoes })
       });
 
-      var nomeGrupo = dados.produto.grupo;
+      var produtosAtualizados = new Map(
+        (dados.produtos || []).map(function(produto) {
+          return [
+            String(produto.codigoProduto),
+            produto
+          ];
+        })
+      );
 
-      if (nomeGrupo && !grupos.includes(nomeGrupo)) {
-        grupos.push(nomeGrupo);
+      configuracoes.forEach(function(configuracao) {
+        var linha = linhas.get(
+          String(configuracao.codigoProduto)
+        );
 
-        grupos.sort(function (a, b) {
-          return a.localeCompare(b, 'pt-BR');
-        });
+        var produtoAtualizado =
+          produtosAtualizados.get(
+            String(configuracao.codigoProduto)
+          );
 
-        linhas.forEach(function (item) {
-          preencherGrupos(item.grupo, item.grupo.value);
-        });
-      }
+        if (linha && produtoAtualizado) {
+          preencherLinha(linha, produtoAtualizado);
+        }
+      });
 
-      alterados.delete(linha.produto.codigoProduto);
-      preencherLinha(linha, dados.produto);
+      alterados.clear();
+      editando = false;
+
       filtrar();
 
       aviso(
-        'Configuração salva: ' + dados.produto.produto + '.',
+        configuracoes.length +
+        ' produto(s) atualizado(s) com sucesso.',
         'sucesso'
       );
     } catch (erro) {
@@ -771,6 +824,27 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
       controles();
     }
   }
+
+  $('editarProdutos').addEventListener(
+    'click',
+    function() {
+      if (ocupado || !podeEditar) {
+        return;
+      }
+
+      editando = true;
+      controles();
+
+      aviso(
+        'Modo de edição ativo. Altere os produtos e clique em Salvar alterações.'
+      );
+    }
+  );
+
+  $('salvarTodos').addEventListener(
+    'click',
+    salvarAlteracoes
+  );
 
     $('adicionarGrupo').addEventListener(
     'click',
