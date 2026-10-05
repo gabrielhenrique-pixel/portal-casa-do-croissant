@@ -608,7 +608,7 @@ export function dashboardRentabilidadePage() {
     }
 
     @media(max-width:620px) {
-      main { padding:4px; }
+      main { padding:8px 10px 24px; }
       .topo {
         gap:12px;
         padding:16px;
@@ -621,16 +621,31 @@ export function dashboardRentabilidadePage() {
       .marca span {
         font-size:23px;
       }
-      .controles {
-        padding:14px;
-      }
-      .cards { grid-template-columns:repeat(2,1fr); }
-      .controles { width:100%; }
-      .campo {
-        width:100%;
-        grid-template-columns:80px 1fr;
-      }
-      .campo input { width:100%; }
+             .controles {
+         display:grid;
+         grid-template-columns:1fr;
+         gap:12px;
+         width:100%;
+         max-width:100%;
+         padding:14px;
+       }
+
+       .campo {
+         display:grid;
+         grid-template-columns:1fr;
+         gap:5px;
+         width:100%;
+         min-width:0;
+         padding-right:14px;
+       }
+
+       .campo input[type="date"] {
+         display:block;
+         width:100%;
+         min-width:0;
+         max-width:100%;
+         box-sizing:border-box;
+       }
       .impactos { grid-template-columns:1fr; }
       .painel { border-radius:16px; }
       .acoes a {
