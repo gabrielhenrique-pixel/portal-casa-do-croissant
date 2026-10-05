@@ -121,38 +121,6 @@ const filtroVendedoresCadastrados =
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
 
-  const sqlProdutos = [
-  'SELECT',
-  '  GRUPO,',
-  '  SUM(FATURAMENTO) AS FATURAMENTO',
-  'FROM (',
-  '  SELECT',
-  '    CASE',
-  "      WHEN PRO.CODPROD IN (931, 928, 929, 930) THEN 'Croissant TO GO'",
-  "      WHEN PRO.CODPROD IN (44, 43, 42) THEN 'Biscoitos'",
-  "      WHEN PRO.CODPROD = 917 THEN 'Amêndoas'",
-  "      WHEN PRO.CODPROD = 291 THEN 'Pão croissant 10un'",
-  "      WHEN PRO.CODPROD = 809 THEN 'Pão Croissant 125g'",
-  "      WHEN PRO.CODPROD = 155 THEN 'Pão Croissant 250g'",
-  "      ELSE 'OUTROS'",
-  '    END AS GRUPO,',
-  '    ((NVL(ITE.VLRTOT, 0) - NVL(ITE.VLRDESC, 0))+ NVL(ITE.VLRSUBST, 0)) AS FATURAMENTO',
-  '  FROM TGFCAB CAB',
-  '  INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
-  '  LEFT JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
-  "  WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
-  "    AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
-  "    AND CAB.TIPMOV = 'V'",
-  "    AND CAB.STATUSNOTA = 'L'",
-  '  AND CAB.CODTIPOPER IN (1101, 1107)',
-    filtroCabVendedoresCadastrados,
-    filtroVendedor,
-  ')',
-  "WHERE GRUPO <> 'OUTROS'",
-  'GROUP BY GRUPO',
-  'ORDER BY GRUPO'
-].filter(Boolean).join('\n');
-
   const sqlOpcoesVendedores = [
   'SELECT',
   '  CODVEND AS CODIGO_VENDEDOR,',
