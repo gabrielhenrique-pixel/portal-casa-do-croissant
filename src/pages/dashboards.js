@@ -1,4 +1,9 @@
-export function dashboardsPage({ podeVerBsc = false } = {}) {
+export function dashboardsPage({
+  podeVerRentabilidade = false,
+  podeVerVendas = false,
+  podeVerDevolucoes = false,
+  podeVerBsc = false
+} = {}) {
   return new Response(String.raw`<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -34,18 +39,26 @@ export function dashboardsPage({ podeVerBsc = false } = {}) {
       <h1>Dashboards</h1>
     </header>
     <section class="grade" aria-label="Escolha um dashboard">
+            ${podeVerRentabilidade ? `
       <a class="card rentabilidade" href="/dashboard-rentabilidade">
         <span class="icone">R$</span>
         <strong>Rentabilidade</strong>
       </a>
+      ` : ''}
+
+      ${podeVerVendas ? `
       <a class="card vendas" href="/dashboard-vendas">
         <span class="icone">↗</span>
         <strong>Monitoramento de vendas</strong>
       </a>
+      ` : ''}
+
+      ${podeVerDevolucoes ? `
       <a class="card devolucoes" href="/devolucoes">
         <span class="icone">↶</span>
         <strong>Painel de devoluções</strong>
       </a>
+      ` : ''}
       ${podeVerBsc ? `
 <a class="card bsc" href="/dashboard-bsc">
   <span class="icone">▦</span>
