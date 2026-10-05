@@ -504,6 +504,55 @@ export async function salvarConfiguracaoProduto(
   };
 }
 
+export async function salvarConfiguracoesProdutos(
+  env,
+  configuracoes,
+  usuario
+) {
+  if (
+    !Array.isArray(configuracoes) ||
+    configuracoes.length === 0
+  ) {
+    return {
+      error: 'Nenhuma alteração de produto foi informada.',
+      status: 400
+    };
+  }
+
+  if (configuracoes.length > 1000) {
+    return {
+      error: 'Quantidade máxima de produtos excedida.',
+      status: 400
+    };
+  }
+
+  const produtos = [];
+
+  for (let indice = 0; indice < configuracoes.length; indice++) {
+    const resultado = await salvarConfiguracaoProduto(
+      env,
+      configuracoes[indice],
+      usuario
+    );
+
+    if (resultado.error) {
+      return {
+        error:
+          'Produto ' + (indice + 1) + ': ' +
+          resultado.error,
+        status: resultado.status || 400
+      };
+    }
+
+    produtos.push(resultado.produto);
+  }
+
+  return {
+    ok: true,
+    produtos
+  };
+}
+
 export async function listarProdutosHabilitadosPainel(env) {
   const cadastro = await listarCadastroProdutos(env);
 
