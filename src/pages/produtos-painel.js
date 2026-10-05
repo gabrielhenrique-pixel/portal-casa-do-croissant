@@ -343,7 +343,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
             <th>Unidade ERP</th>
             <th>Pacotes por caixa</th>
             <th>CMV (R$)</th>
-            <th>Grupo do velocímetro</th>
+            <th>Grupo de produtos</th>
             <th class="centro">Usar no painel</th>
             <th>Situação</th>
             <th>Ação</th>
