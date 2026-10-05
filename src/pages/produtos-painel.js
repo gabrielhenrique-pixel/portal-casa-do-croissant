@@ -662,7 +662,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
 
       aviso(
         podeEditar
-          ? 'Produtos carregados. Configure e salve cada linha.'
+          ? 'Produtos carregados.'
           : 'Somente consulta. É necessário o acesso Alterar em Produtos para editar.'
       );
     } catch (erro) {
