@@ -163,6 +163,22 @@ export async function listarVendedoresCadastrados(env) {
 export async function carregarCadastroMetasPainel(env) {
   await garantirMetasPainel(env);
 
+  const vendedoresCadastrados =
+    await listarVendedoresCadastrados(env);
+
+  const codigosVendedores = vendedoresCadastrados
+    .map(function(vendedor) {
+      return vendedor.codigoVendedor;
+    });
+
+  const codigosCadastrados = new Set(codigosVendedores);
+
+  const filtroVendedores = codigosVendedores.length
+    ? 'WHERE CODVEND IN (' +
+      codigosVendedores.map(Number).join(',') +
+      ')'
+    : 'WHERE 1 = 0';
+
   const token = await autenticar(env);
 
   const [
@@ -179,6 +195,7 @@ export async function carregarCadastroMetasPainel(env) {
           CODVEND,
           NVL(APELIDO, 'SEM VENDEDOR')
         FROM TGFVEN
+        ${filtroVendedores}
         ORDER BY APELIDO
       `
     ),
@@ -204,21 +221,46 @@ export async function carregarCadastroMetasPainel(env) {
 
   const vendedores = new Map();
 
-  linhasVendedores.forEach(linha => {
-    vendedores.set(String(linha[0]), {
-      codigoVendedor: String(linha[0]),
-      vendedor: String(linha[1] || 'SEM VENDEDOR').trim(),
+  vendedoresCadastrados.forEach(function(vendedorCadastrado) {
+    vendedores.set(vendedorCadastrado.codigoVendedor, {
+      codigoVendedor: vendedorCadastrado.codigoVendedor,
+      vendedor: (
+        vendedorCadastrado.usuario || 'SEM VENDEDOR'
+      ).toUpperCase(),
       meta: 0
     });
   });
 
-  (metas.results || []).forEach(meta => {
-    const codigo = String(meta.codigoVendedor);
+  linhasVendedores.forEach(function(linha) {
+    const codigoVendedor = String(linha[0] || '').trim();
+    const vendedorCadastrado = vendedores.get(codigoVendedor);
 
-    vendedores.set(codigo, {
-      codigoVendedor: codigo,
+    if (!vendedorCadastrado) {
+      return;
+    }
+
+    vendedores.set(codigoVendedor, {
+      ...vendedorCadastrado,
+      vendedor: String(
+        linha[1] || vendedorCadastrado.vendedor
+      ).trim()
+    });
+  });
+
+  (metas.results || []).forEach(function(meta) {
+    const codigoVendedor = String(meta.codigoVendedor || '');
+
+    if (!codigosCadastrados.has(codigoVendedor)) {
+      return;
+    }
+
+    const vendedorCadastrado = vendedores.get(codigoVendedor);
+
+    vendedores.set(codigoVendedor, {
+      codigoVendedor,
       vendedor:
-        vendedores.get(codigo)?.vendedor || meta.vendedor,
+        vendedorCadastrado?.vendedor ||
+        String(meta.vendedor || 'SEM VENDEDOR').trim(),
       meta: Number(meta.meta) || 0
     });
   });
@@ -227,17 +269,28 @@ export async function carregarCadastroMetasPainel(env) {
     metaEmpresa: Number(empresa?.meta) || 0,
 
     vendedores: Array.from(vendedores.values()).sort(
-      (a, b) => a.vendedor.localeCompare(b.vendedor, 'pt-BR')
+      function(a, b) {
+        return a.vendedor.localeCompare(
+          b.vendedor,
+          'pt-BR'
+        );
+      }
     ),
 
-    produtos: produtos.map(produto => ({
-      codigoProduto: String(produto.codigoProduto),
-      produto: produto.produto,
-      grupo: produto.grupo,
-      pacotesPorCaixa: produto.pacotesPorCaixa
-    })),
+    produtos: produtos.map(function(produto) {
+      return {
+        codigoProduto: String(produto.codigoProduto),
+        produto: produto.produto,
+        grupo: produto.grupo,
+        pacotesPorCaixa: produto.pacotesPorCaixa
+      };
+    }),
 
-    metasCaixas: caixas
+    metasCaixas: caixas.filter(function(meta) {
+      return codigosCadastrados.has(
+        String(meta.codigoVendedor)
+      );
+    })
   };
 }
 
@@ -330,6 +383,28 @@ export async function salvarMetasPainel(env, dados, usuario) {
           status: 400
         };
       }
+    }
+  }
+
+    if (temVendedor) {
+    const vendedoresCadastrados =
+      await listarVendedoresCadastrados(env);
+
+    const vendedorCadastrado = vendedoresCadastrados.some(
+      function(vendedorCadastrado) {
+        return (
+          vendedorCadastrado.codigoVendedor ===
+          String(vendedor.codigoVendedor)
+        );
+      }
+    );
+
+    if (!vendedorCadastrado) {
+      return {
+        error:
+          'Este código não possui um login cadastrado como vendedor.',
+        status: 403
+      };
     }
   }
 
