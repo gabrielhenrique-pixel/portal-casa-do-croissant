@@ -321,8 +321,6 @@ const vendedores = vendedoresCadastrados
     );
   });
 
-const produtos = gruposCaixas;
-
     const produtos = gruposCaixas;
 
   const opcoesVendedores = vendedores.map(
