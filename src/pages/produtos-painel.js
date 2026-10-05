@@ -301,7 +301,7 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
 
   <div id="barraGrupo" class="barra" hidden>
     <label>
-      NOVO GRUPO DO VELOCÍMETRO
+      NOVO GRUPO DE PRODUTO
       <input
         id="novoGrupo"
         maxlength="80"
@@ -600,9 +600,14 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
     filtrar();
   }
 
-  async function requisicao(opcoes) {
+    async function requisicao(caminho, opcoes) {
+    if (typeof caminho !== 'string') {
+      opcoes = caminho;
+      caminho = '/api/produtos-painel';
+    }
+
     var resposta = await fetch(
-      '/api/produtos-painel',
+      caminho,
       opcoes
     );
 
@@ -746,45 +751,84 @@ export function produtosPainelPage({ podeEditar = false } = {}) {
     }
   }
 
-  $('adicionarGrupo').addEventListener('click', function () {
-    if (!podeEditar || ocupado) return;
+    $('adicionarGrupo').addEventListener(
+    'click',
+    async function () {
+      if (!podeEditar || ocupado) return;
 
-    var nome = $('novoGrupo').value
-      .trim()
-      .replace(/\s+/g, ' ');
+      var nome = $('novoGrupo').value
+        .trim()
+        .replace(/\s+/g, ' ');
 
-    if (!nome) {
-      aviso('Digite o nome do grupo.', 'erro');
-      return;
+      if (!nome) {
+        aviso('Digite o nome do grupo.', 'erro');
+        return;
+      }
+
+      var existe = grupos.some(function(grupo) {
+        return grupo.toLocaleLowerCase('pt-BR') ===
+          nome.toLocaleLowerCase('pt-BR');
+      });
+
+      if (existe) {
+        aviso('Esse grupo já está cadastrado.', 'erro');
+        return;
+      }
+
+      ocupado = true;
+      controles();
+
+      aviso('Criando grupo global...');
+
+      try {
+        var dados = await requisicao(
+          '/api/grupos-produtos',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ nome })
+          }
+        );
+
+        var grupoCriado = String(
+          dados.grupo || ''
+        ).trim();
+
+        if (!grupoCriado) {
+          throw Error(
+            'O Portal não retornou o grupo criado.'
+          );
+        }
+
+        grupos.push(grupoCriado);
+
+        grupos.sort(function(a, b) {
+          return a.localeCompare(b, 'pt-BR');
+        });
+
+        linhas.forEach(function(linha) {
+          preencherGrupos(
+            linha.grupo,
+            linha.grupo.value
+          );
+        });
+
+        $('novoGrupo').value = '';
+
+        aviso(
+          'Grupo global criado. Agora ele pode ser usado em qualquer produto.',
+          'sucesso'
+        );
+      } catch (erro) {
+        aviso(erro.message, 'erro');
+      } finally {
+        ocupado = false;
+        controles();
+      }
     }
-
-    var existe = grupos.some(function (grupo) {
-      return grupo.toLocaleLowerCase('pt-BR') ===
-        nome.toLocaleLowerCase('pt-BR');
-    });
-
-    if (existe) {
-      aviso('Esse grupo já está na lista.', 'erro');
-      return;
-    }
-
-    grupos.push(nome);
-
-    grupos.sort(function (a, b) {
-      return a.localeCompare(b, 'pt-BR');
-    });
-
-    linhas.forEach(function (linha) {
-      preencherGrupos(linha.grupo, linha.grupo.value);
-    });
-
-    $('novoGrupo').value = '';
-
-    aviso(
-      'Grupo adicionado à lista. Selecione-o em um produto e salve para gravá-lo.'
-    );
-  });
-
+  );
   $('pesquisa').addEventListener('input', filtrar);
   $('filtroSituacao').addEventListener('change', filtrar);
   $('sincronizar').addEventListener('click', carregar);
