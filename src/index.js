@@ -49,8 +49,8 @@ import { produtosPainelPage } from './pages/produtos-painel.js';
 import {
   listarCadastroProdutos,
   salvarConfiguracaoProduto,
+  salvarConfiguracoesProdutos,
   listarGruposProdutos,
-  criarGrupoProduto
 } from './produtos-painel-service.js';
 
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -1711,11 +1711,17 @@ if (url.pathname === '/api/produtos-painel') {
       }, 400);
     }
 
-    const resultado = await salvarConfiguracaoProduto(
-      env,
-      dados,
-      acesso.session.username
-    );
+          const resultado = Array.isArray(dados.configuracoes)
+        ? await salvarConfiguracoesProdutos(
+            env,
+            dados.configuracoes,
+            acesso.session.username
+          )
+        : await salvarConfiguracaoProduto(
+            env,
+            dados,
+            acesso.session.username
+          );
 
     return json(
       resultado,
