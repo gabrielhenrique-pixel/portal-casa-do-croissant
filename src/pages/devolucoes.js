@@ -497,26 +497,67 @@ export function devolucoesPage() {
       .graficos { grid-template-columns: repeat(2, 1fr); }
     }
 
-    @media (max-width: 760px) {
-      main { padding: 18px 12px; }
-      .cabecalho {
-        gap:12px;
-        padding:16px;
-      }
-      .nav-icone {
-        width:42px;
-        height:42px;
-        font-size:22px;
-      }
-      h1 { font-size:23px; }
-      .filtros { padding:14px; }
-      .filtro { flex-basis:100%; }
-      .atualizado { display: none; }
-      .filtros,
-      .indicadores,
-      .graficos,
-      .inferior { grid-template-columns: 1fr; }
-    }
+         @media (max-width: 760px) {
+       main {
+         padding:8px 10px 24px;
+       }
+
+       .cabecalho {
+         gap:12px;
+         padding:16px;
+       }
+
+       .titulo-area {
+         min-width:0;
+       }
+
+       .nav-icone {
+         width:42px;
+         height:42px;
+         font-size:22px;
+       }
+
+       h1 {
+         font-size:23px;
+         line-height:1.15;
+       }
+
+       .filtros {
+         display:grid;
+         grid-template-columns:1fr;
+         gap:12px;
+         width:100%;
+         max-width:100%;
+         padding:14px;
+         box-sizing:border-box;
+       }
+
+       .filtro {
+         width:100%;
+         min-width:0;
+         padding-right:14px;
+         box-sizing:border-box;
+       }
+
+       .filtro input,
+       .filtro select {
+         display:block;
+         width:100%;
+         min-width:0;
+         max-width:100%;
+         box-sizing:border-box;
+       }
+
+       .atualizado {
+         display:none;
+       }
+
+       .indicadores,
+       .graficos,
+       .inferior {
+         grid-template-columns:1fr;
+       }
+     }
 
 .card-conteudo {
   min-width: 0;
