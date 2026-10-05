@@ -938,15 +938,6 @@ export function dashboardVendasPage() {
     return document.getElementById(id);
   };
 
-  var GRUPOS = [
-    'Croissant TO GO',
-    'Biscoitos',
-    'Amêndoas',
-    'Pão croissant 10un',
-    'Pão Croissant 125g',
-    'Pão Croissant 250g'
-  ];
-
   var caixas = new Intl.NumberFormat('pt-BR', {
     maximumFractionDigits: 2
   });
