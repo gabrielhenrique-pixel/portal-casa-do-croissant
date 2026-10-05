@@ -19,7 +19,11 @@ export function dashboardsPage({
     .voltar { display:grid; place-items:center; width:48px; height:48px; flex:0 0 48px; border-radius:50%; background:#fff; color:var(--texto); text-decoration:none; font-size:28px; font-weight:700; box-shadow:0 5px 16px rgba(15,69,47,.14); }
     .voltar:hover { background:var(--verde); color:#fff; }
     h1 { margin:0; font-size:32px; color:#123d2d; }
-    .grade { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }
+        .grade {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:24px;
+    }
     .card { min-height:330px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; border-radius:22px; color:#fff; text-decoration:none; box-shadow:0 12px 28px rgba(13,60,42,.18); transition:transform .18s ease,box-shadow .18s ease; }
     .card:hover { transform:translateY(-7px); box-shadow:0 20px 34px rgba(13,60,42,.25); }
     .icone { display:grid; place-items:center; width:76px; height:76px; border-radius:20px; background:rgba(255,255,255,.18); font-size:31px; font-weight:800; }
@@ -28,8 +32,91 @@ export function dashboardsPage({
     .vendas { background:linear-gradient(135deg,#113f70,#2384c4); }
     .devolucoes { background:linear-gradient(135deg,#952d2b,#dd6048); }
     .bsc { background:linear-gradient(135deg,#0d5e3d,#22a366); }
-    @media (max-width:820px) { .grade { grid-template-columns:1fr; }.card { min-height:220px; } }
-    @media (max-width:520px) { main { width:min(100% - 28px,1180px); padding-top:22px; }.topo { margin-bottom:24px; } h1 { font-size:27px; } }
+        @media (max-width:820px) {
+      .grade {
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:14px;
+      }
+
+      .card {
+        min-height:190px;
+        gap:14px;
+        border-radius:18px;
+      }
+
+      .icone {
+        width:58px;
+        height:58px;
+        border-radius:16px;
+        font-size:25px;
+      }
+
+      .card strong {
+        padding:0 10px;
+        font-size:20px;
+      }
+
+      .card:last-child:nth-child(odd) {
+        grid-column:1 / -1;
+      }
+    }
+
+    @media (max-width:520px) {
+      main {
+        width:min(100% - 24px,1180px);
+        padding:22px 0 30px;
+      }
+
+      .topo {
+        gap:12px;
+        margin-bottom:22px;
+      }
+
+      .voltar {
+        width:42px;
+        height:42px;
+        flex-basis:42px;
+        font-size:23px;
+      }
+
+      h1 {
+        font-size:25px;
+      }
+
+      .grade {
+        gap:10px;
+      }
+
+      .card {
+        min-height:164px;
+        gap:10px;
+        border-radius:16px;
+        box-shadow:0 8px 20px rgba(13,60,42,.16);
+      }
+
+      .icone {
+        width:48px;
+        height:48px;
+        border-radius:14px;
+        font-size:21px;
+      }
+
+      .card strong {
+        padding:0 8px;
+        font-size:17px;
+        line-height:1.14;
+      }
+    }
+
+    @media (max-width:350px) {
+      .grade {
+        grid-template-columns:1fr;
+      }
+
+      .card:last-child:nth-child(odd) {
+        grid-column:auto;
+      }
+    }
   </style>
 </head>
 <body>
