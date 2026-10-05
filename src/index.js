@@ -386,13 +386,40 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
     return redirectToPortal();
   }
 
-  return dashboardsPage({
-  podeVerBsc: await podeConsultarModulo(
-    request,
-    env,
-    'BSC_COMERCIAL'
-  )
-});
+      const [
+      podeVerRentabilidade,
+      podeVerVendas,
+      podeVerDevolucoes,
+      podeVerBsc
+    ] = await Promise.all([
+      podeConsultarModulo(
+        request,
+        env,
+        'DASHBOARD_RENTABILIDADE'
+      ),
+      podeConsultarModulo(
+        request,
+        env,
+        'DASHBOARD_VENDAS'
+      ),
+      podeConsultarModulo(
+        request,
+        env,
+        'DEVOLUCOES'
+      ),
+      podeConsultarModulo(
+        request,
+        env,
+        'BSC_COMERCIAL'
+      )
+    ]);
+
+    return dashboardsPage({
+      podeVerRentabilidade,
+      podeVerVendas,
+      podeVerDevolucoes,
+      podeVerBsc
+    });
 }
 
  if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
