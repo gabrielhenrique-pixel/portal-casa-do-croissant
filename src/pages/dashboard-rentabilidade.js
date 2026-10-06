@@ -1071,6 +1071,7 @@ function render(d) {
   $('resultado').textContent = nf.format(resultado);
   $('resultado').className = 'valor ' + cn(resultado);
   $('margem').textContent = pf.format(margem);
+  $('margem').className = 'valor ' + cn(margem);
   $('clientes').textContent = ni.format(clientes);
 
   rosca(
