@@ -317,26 +317,42 @@ tbody tr:hover td:nth-child(2) {
     }
 
     tbody tr.linha-total td {
-  border-top: 2px solid var(--azul);
-  background: #dcebf6;
-  color: #102e49;
-  font-weight: 700;
-}
+      position:sticky;
+      bottom:0;
+      z-index:2;
+      border-top:2px solid var(--azul);
+      background:#dcebf6;
+      color:#102e49;
+      font-weight:700;
+    }
 
-tbody tr.linha-total td:first-child {
-  z-index: 2;
-  background: var(--azul-escuro);
-  color: #fff;
-}
+    /* Área branca fixa abaixo da coluna Rede. */
+    tbody tr.linha-total td:first-child {
+      position:sticky;
+      bottom:0;
+      left:0;
+      z-index:4;
+      width:220px;
+      min-width:220px;
+      max-width:220px;
+      border-right:1px solid var(--borda);
+      background:#fff;
+      color:transparent;
+      box-shadow:2px 0 0 #c7d8e5;
+    }
 
-tbody tr.linha-total td:nth-child(2) {
-  z-index: 2;
-  background: #dcebf6;
-}
+    tbody tr.linha-total td:nth-child(2) {
+      position:sticky;
+      bottom:0;
+      left:220px;
+      z-index:3;
+      background:#dcebf6;
+      box-shadow:2px 0 0 #c7d8e5;
+    }
 
-tbody tr.linha-total td.negativo {
-  color: var(--vermelho);
-}
+    tbody tr.linha-total td.negativo {
+      color:var(--vermelho);
+    }
 
     td.devolucao, td.negativo { color:var(--vermelho); }
     td.margem-critica { background:#f4cccc; color:var(--vermelho); font-weight:700; }
@@ -693,7 +709,7 @@ function adicionarLinhaTotalMargem(redes) {
   var linha = document.createElement('tr');
   linha.className = 'linha-total';
 
-  linha.appendChild(celula('rede total-titulo', 'TOTAL (' + redes.length + ')'));
+  linha.appendChild(celula('rodape-rede-vazio', ''));
   linha.appendChild(celula(negativo(total.faturamentoBruto), moeda(total.faturamentoBruto)));
   linha.appendChild(celula('devolucao', moeda(total.devolucoes)));
   linha.appendChild(celula(negativo(total.receitaLiquida), moeda(total.receitaLiquida)));
