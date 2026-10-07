@@ -1,4 +1,4 @@
-import { paginaInicialPage } from './pages/pagina-inicial.js';
+import { paginaInicialPage } from './pages/pagina-inicial.js'; 
 import { perfilPage } from './pages/perfil.js';
 import { recuperarSenhaPage } from './pages/recuperar-senha.js';
 import { investimentosPage } from './pages/investimentos.js';
