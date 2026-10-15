@@ -1,5 +1,7 @@
 import { listarProdutosHabilitadosPainel } from './produtos-painel-service.js';
 
+const LIMITE = 999999999.99;
+
 export async function garantirMetasPainel(env) {
   await env.DB.batch([
     env.DB.prepare(`
