@@ -1,4 +1,5 @@
 import { paginaInicialPage } from './pages/pagina-inicial.js'; 
+import { iniciarMenuMobile } from './menu-mobile.js';
 import { perfilPage } from './pages/perfil.js';
 import { recuperarSenhaPage } from './pages/recuperar-senha.js';
 import { investimentosPage } from './pages/investimentos.js';
@@ -4201,6 +4202,12 @@ const APP_HTML = `<!doctype html>
       color: #fff;
     }
 
+    .barra-menu-mobile,
+    .fechar-menu,
+    .fundo-menu {
+      display: none;
+    }
+
     .perfil-menu {
   display:flex;
   align-items:center;
@@ -4510,77 +4517,83 @@ const APP_HTML = `<!doctype html>
          display:block;
        }
 
-       .menu {
-         display:grid;
-         grid-template-columns:auto minmax(0, 1fr);
-         gap:12px;
-         align-items:center;
-         width:100%;
-         min-height:auto;
-         padding:14px;
+       body.menu-mobile-aberto {
+         overflow:hidden;
        }
 
-       .perfil-menu {
-         margin:0;
-         gap:8px;
-       }
-
-       .avatar-menu {
-         width:44px;
-         height:44px;
-         flex-basis:44px;
-         font-size:23px;
-       }
-
-       .perfil-menu strong {
-         font-size:14px;
-       }
-
-       .perfil-menu small {
-         margin-top:2px;
-         font-size:11px;
-       }
-
-       .marca-portal {
-         min-width:0;
-         padding:0;
-         font-size:18px;
-       }
-
-       .marca-portal small {
-         margin-top:3px;
-         font-size:11px;
-       }
-
-       .menu nav {
+       .barra-menu-mobile {
          display:flex;
-         grid-column:1 / -1;
-         gap:6px;
-         width:100%;
-         overflow-x:auto;
-         padding-bottom:2px;
-         scrollbar-width:none;
+         align-items:center;
+         padding:12px 16px 0;
        }
 
-       .menu nav::-webkit-scrollbar {
-         display:none;
-       }
-
-       .nav-btn {
-         flex:0 0 auto;
-         width:auto;
-         margin:0;
+       .abrir-menu,
+       .fechar-menu {
+         display:inline-flex;
+         align-items:center;
+         justify-content:center;
+         gap:8px;
+         min-width:44px;
+         min-height:44px;
          padding:10px 12px;
-         white-space:nowrap;
-         font-size:12px;
+         border:0;
+         border-radius:8px;
+         background:#123d2d;
+         color:#fff;
+         font:inherit;
+         font-size:14px;
+         cursor:pointer;
        }
 
-       .nav-btn--sair {
-         margin:0 0 0 6px;
-         padding-top:10px;
-         border-top:0;
-         border-left:1px solid rgba(255,255,255,.18);
-         border-radius:0;
+       .abrir-menu svg,
+       .fechar-menu svg {
+         width:22px;
+         height:22px;
+         flex-shrink:0;
+       }
+
+       .menu {
+         position:fixed;
+         inset:0 auto 0 0;
+         z-index:1001;
+         width:min(280px, calc(100vw - 48px));
+         height:100vh;
+         height:100dvh;
+         min-height:0;
+         padding:calc(12px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+         overflow-y:auto;
+         overscroll-behavior:contain;
+         visibility:hidden;
+         transform:translateX(-100%);
+         transition:transform .2s ease, visibility .2s;
+       }
+
+       .fechar-menu {
+         display:flex;
+         margin:0 0 12px auto;
+         background:#256e50;
+       }
+
+       .fundo-menu {
+         position:fixed;
+         inset:0;
+         z-index:1000;
+         background:rgba(9, 30, 22, .48);
+       }
+
+       .menu-mobile-aberto .menu {
+         visibility:visible;
+         transform:translateX(0);
+       }
+
+       .menu-mobile-aberto .fundo-menu {
+         display:block;
+       }
+
+       .menu :focus-visible,
+       .abrir-menu:focus-visible {
+         outline:3px solid #f6be4b;
+         outline-offset:2px;
        }
 
        .conteudo {
@@ -4605,6 +4618,9 @@ const APP_HTML = `<!doctype html>
        .cartao {
          padding:24px;
        }
+     }
+     @media (prefers-reduced-motion: reduce) {
+       .menu { transition:none; }
      }
   .nav-btn--com-contador {
   display:flex;
@@ -4752,7 +4768,17 @@ const APP_HTML = `<!doctype html>
 </section>
 
 <main id="dashboard" class="painel oculto">
-  <aside class="menu">
+  <div class="barra-menu-mobile">
+    <button id="abrirMenu" class="abrir-menu" type="button" aria-controls="menuLateral" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span>Menu</span>
+    </button>
+  </div>
+  <div id="fundoMenu" class="fundo-menu" aria-hidden="true"></div>
+  <aside id="menuLateral" class="menu" aria-label="Menu principal">
+    <button id="fecharMenu" class="fechar-menu" type="button" aria-label="Fechar menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg>
+    </button>
   <a class="perfil-menu" href="/perfil" aria-label="Abrir perfil">
     <span id="avatarMenu" class="avatar-menu">👤</span>
 
@@ -4875,7 +4901,7 @@ const APP_HTML = `<!doctype html>
     </nav>
   </aside>
 
-  <section class="conteudo">
+  <section id="conteudoPortal" class="conteudo">
     <header class="topo">
       <div>
         <h1 id="tituloPagina">Página inicial</h1>
@@ -5025,6 +5051,7 @@ window.addEventListener(
   const login = $('login');
   const setup = $('setup');
   const dashboard = $('dashboard');
+  const fecharMenuMobile = (${iniciarMenuMobile.toString()})();
 
   let sessionData = null;
   let cachedUsers = [];
@@ -5038,6 +5065,7 @@ window.addEventListener(
   };
 
   function show(view) {
+    if (view !== 'dashboard') fecharMenuMobile();
     document.body.classList.remove('inicializando');
     $('inicializacao').classList.add('oculto');
 
@@ -5122,6 +5150,7 @@ async function carregarPerfilNoMenu() {
   }
 
   function openView(view) {
+    fecharMenuMobile();
     if (view === 'dashboards') {
       window.location.href = '/dashboards';
       return;
