@@ -220,6 +220,10 @@ test('páginas têm links corretos, scripts válidos, modo e endpoints independe
   const inicio = await dreInicioPage().text();
   assert.match(inicio, /href="\/dre\/competencia"/);
   assert.match(inicio, /href="\/dre\/caixa"/);
+  assert.match(inicio, /class="card competencia"/);
+  assert.match(inicio, /class="card caixa"/);
+  assert.doesNotMatch(inicio, /<p[\s>]|<aside[\s>]|class="(?:marca|criterio|integracao|abrir)"/);
+  assert.doesNotMatch(inicio, /Fonte atual:|Sankhya|Omie|Escolha como|Abrir DRE/);
   for (const regime of ['caixa', 'competencia']) {
     const html = await drePage({ regime }).text();
     const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
