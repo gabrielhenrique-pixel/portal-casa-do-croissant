@@ -107,6 +107,16 @@ export async function listarDre(request, env) {
     sql
   );
 
+  return montarRelatorioDre(linhas, { inicio, fim });
+}
+
+// Contrato comum da apresentação. O adaptador de cada ERP resolve a classificação.
+// A competência mantém sua consulta, valores e classificação originais.
+export function montarRelatorioDre(linhas, {
+  inicio, fim, origem = 'sankhya', classificar = identificarGrupoDre,
+  normalizarCategoria = normalizarCodigo
+}) {
+  const inicioComparacao = subtrairUmAno(inicio);
   const mesesConsulta = listarMeses(
     inicioComparacao,
     fim
@@ -135,12 +145,12 @@ for (const grupo of Object.keys(DRE_GRUPOS)) {
 
   for (const linha of linhas) {
     const mes = String(linha[0] || '').slice(0, 7);
-    const codigoNatureza = normalizarCodigo(linha[1]);
+    const codigoNatureza = normalizarCategoria(linha[1]);
     const nomeNatureza = String(
           linha[2] || 'Sem descrição'
     ).trim() || 'Sem descrição';
     const valor = numero(linha[3]);
-    const grupo = identificarGrupoDre(codigoNatureza);
+    const grupo = classificar(codigoNatureza);
 
     if (!mes || !mesesConsulta.includes(mes)) {
       continue;
@@ -376,7 +386,7 @@ const grupos = Array.from(
   }
 
   return {
-    origem: 'sankhya',
+    origem,
     inicio,
     fim,
     meses,
@@ -818,7 +828,7 @@ function numero(valor) {
     : 0;
 }
 
-async function obterTokenSankhya(env) {
+export async function obterTokenSankhya(env) {
   const resposta = await fetch(
     'https://api.sankhya.com.br/authenticate',
     {
@@ -853,7 +863,7 @@ async function obterTokenSankhya(env) {
   return dados.access_token;
 }
 
-async function executarConsultaSankhya(token, sql) {
+export async function executarConsultaSankhya(token, sql) {
   const resposta = await fetch(
     'https://api.sankhya.com.br/gateway/v1/mge/service.sbr' +
       '?serviceName=DbExplorerSP.executeQuery&outputType=json',

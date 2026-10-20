@@ -1,10 +1,13 @@
-export function drePage() {
+export function drePage({ regime = 'competencia' } = {}) {
+  const caixa = regime === 'caixa';
+  const titulo = caixa ? 'DRE Caixa' : 'DRE Competência';
+  const api = caixa ? '/api/dre/caixa' : '/api/dre';
   return new Response(String.raw`<!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DRE | Casa do Croissant</title>
+  <title>${titulo} | Casa do Croissant</title>
 
   <style>
     * {
@@ -460,6 +463,20 @@ tbody .linha-resultado td.coluna-total {
     animation: none;
   }
 }
+.resumo-dre{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.indicador-dre{padding:18px;background:#fff;border:1px solid #dce7ec;border-radius:14px;min-width:0}
+.indicador-dre h2{margin:0;color:#607a91;font-size:13px;font-weight:normal}
+.indicador-dre strong{display:block;margin:16px 0 12px;font-size:20px;overflow-wrap:anywhere}
+.indicador-dre small{color:#607a91;font-size:12px}
+.nota-regime{margin:0 0 18px;padding:16px 20px;border:1px solid #d5e3e4;border-radius:12px;background:#f7fafb;color:#425e70;font-size:13px;line-height:1.6}
+.nota-regime strong{color:#24674f}.nota-regime .pendencias{background:#fff5de;color:#724b0d;padding:12px;border-radius:8px;margin-top:12px}
+.nota-regime ul{margin:8px 0;padding-left:20px}.nota-regime p{margin:0}
+.busca-dre{display:flex;gap:12px;align-items:center;padding:12px 20px;flex-wrap:wrap}
+.busca-dre input{max-width:350px;padding:10px;border:1px solid #cbd9e2;border-radius:8px;min-width:200px}
+.busca-dre button{background:#edf3f7;color:#163a5a;border:1px solid #cbd9e2;border-radius:8px;padding:10px;cursor:pointer}
+.busca-dre label{font-size:13px}.busca-dre [hidden]{display:none}
+@media(max-width:1100px){.resumo-dre{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:680px){.resumo-dre{grid-template-columns:repeat(2,minmax(0,1fr))}.indicador-dre:last-child{grid-column:1/-1}.indicador-dre strong{font-size:18px}.cabecalho{padding:18px;gap:12px}h1{font-size:24px}.busca-dre input{min-width:0;width:100%}}
     
   </style>
 </head>
@@ -467,12 +484,12 @@ tbody .linha-resultado td.coluna-total {
 <body>
   <main>
     <header class="cabecalho">
-      <a class="voltar" href="/" aria-label="Voltar">←</a>
+      <a class="voltar" href="/dre" aria-label="Voltar à seleção do DRE">←</a>
 
       <div>
-        <h1>DRE</h1>
+        <h1>${titulo}</h1>
         <p class="subtitulo">
-          Demonstração do Resultado do Exercício
+          ${caixa ? 'Resultado realizado por data de baixa · Integração Sankhya' : 'Demonstração do Resultado do Exercício · Critérios atuais por competência'}
         </p>
       </div>
     </header>
@@ -493,9 +510,10 @@ tbody .linha-resultado td.coluna-total {
 
         <label>
           Empresa
-          <select id="empresa">
+          <select id="empresa" ${caixa ? 'hidden' : ''}>
             <option value="">Todas</option>
           </select>
+          ${caixa ? '<input id="codigoEmpresaCaixa" inputmode="numeric" pattern="[0-9]*" placeholder="Todas (ou código Sankhya)" aria-label="Código da empresa no Sankhya">' : ''}
         </label>
 
         <button id="atualizar" type="button">
@@ -513,6 +531,11 @@ tbody .linha-resultado td.coluna-total {
     >
       Atualizando DRE...
     </p>
+
+    ${caixa ? `<section class="resumo-dre" aria-label="Indicadores do período">
+      ${[['receitaBruta', 'Receita Bruta'], ['receitaLiquida', 'Receita Líquida'], ['custosProducao', 'Custos'], ['despesasGerais', 'Despesas'], ['resultadoOperacional', 'Resultado Operacional']].map(([chave, nome]) => `<article class="indicador-dre"><h2>${nome}</h2><strong id="kpi-${chave}">—</strong><small id="comparacao-${chave}">vs. ano anterior</small></article>`).join('')}
+    </section>
+    <aside class="nota-regime" aria-live="polite"><p><strong>Fonte: Sankhya · Regime de caixa · Em homologação.</strong> Confira um mês fechado com o relatório nativo antes de usar os resultados para decisão financeira.</p><p>Baixas reais por DHBAIXA, com VLRBAIXA rateado por natureza e classificação do DRE atual do portal. Exclui títulos em aberto, provisões e datas de baixa futuras. Juros e descontos não são somados ou descontados novamente. Este relatório não é conciliação bancária.</p><p>% A.H.: comparação com o mesmo recorte do ano anterior. % A.V.: participação sobre a receita bruta do mês (ou do período, no total).</p><p id="metadadosCaixa"></p><div id="pendenciasCaixa" class="pendencias" hidden></div></aside>` : ''}
 
     <section class="painel">
       <div class="titulo-painel">
@@ -544,6 +567,7 @@ tbody .linha-resultado td.coluna-total {
         </div>
       </div>
 
+      ${caixa ? '<div class="busca-dre"><label for="buscarNatureza">Buscar grupo ou natureza</label><input id="buscarNatureza" type="search" placeholder="Digite para filtrar…"><button type="button" id="expandirTudo">Expandir grupos</button><button type="button" id="recolherTudo">Recolher grupos</button></div>' : ''}
       <div class="tabela-wrap">
         <table>
           <thead>
@@ -565,6 +589,10 @@ tbody .linha-resultado td.coluna-total {
     </section>
   </main>
   <script>
+  const DRE_CAIXA = ${caixa};
+  const DRE_API = '${api}';
+  let filtrosConsultados = null;
+  let resultadoConsultado = null;
   const dataInicial = document.getElementById('dataInicial');
   const dataFinal = document.getElementById('dataFinal');
   const empresa = document.getElementById('empresa');
@@ -573,6 +601,9 @@ tbody .linha-resultado td.coluna-total {
   const tabela = document.querySelector('table');
   const abrirExportacao = document.getElementById('abrirExportacao');
   const menuExportacao = document.getElementById('menuExportacao');
+  const codigoEmpresaCaixa = document.getElementById('codigoEmpresaCaixa');
+  const buscarNatureza = document.getElementById('buscarNatureza');
+  function empresaSelecionada() { return codigoEmpresaCaixa ? codigoEmpresaCaixa.value.trim() : empresa.value; }
 
   function dataLocal(data) {
   const ano = data.getFullYear();
@@ -627,11 +658,11 @@ tbody .linha-resultado td.coluna-total {
     '</tr>' +
     '<tr>' +
       meses.map(() =>
-        '<th>Resultado</th>' +
+        '<th>' + (DRE_CAIXA ? 'Resultado Caixa' : 'Resultado') + '</th>' +
         '<th>% A.H.</th>' +
         '<th>% A.V.</th>'
       ).join('') +
-      '<th class="coluna-total">Resultado</th>' +
+      '<th class="coluna-total">' + (DRE_CAIXA ? 'Resultado Caixa' : 'Resultado') + '</th>' +
       '<th>% A.H.</th>' +
       '<th>% A.V.</th>' +
     '</tr>';
@@ -719,7 +750,7 @@ function montarLinhaDre(registro, opcoes, meses) {
           opcoes.possuiFilhos,
           opcoes.auditoria
         ) +
-        registro.nome +
+        escaparHtml(registro.nome) +
       '</td>' +
       montarCelulas(registro, meses) +
     '</tr>'
@@ -826,7 +857,7 @@ function montarLinhas(dados) {
     }
 
     for (const detalhe of registro.detalhes || []) {
-      const possuiAuditoria =
+      const possuiAuditoria = DRE_CAIXA ||
         Number(detalhe.total?.resultado || 0) !== 0;
 
       linhas.push(
@@ -1464,12 +1495,17 @@ function criarPlanilhaExcel(modo) {
   const linhasXml = [];
 
   linhasXml.push('<row r="1" ht="26" customHeight="1">' +
-    celulaXlsx('A1', 'DRE - Demonstração do Resultado do Exercício', 1) + '</row>');
+    celulaXlsx('A1', DRE_CAIXA ? 'DRE Caixa - Resultado realizado' : 'DRE Competência - Demonstração do Resultado do Exercício', 1) + '</row>');
   linhasXml.push('<row r="2">' + celulaXlsx('A2',
-    'Período: ' + formatarDataPlanilha(dataInicial.value) + ' a ' +
-    formatarDataPlanilha(dataFinal.value) + ' | Visualização: ' +
+    'Período: ' + formatarDataPlanilha(filtrosConsultados?.inicio || dataInicial.value) + ' a ' +
+    formatarDataPlanilha(filtrosConsultados?.fim || dataFinal.value) + ' | Empresa: ' + (filtrosConsultados?.empresa || 'Todas') + ' | Visualização: ' +
     nomeModoExportacao(modo), 2) + '</row>');
-  linhasXml.push('<row r="3"/>');
+  if (DRE_CAIXA) {
+    const pendencias = resultadoConsultado?.pendenciasClassificacao || [];
+    const aviso = pendencias.length ? ' | ATENÇÃO: NÃO INCLUÍDAS NOS SUBTOTAIS: ' + pendencias.map(item => item.codigo + ' ' + item.nome + ' R$ ' + formatarNumero(item.valor) + ' (anterior R$ ' + formatarNumero(item.valorAnterior) + ')').join('; ') : '';
+    linhasXml.push('<row r="3">' + celulaXlsx('A3', 'EM HOMOLOGAÇÃO | Sankhya | Baixa (DHBAIXA / VLRBAIXA), valores rateados. Não é conciliação bancária.' + aviso, 2) + '</row>');
+    mesclas.push('A3:' + ultimaColuna + '3');
+  } else linhasXml.push('<row r="3"/>');
 
   let colunaPeriodo = 2;
   let periodosXml = celulaXlsx('A4', cabecalho.grupo, 3);
@@ -1545,10 +1581,10 @@ function exportarExcel(modo) {
   });
   const link = document.createElement('a');
   const urlArquivo = URL.createObjectURL(arquivo);
-  const periodo = dataInicial.value + '_a_' + dataFinal.value;
+  const periodo = (filtrosConsultados?.inicio || dataInicial.value) + '_a_' + (filtrosConsultados?.fim || dataFinal.value);
 
   link.href = urlArquivo;
-  link.download = 'DRE_' + periodo + '_' + modo + '.xlsx';
+  link.download = (DRE_CAIXA ? 'DRE_Caixa_' : 'DRE_Competencia_') + periodo + '_' + modo + '.xlsx';
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -1667,18 +1703,19 @@ async function carregarLancamentos(id, natureza) {
   }
 
   const parametros = new URLSearchParams({
-    inicio: dataInicial.value,
-    fim: dataFinal.value,
+    inicio: filtrosConsultados?.inicio || dataInicial.value,
+    fim: filtrosConsultados?.fim || dataFinal.value,
     natureza: natureza
   });
 
-  if (empresa.value) {
-    parametros.set('empresa', empresa.value);
+  const empresaConsulta = filtrosConsultados?.empresa || '';
+  if (empresaConsulta) {
+    parametros.set('empresa', empresaConsulta);
   }
 
   try {
     const resposta = await fetch(
-      '/api/dre/auditoria?' + parametros.toString()
+      DRE_API + '/auditoria?' + parametros.toString()
     );
     const dados = await resposta.json();
 
@@ -1720,6 +1757,11 @@ async function carregarLancamentos(id, natureza) {
   atualizar.classList.add('carregando');
   atualizar.setAttribute('aria-busy', 'true');
   statusAtualizacao.hidden = false;
+  abrirExportacao.disabled = true;
+  [dataInicial, dataFinal, empresa, codigoEmpresaCaixa].filter(Boolean).forEach(input => { input.disabled = true; });
+  menuExportacao.hidden = true;
+  abrirExportacao.setAttribute('aria-expanded', 'false');
+  if (DRE_CAIXA) atualizarResumoCaixa(null);
 
   try {
     const parametros = new URLSearchParams({
@@ -1727,12 +1769,12 @@ async function carregarLancamentos(id, natureza) {
       fim: dataFinal.value
     });
 
-    if (empresa.value) {
-      parametros.set('empresa', empresa.value);
+    if (empresaSelecionada()) {
+      parametros.set('empresa', empresaSelecionada());
     }
 
     const resposta = await fetch(
-      '/api/dre?' + parametros.toString()
+      DRE_API + '?' + parametros.toString()
     );
 
     const dados = await resposta.json();
@@ -1747,8 +1789,17 @@ async function carregarLancamentos(id, natureza) {
     montarCabecalho(dados.meses);
 
     linhasDre.innerHTML = montarLinhas(dados);
+    filtrosConsultados = { inicio: parametros.get('inicio'), fim: parametros.get('fim'), empresa: parametros.get('empresa') || '' };
+    resultadoConsultado = dados;
+    abrirExportacao.disabled = false;
+    if (DRE_CAIXA) {
+      atualizarResumoCaixa(dados);
+      if (buscarNatureza.value) filtrarNaturezas();
+    }
   } catch (error) {
     console.error('Erro ao carregar DRE:', error);
+    filtrosConsultados = null;
+    resultadoConsultado = null;
 
     const linhaErro = document.createElement('tr');
     const celulaErro = document.createElement('td');
@@ -1767,16 +1818,92 @@ async function carregarLancamentos(id, natureza) {
     atualizar.classList.remove('carregando');
     atualizar.removeAttribute('aria-busy');
     statusAtualizacao.hidden = true;
+    [dataInicial, dataFinal, empresa, codigoEmpresaCaixa].filter(Boolean).forEach(input => { input.disabled = false; });
   }
 }
 
   const hoje = new Date();
 
   dataInicial.value = dataLocal(
-    primeiroDiaDoMes(hoje)
+    DRE_CAIXA ? new Date(hoje.getFullYear(), 0, 1) : primeiroDiaDoMes(hoje)
   );
 
   dataFinal.value = dataLocal(hoje);
+  if (DRE_CAIXA) {
+    dataInicial.max = dataLocal(hoje);
+    dataFinal.max = dataLocal(hoje);
+  }
+
+  function atualizarResumoCaixa(dados) {
+    for (const chave of ['receitaBruta', 'receitaLiquida', 'custosProducao', 'despesasGerais', 'resultadoOperacional']) {
+      const total = dados?.subtotais?.[chave]?.total;
+      const valor = document.getElementById('kpi-' + chave);
+      valor.textContent = total ? 'R$ ' + formatarNumero(total.resultado) : '—';
+      valor.className = total ? classeResultado(total.resultado) : '';
+      document.getElementById('comparacao-' + chave).textContent = !total ? 'Aguardando consulta' :
+        total.anoAnterior === 0 ? 'Sem base no ano anterior' : formatarPercentual(total.ah) + ' vs. ano anterior';
+    }
+    const aviso = document.getElementById('pendenciasCaixa');
+    aviso.hidden = true;
+    aviso.replaceChildren();
+    document.getElementById('metadadosCaixa').textContent = dados ?
+      'Consulta: ' + new Date(dados.atualizadoEm).toLocaleString('pt-BR') + '. ' +
+      (dados.grupos.some(grupo => grupo.detalhes.length) || dados.pendenciasClassificacao.length ? '' : 'Nenhuma baixa encontrada no período. ') +
+      'Comparativo: ' + formatarDataPlanilha(dados.comparacao.inicio) + ' a ' + formatarDataPlanilha(dados.comparacao.fim) + '.' : '';
+    if (dados?.pendenciasClassificacao?.length) {
+      aviso.hidden = false;
+      const titulo = document.createElement('strong');
+      titulo.textContent = 'Atenção: naturezas sem classificação no DRE. Não incluídas nos subtotais; o resultado precisa de conferência.';
+      aviso.appendChild(titulo);
+      const lista = document.createElement('ul');
+      for (const item of dados.pendenciasClassificacao) {
+        const li = document.createElement('li');
+        li.textContent = item.codigo + ' · ' + item.nome + ': R$ ' + formatarNumero(item.valor) +
+          (item.valorAnterior ? ' (ano anterior: R$ ' + formatarNumero(item.valorAnterior) + ')' : '');
+        lista.appendChild(li);
+      }
+      aviso.appendChild(lista);
+    }
+  }
+
+  function expandirGrupos(aberto) {
+    linhasDre.querySelectorAll('tr[data-linha]:not(.linha-auditoria)').forEach(linha => {
+      linha.style.display = aberto || !linha.dataset.pai ? 'table-row' : 'none';
+      if (linha.hasAttribute('data-aberto') && (!aberto || !linha.querySelector('[data-auditoria]'))) linha.dataset.aberto = String(aberto);
+      atualizarBotaoExpansao(linha);
+    });
+    if (!aberto) linhasDre.querySelectorAll('.linha-auditoria').forEach(linha => { linha.style.display = 'none'; });
+  }
+
+  function filtrarNaturezas() {
+    const termo = buscarNatureza.value.trim().toLocaleLowerCase('pt-BR');
+    if (!termo) { expandirGrupos(false); return; }
+    const linhas = Array.from(linhasDre.querySelectorAll('tr[data-linha]'));
+    const visiveis = new Set();
+    for (const linha of linhas) {
+      if (!linha.cells[0].textContent.toLocaleLowerCase('pt-BR').includes(termo)) continue;
+      visiveis.add(linha.dataset.linha);
+      let pai = linha.dataset.pai;
+      while (pai) {
+        visiveis.add(pai);
+        pai = linhas.find(item => item.dataset.linha === pai)?.dataset.pai;
+      }
+      // Ao encontrar um grupo, inclui seus descendentes já consultados.
+      const descendentes = [linha.dataset.linha];
+      while (descendentes.length) {
+        const id = descendentes.pop();
+        for (const filho of linhas.filter(item => item.dataset.pai === id)) {
+          visiveis.add(filho.dataset.linha); descendentes.push(filho.dataset.linha);
+        }
+      }
+    }
+    for (const linha of linhas) linha.style.display = visiveis.has(linha.dataset.linha) ? 'table-row' : 'none';
+  }
+  if (DRE_CAIXA) {
+    buscarNatureza.addEventListener('input', filtrarNaturezas);
+    document.getElementById('expandirTudo').addEventListener('click', () => { buscarNatureza.value = ''; expandirGrupos(true); });
+    document.getElementById('recolherTudo').addEventListener('click', () => { buscarNatureza.value = ''; expandirGrupos(false); });
+  }
 
   atualizar.addEventListener(
     'click',

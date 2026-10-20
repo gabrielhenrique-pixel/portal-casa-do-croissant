@@ -24,6 +24,8 @@ import {
   listarAuditoriaDre
 } from './dre-service.js';
 import { drePage } from './pages/dre.js';
+import { dreInicioPage } from './pages/dre-inicio.js';
+import { listarDreCaixa, listarAuditoriaDreCaixa } from './dre-caixa/service.js';
 import {
   carregarCadastroMetasPainel,
   salvarMetasPainel
@@ -437,7 +439,7 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
 
       if (
-  url.pathname === '/dre' &&
+  ['/dre', '/dre/competencia', '/dre/caixa'].includes(url.pathname) &&
   request.method === 'GET'
 ) {
   const acesso = await obterAcessoModulo(
@@ -450,7 +452,8 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
     return redirectToPortal();
   }
 
-  return drePage();
+  if (url.pathname === '/dre') return dreInicioPage();
+  return drePage({ regime: url.pathname === '/dre/caixa' ? 'caixa' : 'competencia' });
 }
 
 if (
@@ -521,6 +524,21 @@ if (vendedorVinculado) {
       error: error.message ||
         'Não foi possível carregar a DRE.'
     }, 502);
+  }
+}
+
+if (
+  ['/api/dre/caixa', '/api/dre/caixa/auditoria'].includes(url.pathname) &&
+  request.method === 'GET'
+) {
+  const acesso = await obterAcessoModulo(request, env, 'DRE');
+  if (!acesso?.permissions.view) return json({ error: 'Acesso não autorizado.' }, 403);
+  try {
+    const consultar = url.pathname.endsWith('/auditoria') ? listarAuditoriaDreCaixa : listarDreCaixa;
+    return json(await consultar(request, env));
+  } catch (error) {
+    console.error('Erro ao consultar DRE Caixa:', error);
+    return json({ error: error.message || 'Não foi possível consultar o DRE Caixa.' }, error.status || 502);
   }
 }
 
