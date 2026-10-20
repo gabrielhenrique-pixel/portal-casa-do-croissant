@@ -12,9 +12,6 @@ const REDES_MODELO = [
   'ZAMPROGNA', 'IMPERATRIZ'
 ];
 
-// Regra homologada para a rede auditada; as demais mantêm a base anterior.
-const REDES_ENCARGOS_SOBRE_LIQUIDO = new Set(['ANGELONI SC']);
-
 export async function listarMargemRedeSankhya(request, env, session) {
   if (!session) {
   return responderJson({ error: 'Acesso não autorizado.' }, 403);
@@ -150,17 +147,6 @@ clientes.forEach((cliente) => {
       }
 
       resumo.devolucoes += valorTotal;
-
-      if (REDES_ENCARGOS_SOBRE_LIQUIDO.has(resumo.rede)) {
-        // A devolução abate somente os encargos comerciais do próprio cliente.
-        // CMV, frete, imposto estimado e contrato continuam com a regra atual.
-        resumo.custoPromotoria -= valorTotal * percentualCadastro(
-          cadastro?.percentualPromotoria
-        );
-        resumo.custoComissao -= valorTotal * percentualCadastro(
-          cadastro?.percentualComissao
-        );
-      }
     });
 
     linhasFrete.forEach((linha) => {
@@ -263,9 +249,6 @@ function resumoDaRede(resumoPorRede, rede) {
 }
 
 function finalizarResumo(resumo, totalClientes) {
-  const basePromotoriaComissao = REDES_ENCARGOS_SOBRE_LIQUIDO.has(resumo.rede)
-    ? resumo.faturamentoBruto - resumo.devolucoes
-    : resumo.faturamentoBruto;
   const receitaLiquida = limparMenosZero(
     resumo.receitaLiquida - resumo.devolucoes
   );
@@ -292,18 +275,17 @@ function finalizarResumo(resumo, totalClientes) {
       ? null
       : limparMenosZero(cmvTotal / resumo.quantidade),
     cmvTotal,
-    basePromotoriaComissao: limparMenosZero(basePromotoriaComissao),
-    percentualPromotoria: basePromotoriaComissao === 0
+    percentualPromotoria: resumo.faturamentoBruto === 0
       ? null
-      : limparMenosZero(custoPromotoria / basePromotoriaComissao),
+      : limparMenosZero(custoPromotoria / resumo.faturamentoBruto),
     custoPromotoria,
     percentualContrato: resumo.faturamentoBruto === 0
       ? null
       : limparMenosZero(custoContrato / resumo.faturamentoBruto),
     custoContrato,
-    percentualComissao: basePromotoriaComissao === 0
+    percentualComissao: resumo.faturamentoBruto === 0
       ? null
-      : limparMenosZero(custoComissao / basePromotoriaComissao),
+      : limparMenosZero(custoComissao / resumo.faturamentoBruto),
     custoComissao,
     investimentos,
     frete,
@@ -317,11 +299,6 @@ function finalizarResumo(resumo, totalClientes) {
       resumo.faturamentoPorParceiro.values()
     ).filter((valor) => valor > 0).length
   };
-}
-
-function percentualCadastro(valor) {
-  const numero = Number(valor);
-  return Number.isFinite(numero) && numero >= 0 && numero <= 1 ? numero : 0;
 }
 
 function adicionarAlerta(mapa, codigoParceiro, parceiro, valor) {
