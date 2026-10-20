@@ -1,5 +1,5 @@
 import { paginaInicialPage } from './pages/pagina-inicial.js'; 
-import { iniciarMenuMobile } from './menu-mobile.js';
+import { MENU_MOBILE_SCRIPT } from './menu-mobile.js';
 import { perfilPage } from './pages/perfil.js';
 import { recuperarSenhaPage } from './pages/recuperar-senha.js';
 import { investimentosPage } from './pages/investimentos.js';
@@ -5051,7 +5051,7 @@ window.addEventListener(
   const login = $('login');
   const setup = $('setup');
   const dashboard = $('dashboard');
-  const fecharMenuMobile = (${iniciarMenuMobile.toString()})();
+  const fecharMenuMobile = ${MENU_MOBILE_SCRIPT};
 
   let sessionData = null;
   let cachedUsers = [];

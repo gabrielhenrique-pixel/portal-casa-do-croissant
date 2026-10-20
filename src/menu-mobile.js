@@ -1,5 +1,6 @@
-// Executado no navegador. Não consulta nem altera dados do portal.
-export function iniciarMenuMobile() {
+// Fonte do navegador preservada como texto: o bundler do Worker não deve
+// inserir helpers de servidor neste script. Não consulta nem altera dados.
+export const MENU_MOBILE_SCRIPT = String.raw`(function iniciarMenuMobile() {
   const menu = document.getElementById('menuLateral');
   const abrir = document.getElementById('abrirMenu');
   const fechar = document.getElementById('fecharMenu');
@@ -65,4 +66,4 @@ export function iniciarMenuMobile() {
   window.addEventListener('pageshow', () => definirMenu(false, false));
   definirMenu(false, false);
   return (restaurarFoco = false) => definirMenu(false, restaurarFoco);
-}
+})()`;

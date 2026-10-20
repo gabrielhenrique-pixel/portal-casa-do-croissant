@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext, Script } from 'node:vm';
-import { iniciarMenuMobile } from '../src/menu-mobile.js';
+import { MENU_MOBILE_SCRIPT } from '../src/menu-mobile.js';
 import worker from '../src/index.js';
 
 function cenario(matches = true) {
@@ -38,7 +38,7 @@ function cenario(matches = true) {
   document = { body: elemento(), getElementById: id => ids[id], listeners: {}, addEventListener(tipo, callback) { this.listeners[tipo] = callback; } };
   const media = { matches, addEventListener(_tipo, callback) { this.alterar = callback; } };
   const window = { listeners: {}, matchMedia: () => media, addEventListener(tipo, callback) { this.listeners[tipo] = callback; } };
-  const fechar = runInNewContext(`(${iniciarMenuMobile.toString()})()`, { document, window });
+  const fechar = runInNewContext(MENU_MOBILE_SCRIPT, { document, window });
   function tecla(key, shiftKey = false) {
     const event = { key, shiftKey, prevented: false, preventDefault() { this.prevented = true; } };
     document.listeners.keydown(event);
@@ -142,6 +142,7 @@ test('HTML do portal incorpora os controles, estilos e JavaScript válidos', asy
   assert.match(html, /height:100dvh/);
   assert.match(html, /width:min\(280px, calc\(100vw - 48px\)\)/);
   assert.match(html, /const fecharMenuMobile = \(function iniciarMenuMobile/);
+  assert.doesNotMatch(MENU_MOBILE_SCRIPT, /__name|__publicField|\.toString\(/);
   assert.match(html, /function openView\(view\) \{\s*fecharMenuMobile\(\);/);
   for (const script of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) new Script(script[1]);
 });
