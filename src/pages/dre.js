@@ -468,9 +468,6 @@ tbody .linha-resultado td.coluna-total {
 .indicador-dre h2{margin:0;color:#607a91;font-size:13px;font-weight:normal}
 .indicador-dre strong{display:block;margin:16px 0 12px;font-size:20px;overflow-wrap:anywhere}
 .indicador-dre small{color:#607a91;font-size:12px}
-.nota-regime{margin:0 0 18px;padding:16px 20px;border:1px solid #d5e3e4;border-radius:12px;background:#f7fafb;color:#425e70;font-size:13px;line-height:1.6}
-.nota-regime strong{color:#24674f}.nota-regime .pendencias{background:#fff5de;color:#724b0d;padding:12px;border-radius:8px;margin-top:12px}
-.nota-regime ul{margin:8px 0;padding-left:20px}.nota-regime p{margin:0}
 .busca-dre{display:flex;gap:12px;align-items:center;padding:12px 20px;flex-wrap:wrap}
 .busca-dre input{max-width:350px;padding:10px;border:1px solid #cbd9e2;border-radius:8px;min-width:200px}
 .busca-dre button{background:#edf3f7;color:#163a5a;border:1px solid #cbd9e2;border-radius:8px;padding:10px;cursor:pointer}
@@ -534,8 +531,7 @@ tbody .linha-resultado td.coluna-total {
 
     ${caixa ? `<section class="resumo-dre" aria-label="Indicadores do período">
       ${[['receitaBruta', 'Receita Bruta'], ['receitaLiquida', 'Receita Líquida'], ['custosProducao', 'Custos'], ['despesasGerais', 'Despesas'], ['resultadoOperacional', 'Resultado Operacional']].map(([chave, nome]) => `<article class="indicador-dre"><h2>${nome}</h2><strong id="kpi-${chave}">—</strong><small id="comparacao-${chave}">vs. ano anterior</small></article>`).join('')}
-    </section>
-    <aside class="nota-regime" aria-live="polite"><p><strong>Fonte: Sankhya · Regime de caixa · Em homologação.</strong> Confira um mês fechado com o relatório nativo antes de usar os resultados para decisão financeira.</p><p>Baixas reais por DHBAIXA, com VLRBAIXA rateado por natureza e classificação do DRE atual do portal. Exclui títulos em aberto, provisões e datas de baixa futuras. Juros e descontos não são somados ou descontados novamente. Este relatório não é conciliação bancária.</p><p>% A.H.: comparação com o mesmo recorte do ano anterior. % A.V.: participação sobre a receita bruta do mês (ou do período, no total).</p><p id="metadadosCaixa"></p><div id="pendenciasCaixa" class="pendencias" hidden></div></aside>` : ''}
+    </section>` : ''}
 
     <section class="painel">
       <div class="titulo-painel">
@@ -1842,27 +1838,6 @@ async function carregarLancamentos(id, natureza) {
       valor.className = total ? classeResultado(total.resultado) : '';
       document.getElementById('comparacao-' + chave).textContent = !total ? 'Aguardando consulta' :
         total.anoAnterior === 0 ? 'Sem base no ano anterior' : formatarPercentual(total.ah) + ' vs. ano anterior';
-    }
-    const aviso = document.getElementById('pendenciasCaixa');
-    aviso.hidden = true;
-    aviso.replaceChildren();
-    document.getElementById('metadadosCaixa').textContent = dados ?
-      'Consulta: ' + new Date(dados.atualizadoEm).toLocaleString('pt-BR') + '. ' +
-      (dados.grupos.some(grupo => grupo.detalhes.length) || dados.pendenciasClassificacao.length ? '' : 'Nenhuma baixa encontrada no período. ') +
-      'Comparativo: ' + formatarDataPlanilha(dados.comparacao.inicio) + ' a ' + formatarDataPlanilha(dados.comparacao.fim) + '.' : '';
-    if (dados?.pendenciasClassificacao?.length) {
-      aviso.hidden = false;
-      const titulo = document.createElement('strong');
-      titulo.textContent = 'Atenção: naturezas sem classificação no DRE. Não incluídas nos subtotais; o resultado precisa de conferência.';
-      aviso.appendChild(titulo);
-      const lista = document.createElement('ul');
-      for (const item of dados.pendenciasClassificacao) {
-        const li = document.createElement('li');
-        li.textContent = item.codigo + ' · ' + item.nome + ': R$ ' + formatarNumero(item.valor) +
-          (item.valorAnterior ? ' (ano anterior: R$ ' + formatarNumero(item.valorAnterior) + ')' : '');
-        lista.appendChild(li);
-      }
-      aviso.appendChild(lista);
     }
   }
 

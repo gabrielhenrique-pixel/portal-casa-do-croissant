@@ -226,6 +226,13 @@ test('páginas têm links corretos, scripts válidos, modo e endpoints independe
   assert.doesNotMatch(inicio, /Fonte atual:|Sankhya|Omie|Escolha como|Abrir DRE/);
   for (const regime of ['caixa', 'competencia']) {
     const html = await drePage({ regime }).text();
+    if (regime === 'caixa') {
+      const pagina = html.split('<script>')[0];
+      assert.doesNotMatch(pagina, /nota-regime|pendenciasCaixa|metadadosCaixa|Em homologação|Confira um mês fechado|DHBAIXA|VLRBAIXA/);
+      assert.doesNotMatch(html, /getElementById\('(?:pendenciasCaixa|metadadosCaixa)'\)/);
+      assert.match(pagina, /id="kpi-receitaBruta"/);
+      assert.match(pagina, /id="linhasDre"/);
+    }
     const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
     assert.doesNotThrow(() => new Script(script));
     assert.match(html, /href="\/dre"/);
