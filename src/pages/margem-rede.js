@@ -547,8 +547,8 @@ tbody tr.linha-total td.coluna-receita-ajustada.negativo {
           <tr>
             <th>Rede</th>
             <th>Fat Bruto</th>
-            <th>Devoluções</th>
             <th>Receita Líquida</th>
+            <th>Devoluções</th>
             <th>Impostos</th>
             <th class="coluna-receita-ajustada">Receita após Deduções</th>
             <th>CMV Unit.</th>
@@ -656,8 +656,8 @@ tbody tr.linha-total td.coluna-receita-ajustada.negativo {
           var linha = document.createElement('tr');
           linha.appendChild(celula('rede', rede.rede || ''));
           linha.appendChild(celula(negativo(rede.faturamentoBruto), moeda(rede.faturamentoBruto)));
-          linha.appendChild(celula('devolucao', moeda(rede.devolucoes)));
           linha.appendChild(celula(negativo(rede.receitaLiquida), moeda(rede.receitaLiquida)));
+          linha.appendChild(celula('devolucao', moeda(rede.devolucoes))); 
           linha.appendChild(celula(negativo(rede.impostos), moeda(rede.impostos)));
           
 var ajustada = receitaAposDeducoes(rede);
@@ -755,8 +755,8 @@ function adicionarLinhaTotalMargem(redes) {
 
   linha.appendChild(celula('rodape-rede-vazio', ''));
   linha.appendChild(celula(negativo(total.faturamentoBruto), moeda(total.faturamentoBruto)));
-  linha.appendChild(celula('devolucao', moeda(total.devolucoes)));
   linha.appendChild(celula(negativo(total.receitaLiquida), moeda(total.receitaLiquida)));
+  linha.appendChild(celula('devolucao', moeda(total.devolucoes)));  
   linha.appendChild(celula(negativo(total.impostos), moeda(total.impostos)));
   
 var ajustadaTotal = receitaAposDeducoes(total);
@@ -965,8 +965,8 @@ linha.appendChild(celula(
         var colunas = [
           { titulo:'Rede', campo:'rede', tipo:'texto', largura:26 },
           { titulo:'Faturamento bruto', campo:'faturamentoBruto', tipo:'moeda', largura:18 },
-          { titulo:'Devoluções', campo:'devolucoes', tipo:'moeda', largura:17 },
           { titulo:'Receita líquida', campo:'receitaLiquida', tipo:'moeda', largura:18 },
+          { titulo:'Devoluções', campo:'devolucoes', tipo:'moeda', largura:17 },   
           { titulo:'Impostos', campo:'impostos', tipo:'moeda', largura:16 },
           { titulo:'Receita após deduções', campo:'receitaAposDeducoes', tipo:'moeda', largura:22 },
           { titulo:'CMV unitário', campo:'cmvUnitario', tipo:'moeda', largura:16 },
