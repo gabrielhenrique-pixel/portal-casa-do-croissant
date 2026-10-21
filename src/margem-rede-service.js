@@ -12,7 +12,12 @@ const REDES_MODELO = [
   'ZAMPROGNA', 'IMPERATRIZ'
 ];
 
-export async function listarMargemRedeSankhya(request, env, session) {
+export async function listarMargemRedeSankhya(
+  request,
+  env,
+  session,
+  comporRedes = null
+) {
   if (!session) {
   return responderJson({ error: 'Acesso não autorizado.' }, 403);
 }
@@ -112,7 +117,7 @@ clientes.forEach((cliente) => {
       }
 
       resumo.faturamentoBruto += item.faturamento;
-      // Nesta visão, impostos e devoluções são deduzidos somente no Resultado Final.
+      resumo.valorSt += item.valorSt;
       resumo.receitaLiquida += item.faturamento - item.valorSt;
       resumo.quantidade += item.quantidade;
       resumo.impostos += item.impostos;
@@ -203,12 +208,22 @@ clientes.forEach((cliente) => {
         : rede.receitaLiquida / totalReceitaLiquida;
     });
 
+    
+const redesResposta = comporRedes === null
+  ? redes
+  : comporRedes({
+      resumosPorRede: resumoPorRede,
+      totalClientesPorRede,
+      redesMargem: redes
+    });
+
+
     return responderJson({
       inicio,
       fim,
       faturamentoGeral: limparMenosZero(faturamentoGeral),
       devolucoesGeral: limparMenosZero(devolucoesGeral),
-      redes,
+      redes: redesResposta,,
       alertas: {
         vendasSemCadastro: listaDeAlertas(alertas.vendasSemCadastro),
         devolucoesSemCadastro: listaDeAlertas(alertas.devolucoesSemCadastro),
@@ -231,6 +246,7 @@ function novoResumo(rede) {
   return {
     rede,
     faturamentoBruto: 0,
+    valorSt: 0,
     devolucoes: 0,
     receitaLiquida: 0,
     quantidade: 0,
