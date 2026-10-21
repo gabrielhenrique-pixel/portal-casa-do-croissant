@@ -1220,43 +1220,57 @@ export function dashboardVendasPage() {
   }
 
   function velocimetroGrupo(grupo) {
-    var participacao = grupo.participacao;
+  var participacao = grupo.participacao;
 
-    var progresso = Math.max(
-      0,
-      Math.min(numero(participacao), 1)
-    ) * 245;
+  var progresso = Math.max(
+    0,
+    Math.min(numero(participacao), 1)
+  ) * 100;
 
-    var textoPercentual;
+  var textoPercentual;
 
-    if (grupo.semConversao) {
-      textoPercentual = '—';
-    } else if (participacao == null) {
-      textoPercentual = 'Sem meta';
-    } else {
-      textoPercentual = percentual.format(participacao);
-    }
-
-    return (
-      '<div class="grupo-gauge">' +
-        '<svg viewBox="0 0 190 130" aria-hidden="true">' +
-          '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
-            'fill="none" stroke="#a7a7a7" stroke-width="25"/>' +
-          '<path d="M 20 105 A 75 75 0 0 1 170 105" ' +
-            'fill="none" stroke="#00ad4f" stroke-width="25" ' +
-            'stroke-dasharray="' +
-              progresso.toFixed(1) +
-              ' 245"/>' +
-        '</svg>' +
-        '<i class="grupo-ponteiro" style="transform:rotate(' +
-          angulo(participacao) +
-          'deg)"></i>' +
-        '<b>' +
-          textoPercentual +
-        '</b>' +
-      '</div>'
-    );
+  if (grupo.semConversao) {
+    textoPercentual = '—';
+  } else if (participacao == null) {
+    textoPercentual = 'Sem meta';
+  } else {
+    textoPercentual = percentual.format(participacao);
   }
+
+  return (
+    '<div class="grupo-gauge">' +
+      '<svg viewBox="0 0 190 130" aria-hidden="true">' +
+        '<path ' +
+          'd="M 20 105 A 75 75 0 0 1 170 105" ' +
+          'fill="none" ' +
+          'stroke="#a7a7a7" ' +
+          'stroke-width="25" ' +
+          'pathLength="100"/>' +
+
+        '<path ' +
+          'd="M 20 105 A 75 75 0 0 1 170 105" ' +
+          'fill="none" ' +
+          'stroke="#00ad4f" ' +
+          'stroke-width="25" ' +
+          'pathLength="100" ' +
+          'stroke-dasharray="' + progresso.toFixed(1) + ' 100"/>' +
+
+        '<line ' +
+          'x1="95" y1="105" x2="95" y2="41" ' +
+          'stroke="#111" ' +
+          'stroke-width="4" ' +
+          'stroke-linecap="round" ' +
+          'transform="rotate(' + angulo(participacao) + ' 95 105)"/>' +
+
+        '<circle cx="95" cy="105" r="5" fill="#111"/>' +
+      '</svg>' +
+
+      '<b>' +
+        textoPercentual +
+      '</b>' +
+    '</div>'
+  );
+}
 
     function montarGrupos(produtos) {
     return produtos.map(function (produto) {
