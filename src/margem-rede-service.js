@@ -223,7 +223,7 @@ const redesResposta = comporRedes === null
       fim,
       faturamentoGeral: limparMenosZero(faturamentoGeral),
       devolucoesGeral: limparMenosZero(devolucoesGeral),
-      redes: redesResposta,,
+      redes: redesResposta,
       alertas: {
         vendasSemCadastro: listaDeAlertas(alertas.vendasSemCadastro),
         devolucoesSemCadastro: listaDeAlertas(alertas.devolucoesSemCadastro),
