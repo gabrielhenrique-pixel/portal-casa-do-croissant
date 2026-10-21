@@ -17,7 +17,11 @@ import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
 import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
-import {carregarMetaFaturamento,salvarMetaFaturamento} from './dashboard-rentabilidade-service.js';
+import {
+  carregarMetaFaturamento,
+  salvarMetaFaturamento,
+  comporRedesDashboard
+} from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
 import { metasVendasPage } from './pages/metas-vendas.js';
 import {
@@ -1375,6 +1379,32 @@ if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
 
   return margemRedePage();
 }
+
+      
+if (
+  url.pathname === '/api/rentabilidade/dashboard' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_RENTABILIDADE'
+  );
+
+  if (!permitido) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  const session = await getSession(request, env);
+
+  return listarMargemRedeSankhya(
+    request,
+    env,
+    session,
+    comporRedesDashboard
+  );
+}
+
 
 if (
   url.pathname === '/api/rentabilidade/margem-rede' &&
