@@ -7,7 +7,7 @@ import { garantirCadastroProdutos } from '../src/produtos-painel-service.js';
 import { listarMargemRedeSankhya } from '../src/margem-rede-service.js';
 import { listarRentabilidadeSkuSankhya } from '../src/rentabilidade-sku-service.js';
 
-// Versão publicada antes da mudança de posição dos impostos.
+// Versão publicada antes da mudança de posição dos impostos e das devoluções.
 const fonteAnterior = execFileSync('git', [
   'show', '8bb3518427dc387a500e91a4d3888b4aa3104363:src/margem-rede-service.js'
 ], { encoding: 'utf8' }).replace(/from '(\.\/[^']+)'/g, (_, caminho) =>
@@ -17,7 +17,7 @@ const request = () => new Request('https://portal.test/api/rentabilidade/margem-
 const sessao = { username: 'Teste' };
 const aproximado = (atual, esperado) => assert(Math.abs(atual - esperado) < 1e-8, `${atual} != ${esperado}`);
 
-async function cenario(t, devolucao) {
+async function cenario(t, devolucao, parceiroDevolucao = 1) {
   const banco = new DatabaseSync(':memory:');
   t.after(() => banco.close());
   const statement = (sql, args = []) => ({
@@ -34,7 +34,8 @@ async function cenario(t, devolucao) {
   banco.exec(`INSERT INTO rentabilidade_clientes VALUES
     ('1','Cliente teste A','ST MARCHE',.10,.03,.025,'2026-01-01','2026-01-01','Teste'),
     ('2','Cliente teste B','ST MARCHE',.04,.02,.01,'2026-01-01','2026-01-01','Teste'),
-    ('3','Cliente teste C','CONDOR',.04,.05,.02,'2026-01-01','2026-01-01','Teste');
+    ('3','Cliente teste C','CONDOR',.04,.05,.02,'2026-01-01','2026-01-01','Teste'),
+    ('4','Cliente sem vendas','GIASSI',.04,.05,.02,'2026-01-01','2026-01-01','Teste');
     INSERT INTO produtos_painel_config
       (codigo_produto,cmv,atualizado_em,atualizado_por)
       VALUES ('11',5,'2026-01-01','Teste'),('12',7,'2026-01-01','Teste');`);
@@ -56,7 +57,7 @@ async function cenario(t, devolucao) {
     assert.doesNotMatch(sql, /\b(INSERT|UPDATE|DELETE|MERGE|DROP)\b/i);
     const rows = sql.includes('AS VLR_LIQUIDO') ? vendas :
       sql.includes('TOTAL_PACOTES_VILMAR') ? [['VILMAR',1,0,'2026-10-01','Cliente teste A',0,101,0,0,null,null,null,0,12.60]] :
-      devolucao ? [['2026-10-05',201,1,'Cliente teste A','Produto teste 1',1,devolucao,devolucao]] : [];
+      devolucao ? [['2026-10-05',201,parceiroDevolucao,'Cliente teste','Produto teste 1',1,devolucao,devolucao]] : [];
     return Response.json({ status: '1', responseBody: { rows } });
   });
   // Cria a tabela de investimentos exclusivamente no banco em memória do teste.
@@ -68,8 +69,8 @@ async function cenario(t, devolucao) {
   return { env, banco, sqls };
 }
 
-for (const [devolucao, sinal] of [[0, 'positiva'], [1550, 'zero'], [1600, 'negativa']]) {
-  test(`receita ${sinal}: retira somente ST e devoluções, descontando imposto uma vez no resultado`, async t => {
+for (const devolucao of [0, 1550, 1600]) {
+  test(`devolução ${devolucao}: receita retira somente ST; imposto e devolução saem uma vez no resultado`, async t => {
     const { env, sqls } = await cenario(t, devolucao);
     const resposta = await listarMargemRedeSankhya(request(), env, sessao);
     assert.equal(resposta.status, 200);
@@ -82,7 +83,8 @@ for (const [devolucao, sinal] of [[0, 'positiva'], [1550, 'zero'], [1600, 'negat
 
     const rede = atual.redes.find(r => r.rede === 'ST MARCHE');
     aproximado(rede.faturamentoBruto, 1630);
-    aproximado(rede.receitaLiquida, 1550 - devolucao);
+    aproximado(rede.receitaLiquida, 1550);
+    aproximado(rede.devolucoes, devolucao);
     aproximado(rede.impostos, 195.60);
     aproximado(rede.cmvTotal, 79);
     aproximado(rede.custoPromotoria, 45.90);
@@ -90,12 +92,12 @@ for (const [devolucao, sinal] of [[0, 'positiva'], [1550, 'zero'], [1600, 'negat
     aproximado(rede.custoComissao, 36.25);
     aproximado(rede.investimentos, 200);
     aproximado(rede.frete, 12.60);
-    aproximado(rede.resultadoFinal, rede.receitaLiquida - rede.impostos - 79 - 45.90 - 145 - 36.25 - 200 - 12.60);
+    aproximado(rede.resultadoFinal, rede.receitaLiquida - rede.devolucoes - rede.impostos - 79 - 45.90 - 145 - 36.25 - 200 - 12.60);
 
     const totalReceita = atual.redes.reduce((s, r) => s + r.receitaLiquida, 0);
     for (const linha of atual.redes) {
       const previa = antigo.redes.find(r => r.rede === linha.rede);
-      aproximado(linha.receitaLiquida, previa.receitaLiquida + previa.impostos);
+      aproximado(linha.receitaLiquida, previa.receitaLiquida + previa.impostos + previa.devolucoes);
       aproximado(linha.resultadoFinal, previa.resultadoFinal);
       assert.equal(Math.round(linha.resultadoFinal * 100), Math.round(previa.resultadoFinal * 100));
       const retirarDerivados = ({ receitaLiquida, resultadoFinal, margem, participacao, ...resto }) => resto;
@@ -108,6 +110,21 @@ for (const [devolucao, sinal] of [[0, 'positiva'], [1550, 'zero'], [1600, 'negat
     assert.equal(atual.devolucoesGeral, antigo.devolucoesGeral);
   });
 }
+
+test('rede somente com devolução mantém receita zero e deduz a devolução no resultado final', async t => {
+  const { env } = await cenario(t, 200, 4);
+  const atual = await (await listarMargemRedeSankhya(request(), env, sessao)).json();
+  const antigo = await (await anterior.listarMargemRedeSankhya(request(), env, sessao)).json();
+  const rede = atual.redes.find(r => r.rede === 'GIASSI');
+  assert.equal(rede.faturamentoBruto, 0);
+  assert.equal(rede.receitaLiquida, 0);
+  assert.equal(rede.devolucoes, 200);
+  assert.equal(rede.impostos, 0);
+  assert.equal(rede.resultadoFinal, -200);
+  assert.equal(rede.resultadoFinal, antigo.redes.find(r => r.rede === 'GIASSI').resultadoFinal);
+  assert.equal(rede.margem, null);
+  assert.equal(rede.participacao, 0);
+});
 
 test('a mudança de Margem por Rede não altera a Receita Líquida nem o resultado por SKU', async t => {
   const { env, banco } = await cenario(t, 1600);

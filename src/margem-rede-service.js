@@ -112,7 +112,7 @@ clientes.forEach((cliente) => {
       }
 
       resumo.faturamentoBruto += item.faturamento;
-      // Nesta visão, os impostos são deduzidos somente no Resultado Final.
+      // Nesta visão, impostos e devoluções são deduzidos somente no Resultado Final.
       resumo.receitaLiquida += item.faturamento - item.valorSt;
       resumo.quantidade += item.quantidade;
       resumo.impostos += item.impostos;
@@ -250,9 +250,8 @@ function resumoDaRede(resumoPorRede, rede) {
 }
 
 function finalizarResumo(resumo, totalClientes) {
-  const receitaLiquida = limparMenosZero(
-    resumo.receitaLiquida - resumo.devolucoes
-  );
+  const receitaLiquida = limparMenosZero(resumo.receitaLiquida);
+  const devolucoes = limparMenosZero(resumo.devolucoes);
   const impostos = limparMenosZero(resumo.impostos);
   const cmvTotal = limparMenosZero(resumo.cmvTotal);
   const custoPromotoria = limparMenosZero(resumo.custoPromotoria);
@@ -261,14 +260,14 @@ function finalizarResumo(resumo, totalClientes) {
   const investimentos = limparMenosZero(resumo.investimentos);
   const frete = limparMenosZero(resumo.frete);
   const resultadoFinal = limparMenosZero(
-    receitaLiquida - impostos - cmvTotal - custoPromotoria - custoContrato -
+    receitaLiquida - devolucoes - impostos - cmvTotal - custoPromotoria - custoContrato -
       custoComissao - investimentos - frete
   );
 
   return {
     rede: resumo.rede,
     faturamentoBruto: limparMenosZero(resumo.faturamentoBruto),
-    devolucoes: limparMenosZero(resumo.devolucoes),
+    devolucoes,
     receitaLiquida,
     impostos,
     quantidade: resumo.quantidade,
