@@ -41,3 +41,66 @@ async function garantirTabelaMeta(env) {
     )`
   ).run();
 }
+
+
+export function comporRedesDashboard({
+  resumosPorRede,
+  totalClientesPorRede,
+  redesMargem
+}) {
+  const redes = redesMargem.map(({ rede, resultadoFinal }) => {
+    const base = resumosPorRede.get(rede);
+
+    if (!base || !Number.isFinite(resultadoFinal)) {
+      throw new Error(
+        `Dados de rentabilidade indisponíveis para a rede ${rede}.`
+      );
+    }
+
+    const faturamentoBruto = semMenosZero(base.faturamentoBruto);
+    const receitaLiquida = semMenosZero(
+      faturamentoBruto - base.valorSt
+    );
+
+    return {
+      rede,
+      faturamentoBruto,
+      devolucoes: semMenosZero(base.devolucoes),
+      receitaLiquida,
+
+      resultadoFinal,
+
+      margem: receitaLiquida === 0
+        ? null
+        : resultadoFinal / Math.abs(receitaLiquida),
+
+      participacao: null,
+      investimentos: semMenosZero(base.investimentos),
+      frete: semMenosZero(base.frete),
+
+      clientesPositivados: Array.from(
+        base.faturamentoPorParceiro.values()
+      ).filter((valor) => valor > 0).length,
+
+      totalClientes: totalClientesPorRede.get(rede) || 0
+    };
+  });
+
+  const receitaTotal = redes.reduce(
+    (total, rede) => total + rede.receitaLiquida,
+    0
+  );
+
+  redes.forEach((rede) => {
+    rede.participacao = receitaTotal === 0
+      ? null
+      : rede.receitaLiquida / receitaTotal;
+  });
+
+  return redes;
+}
+
+function semMenosZero(valor) {
+  return valor === 0 ? 0 : valor;
+}
+
