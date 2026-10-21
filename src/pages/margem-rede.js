@@ -365,6 +365,33 @@ tbody tr:hover td:nth-child(2) {
     tbody tr:hover td.margem-alerta { background:#ffebac; }
     tbody tr:hover td.margem-boa { background:#d6ebc9; }
 
+    
+/* Destaque da Receita após Deduções */
+th.coluna-receita-ajustada {
+  background:#116149;
+  color:#fff;
+}
+
+tbody td.coluna-receita-ajustada {
+  background:#e3f5ec;
+  color:#12513b;
+  font-weight:700;
+}
+
+tbody tr:hover td.coluna-receita-ajustada {
+  background:#c9e9d8;
+}
+
+tbody tr.linha-total td.coluna-receita-ajustada {
+  background:#b4e0c7;
+  color:#0e4933;
+}
+
+tbody tr.linha-total td.coluna-receita-ajustada.negativo {
+  color:var(--vermelho);
+}
+
+
     .sem-dados td {
       padding:26px;
       color:#5d6f65;
@@ -523,6 +550,7 @@ tbody tr:hover td:nth-child(2) {
             <th>Devoluções</th>
             <th>Receita Líquida</th>
             <th>Impostos</th>
+            <th class="coluna-receita-ajustada">Receita após Deduções</th>
             <th>CMV Unit.</th>
             <th>CMV Total</th>
             <th>Promotoria (%)</th>
@@ -618,7 +646,7 @@ tbody tr:hover td:nth-child(2) {
           var semDados = document.createElement('tr');
           semDados.className = 'sem-dados';
           var coluna = celula('', 'Nenhuma rede encontrada no período.');
-          coluna.colSpan = 19;
+          coluna.colSpan = 20;
           semDados.appendChild(coluna);
           linhasTabela.appendChild(semDados);
           return;
@@ -631,6 +659,14 @@ tbody tr:hover td:nth-child(2) {
           linha.appendChild(celula('devolucao', moeda(rede.devolucoes)));
           linha.appendChild(celula(negativo(rede.receitaLiquida), moeda(rede.receitaLiquida)));
           linha.appendChild(celula(negativo(rede.impostos), moeda(rede.impostos)));
+          
+var ajustada = receitaAposDeducoes(rede);
+
+linha.appendChild(celula(
+  'coluna-receita-ajustada ' + negativo(ajustada),
+  moeda(ajustada)
+));
+
           linha.appendChild(celula(negativo(rede.cmvUnitario), moeda(rede.cmvUnitario)));
           linha.appendChild(celula(negativo(rede.cmvTotal), moeda(rede.cmvTotal)));
           linha.appendChild(celula('', percentual(rede.percentualPromotoria)));
@@ -655,6 +691,14 @@ tbody tr:hover td:nth-child(2) {
   var numero = Number(valor);
   return Number.isFinite(numero) ? numero : 0;
 }
+
+
+function receitaAposDeducoes(rede) {
+  return numeroTotalMargem(rede.receitaLiquida)
+    - numeroTotalMargem(rede.devolucoes)
+    - numeroTotalMargem(rede.impostos);
+}
+
 
 function adicionarLinhaTotalMargem(redes) {
   var total = redes.reduce(function(acumulado, rede) {
@@ -714,6 +758,14 @@ function adicionarLinhaTotalMargem(redes) {
   linha.appendChild(celula('devolucao', moeda(total.devolucoes)));
   linha.appendChild(celula(negativo(total.receitaLiquida), moeda(total.receitaLiquida)));
   linha.appendChild(celula(negativo(total.impostos), moeda(total.impostos)));
+  
+var ajustadaTotal = receitaAposDeducoes(total);
+
+linha.appendChild(celula(
+  'coluna-receita-ajustada ' + negativo(ajustadaTotal),
+  moeda(ajustadaTotal)
+));
+
   linha.appendChild(celula('total-vazio', ''));
   linha.appendChild(celula(negativo(total.cmvTotal), moeda(total.cmvTotal)));
   linha.appendChild(celula('total-vazio', ''));
@@ -757,10 +809,11 @@ function adicionarLinhaTotalMargem(redes) {
         return Number.isFinite(numero) ? numero : 0;
       }
 
-      function celulaXlsxMargem(referencia, valor, tipo) {
+      function celulaXlsxMargem(referencia, valor, tipo, destaque) {
         var estilo = tipo === 'moeda' ? 4 :
           tipo === 'percentual' ? 5 :
           tipo === 'inteiro' ? 6 : 0;
+          if (destaque) estilo = 7;
 
         if (tipo === 'texto') {
           return '<c r="' + referencia + '" s="' + estilo + '" t="inlineStr"><is><t>' +
@@ -880,18 +933,20 @@ function adicionarLinhaTotalMargem(redes) {
           '<font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>' +
           '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>' +
           '</fonts>' +
-          '<fills count="4">' +
+          '<fills count="6">' +
           '<fill><patternFill patternType="none"/></fill>' +
           '<fill><patternFill patternType="gray125"/></fill>' +
           '<fill><patternFill patternType="solid"><fgColor rgb="FF102E49"/><bgColor indexed="64"/></patternFill></fill>' +
           '<fill><patternFill patternType="solid"><fgColor rgb="FF1F4E78"/><bgColor indexed="64"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FFE3F5EC"/><bgColor indexed="64"/></patternFill></fill>' +
+          '<fill><patternFill patternType="solid"><fgColor rgb="FF116149"/><bgColor indexed="64"/></patternFill></fill>' +
           '</fills>' +
           '<borders count="2">' +
           '<border><left/><right/><top/><bottom/><diagonal/></border>' +
           '<border><left style="thin"><color rgb="FFD9D2C3"/></left><right style="thin"><color rgb="FFD9D2C3"/></right><top style="thin"><color rgb="FFD9D2C3"/></top><bottom style="thin"><color rgb="FFD9D2C3"/></bottom><diagonal/></border>' +
           '</borders>' +
           '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-          '<cellXfs count="7">' +
+          '<cellXfs count="9">' +
           '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment vertical="center"/></xf>' +
           '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
           '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
@@ -899,6 +954,10 @@ function adicionarLinhaTotalMargem(redes) {
           '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
           '<xf numFmtId="165" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
           '<xf numFmtId="166" fontId="0" fillId="0" borderId="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+          '<xf numFmtId="164" fontId="0" fillId="4" borderId="1" applyFill="1" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+          '<xf numFmtId="0" fontId="2" fillId="5" borderId="1" applyFill="1" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
+
+          
           '</cellXfs></styleSheet>';
       }
 
@@ -909,6 +968,7 @@ function adicionarLinhaTotalMargem(redes) {
           { titulo:'Devoluções', campo:'devolucoes', tipo:'moeda', largura:17 },
           { titulo:'Receita líquida', campo:'receitaLiquida', tipo:'moeda', largura:18 },
           { titulo:'Impostos', campo:'impostos', tipo:'moeda', largura:16 },
+          { titulo:'Receita após deduções', campo:'receitaAposDeducoes', tipo:'moeda', largura:22 },
           { titulo:'CMV unitário', campo:'cmvUnitario', tipo:'moeda', largura:16 },
           { titulo:'CMV total', campo:'cmvTotal', tipo:'moeda', largura:16 },
           { titulo:'Promotoria (%)', campo:'percentualPromotoria', tipo:'percentual', largura:15 },
@@ -934,18 +994,27 @@ function adicionarLinhaTotalMargem(redes) {
         linhas.push('<row r="2" ht="18" customHeight="1">' +
           '<c r="A2" s="2" t="inlineStr"><is><t>' + escaparXmlXlsxMargem(periodo) + '</t></is></c></row>');
         linhas.push('<row r="4" ht="30" customHeight="1">' + colunas.map(function(coluna, indice) {
-          return '<c r="' + colunaXlsxMargem(indice) + '4" s="3" t="inlineStr"><is><t>' +
+          
+return '<c r="' + colunaXlsxMargem(indice) + '4" s="' +
+  (coluna.campo === 'receitaAposDeducoes' ? 8 : 3) +
+  '" t="inlineStr"><is><t>' +
+
             escaparXmlXlsxMargem(coluna.titulo) + '</t></is></c>';
         }).join('') + '</row>');
 
         redes.forEach(function(rede, indiceLinha) {
           var numeroLinha = indiceLinha + 5;
           linhas.push('<row r="' + numeroLinha + '">' + colunas.map(function(coluna, indiceColuna) {
-            return celulaXlsxMargem(
-              colunaXlsxMargem(indiceColuna) + numeroLinha,
-              rede[coluna.campo],
-              coluna.tipo
-            );
+            
+return celulaXlsxMargem(
+  colunaXlsxMargem(indiceColuna) + numeroLinha,
+  coluna.campo === 'receitaAposDeducoes'
+    ? receitaAposDeducoes(rede)
+    : rede[coluna.campo],
+  coluna.tipo,
+  coluna.campo === 'receitaAposDeducoes'
+);
+
           }).join('') + '</row>');
         });
 
