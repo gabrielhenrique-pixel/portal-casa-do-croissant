@@ -281,11 +281,6 @@ const vendasPorCodigo = new Map(
 );
 
 const vendedores = vendedoresCadastrados
-  .filter(function (vendedorCadastrado) {
-    return !vendedorBloqueado ||
-      String(vendedorCadastrado.codigoVendedor).trim() ===
-        vendedorSelecionado;
-  })
   .map(function(vendedorCadastrado) {
     const codigoVendedor =
       vendedorCadastrado.codigoVendedor;
@@ -311,13 +306,22 @@ const vendedores = vendedoresCadastrados
       faturamento: podeVerFaturamento
   ? faturamentoReal
   : null,
-meta,
-pedidosAFaturar:
-  pedidosPorVendedor.get(String(codigoVendedor).trim()) || 0,
-devolucoes:
-  devolucoesPorVendedor.get(String(codigoVendedor).trim()) || 0,
+
+meta: podeVerFaturamento
+  ? meta
+  : null,
+
+pedidosAFaturar: podeVerFaturamento
+  ? (pedidosPorVendedor.get(String(codigoVendedor).trim()) || 0)
+  : null,
+
+devolucoes: podeVerFaturamento
+  ? (devolucoesPorVendedor.get(String(codigoVendedor).trim()) || 0)
+  : null,
+
 percentualMeta: meta > 0
   ? faturamentoReal / meta
+  : null / meta
   : null
     };
   })
