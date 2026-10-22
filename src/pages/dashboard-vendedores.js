@@ -202,15 +202,28 @@ export function dashboardVendedoresPage() {
         var linha = document.createElement('tr');
 
         var valores = [
-          vendedor.vendedor,
-          moeda.format(vendedor.faturamento),
-          moeda.format(vendedor.meta),
-          vendedor.percentualMeta == null
-            ? '—'
-            : percentual.format(vendedor.percentualMeta),
-          moeda.format(vendedor.pedidosAFaturar),
-          moeda.format(vendedor.devolucoes)
-        ];
+  vendedor.vendedor,
+
+  vendedor.faturamento == null
+    ? '—'
+    : moeda.format(vendedor.faturamento),
+
+  vendedor.meta == null
+    ? '—'
+    : moeda.format(vendedor.meta),
+
+  vendedor.percentualMeta == null
+    ? '—'
+    : percentual.format(vendedor.percentualMeta),
+
+  vendedor.pedidosAFaturar == null
+    ? '—'
+    : moeda.format(vendedor.pedidosAFaturar),
+
+  vendedor.devolucoes == null
+    ? '—'
+    : moeda.format(vendedor.devolucoes)
+];
 
         valores.forEach(function (valor, indice) {
           var celula = document.createElement('td');
