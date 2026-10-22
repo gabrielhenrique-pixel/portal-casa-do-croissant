@@ -1333,11 +1333,7 @@ acoesMetas.style.display = vendedorBloqueado ? 'none' : '';
     fim: dados.fim
   }).toString();
 
-var vendedoresExibidos = vendedorSelecionado
-  ? vendedores.filter(function (vendedor) {
-      return String(vendedor.codigoVendedor) === vendedorSelecionado;
-    })
-  : vendedores;
+var vendedoresExibidos = vendedores;
 
 $('linhas').innerHTML =
   vendedoresExibidos.slice(0, 5).map(function (vendedor, indice) {
@@ -1382,9 +1378,9 @@ $('linhas').innerHTML =
             '</td>' +
             '<td>' +
               (
-                vendedorSelecionado && !selecionado
-                  ? '—'
-                  : moeda.format(numero(vendedor.faturamento))
+                vvendedor.faturamento == null
+  ? '—'
+  : moeda.format(numero(vendedor.faturamento))
               ) +
             '</td>' +
             '<td>' +
