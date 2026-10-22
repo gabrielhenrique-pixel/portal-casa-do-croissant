@@ -2570,6 +2570,7 @@ async function currentUser(request, env) {
     user: {
       id: session.user_id,
       username: session.username,
+       nome: session.nome || '',
       email: session.email,
       role: session.role
     },
@@ -2770,7 +2771,7 @@ async function listUsers(request, env) {
     'view'
   );
   const result = await env.DB.prepare(
-    `SELECT users.id, users.username, users.email, users.role, users.created_at,
+        `SELECT users.id, users.nome, users.username, users.email, users.role, users.created_at,
        COUNT(user_module_permissions.module_id) AS permission_count
      FROM users
      LEFT JOIN user_module_permissions ON user_module_permissions.user_id = users.id
@@ -2789,6 +2790,13 @@ async function createUser(request, env) {
   );
 
   const data = await bodyAsJson(request);
+const nome = String(data.nome ?? '').trim();
+
+if (nome.length > 120 || (data.nome !== undefined && !nome)) {
+  return json({
+    error: 'Informe um nome com até 120 caracteres.'
+  }, 400);
+}
   const username = normalizeUsername(data.username);
   const email = normalizeEmail(data.email);
   const password = String(data.password || '');
@@ -2826,12 +2834,13 @@ async function createUser(request, env) {
   try {
     const comandos = [
       env.DB.prepare(
-        `INSERT INTO users
-         (id, username, email, role, password_hash, password_salt,
+                `INSERT INTO users
+         (id, nome, username, email, role, password_hash, password_salt,
           password_algorithm, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'pbkdf2-sha256', ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pbkdf2-sha256', ?)`
       ).bind(
         id,
+        nome,
         username,
         email,
         roleBanco,
@@ -2937,7 +2946,7 @@ async function updateUser(request, env, userId) {
   );
 
   const targetUser = await env.DB.prepare(
-    'SELECT id, username, email, role FROM users WHERE id = ?'
+    'SELECT id, nome, username, email, role FROM users WHERE id = ?'
   ).bind(userId).first();
 
   if (!targetUser) {
@@ -2945,6 +2954,13 @@ async function updateUser(request, env, userId) {
   }
 
   const data = await bodyAsJson(request);
+const nome = String(data.nome ?? targetUser.nome ?? '').trim();
+
+if (nome.length > 120 || (data.nome !== undefined && !nome)) {
+  return json({
+    error: 'Informe um nome com até 120 caracteres.'
+  }, 400);
+}
   const username = normalizeUsername(data.username);
   const email = normalizeEmail(data.email);
   const role = String(data.role || '');
@@ -2978,8 +2994,8 @@ async function updateUser(request, env, userId) {
   try {
     await env.DB.batch([
       env.DB.prepare(
-        'UPDATE users SET username = ?, email = ?, role = ? WHERE id = ?'
-      ).bind(username, email, role, userId),
+          'UPDATE users SET nome = ?, username = ?, email = ?, role = ? WHERE id = ?'
+      ).bind(nome, username, email, role, userId),
 
       env.DB.prepare(
         'INSERT INTO audit_log (id, created_at, username, action, detail) VALUES (?, ?, ?, ?, ?)'
@@ -3442,7 +3458,7 @@ async function getSession(request, env) {
   const tokenHash = await sha256(token);
   const now = new Date().toISOString();
   const session = await env.DB.prepare(
-    `SELECT sessions.id, users.id AS user_id, users.username, users.email, users.role
+    `SELECT sessions.id, users.id AS user_id, users.nome, users.username, users.email, users.role
      FROM sessions
      JOIN users ON users.id = sessions.user_id
      WHERE sessions.id = ? AND sessions.expires_at > ?`
@@ -5356,7 +5372,7 @@ async function carregarPerfilNoMenu() {
     sessionData = data;
 
     $('greeting').textContent =
-      'Bem-vindo, ' + data.user.username + '.';
+      'Bem-vindo, ' + (data.user.nome || data.user.username) + '.';
 
     $('role').textContent = data.user.role;
     carregarPerfilNoMenu();
