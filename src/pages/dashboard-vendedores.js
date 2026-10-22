@@ -159,7 +159,7 @@ export function dashboardVendedoresPage() {
           <tr>
             <th>Vendedor</th>
             <th>Total vendido</th>
-            <th>Meta em dinheiro</th>
+            <th>Meta</th>
             <th>Meta atingida</th>
             <th>Pedidos a faturar</th>
             <th>Total de devoluções</th>
