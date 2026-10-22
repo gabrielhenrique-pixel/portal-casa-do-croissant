@@ -1053,7 +1053,15 @@ export function dashboardVendasPage() {
             </tr>
           </thead>
           <tbody id="linhas"></tbody>
-        </table>
+</table>
+
+<div style="display:flex;justify-content:center;margin-top:14px">
+  <a
+    id="exibirTodosVendedores"
+    href="/dashboard-vendas/vendedores"
+    style="display:inline-block;padding:10px 18px;border-radius:8px;background:#102e49;color:#fff;text-decoration:none;font-size:13px;font-weight:700"
+  >Exibir todos</a>
+</div>
       </article>
 
       <article class="painel">
@@ -1318,8 +1326,21 @@ var acoesMetas = $('abrirMetas').closest('.acoes-metas');
 acoesMetas.hidden = vendedorBloqueado;
 acoesMetas.style.display = vendedorBloqueado ? 'none' : '';
 
-    $('linhas').innerHTML =
-      vendedores.map(function (vendedor, indice) {
+    $('exibirTodosVendedores').href =
+  '/dashboard-vendas/vendedores?' +
+  new URLSearchParams({
+    inicio: dados.inicio,
+    fim: dados.fim
+  }).toString();
+
+var vendedoresExibidos = vendedorSelecionado
+  ? vendedores.filter(function (vendedor) {
+      return String(vendedor.codigoVendedor) === vendedorSelecionado;
+    })
+  : vendedores;
+
+$('linhas').innerHTML =
+  vendedoresExibidos.slice(0, 5).map(function (vendedor, indice) {
         var semMeta = vendedor.percentualMeta == null;
 
         var metaAtingida = semMeta
