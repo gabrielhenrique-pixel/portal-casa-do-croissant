@@ -321,7 +321,6 @@ devolucoes: podeVerFaturamento
 
 percentualMeta: meta > 0
   ? faturamentoReal / meta
-  : null / meta
   : null
     };
   })
