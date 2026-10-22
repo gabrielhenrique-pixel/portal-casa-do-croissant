@@ -99,14 +99,15 @@ function numeroPercentualSankhya(valor) {
   return numero > 1 ? numero / 100 : numero;
 }
 
-function redeEditavel(valor) {
+async function redeEditavel(env, valor) {
   const rede = String(valor || '').trim().toUpperCase() || 'SEM REDE';
+  const redes = await listarRedesRentabilidade(env);
 
-  if (!REDES_RENTABILIDADE.includes(rede)) {
-  throw new Error('Selecione uma rede válida.');
-}
+  if (!redes.includes(rede)) {
+    throw new Error('Selecione uma rede válida.');
+  }
 
-return rede;
+  return rede;
 }
 
 const DADOS_MANUAIS_CLIENTES = {};
