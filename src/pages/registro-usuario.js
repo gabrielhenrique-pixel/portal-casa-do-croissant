@@ -37,7 +37,9 @@ export function registroUsuarioPage() {
     </header>
 
     <section class="cartao">
-      <form id="formulario">
+           <form id="formulario">
+        <label for="nome">Nome</label>
+        <input id="nome" maxlength="120" autocomplete="name" required>
         <label for="username">Usuário</label>
         <input id="username" minlength="3" autocomplete="username" required>
 
@@ -127,6 +129,7 @@ atualizarCampoVendedor();
           credentials: 'same-origin',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
+            nome: document.getElementById('nome').value.trim(),
             username: document.getElementById('username').value,
             email: document.getElementById('email').value,
             role: document.getElementById('role').value,
