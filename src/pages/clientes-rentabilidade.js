@@ -71,6 +71,22 @@ export function clientesRentabilidadePage() {
     <strong id="contagem" class="contagem">Carregando...</strong>
   </section>
 
+  <form id="formNovaRede" class="barra" style="display:none">
+  <input
+    id="nomeNovaRede"
+    class="busca"
+    type="text"
+    aria-label="Nome da nova rede"
+    placeholder="Nome da nova rede"
+    minlength="2"
+    maxlength="80"
+    required
+  >
+  <button id="cadastrarRede" class="botao verde" type="submit">
+    Cadastrar rede
+  </button>
+</form>
+
   <p id="estado" class="estado"></p>
 
   <section class="tabela-wrap">
@@ -340,6 +356,55 @@ export function clientesRentabilidadePage() {
     };
   }
 
+  function preencherOpcoesRedes() {
+  var campo = $('campoRede');
+  var selecionada = campo.value;
+
+  campo.replaceChildren(new Option('Não alterar', ''));
+
+  redes.forEach(function (rede) {
+    campo.add(new Option(rede, rede));
+  });
+
+  campo.value = redes.includes(selecionada) ? selecionada : '';
+}
+
+async function cadastrarNovaRede(evento) {
+  evento.preventDefault();
+
+  var botao = $('cadastrarRede');
+  botao.disabled = true;
+
+  try {
+    var resposta = await fetch('/api/rentabilidade/redes', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        nome: $('nomeNovaRede').value
+      })
+    });
+
+    var dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(dados.error || 'Não foi possível cadastrar a rede.');
+    }
+
+    redes = dados.redes;
+    preencherOpcoesRedes();
+
+    $('nomeNovaRede').value = '';
+    $('estado').className = 'estado';
+    $('estado').textContent = 'Rede ' + dados.rede + ' cadastrada.';
+  } catch (erro) {
+    $('estado').className = 'estado erro';
+    $('estado').textContent = erro.message;
+  } finally {
+    botao.disabled = false;
+  }
+}
+
   async function carregar() {
   try {
     $('estado').textContent = 'Carregando cadastro...';
@@ -393,10 +458,10 @@ export function clientesRentabilidadePage() {
     clientes = dados.clientes || [];
     redes = dados.redes || [];
 
-    $('campoRede').innerHTML =
-      '<option value="">Não alterar</option>' +
-      redes.map(function (rede) {
-        return '<option value="' + esc(rede) + '">' + esc(rede) + '</option>';
+    preencherOpcoesRedes();
+
+    $('formNovaRede').style.display =
+    dados.canCadastrarRede ? 'flex' : 'none';
       }).join('');
 
     $('estado').className = 'estado';
@@ -590,6 +655,7 @@ export function clientesRentabilidadePage() {
   $('editar').onclick = abrirModal;
   $('cancelar').onclick = fecharModal;
   $('salvar').onclick = salvar;
+  $('formNovaRede').addEventListener('submit', cadastrarNovaRede);
 
   $('modal').addEventListener('click', function (evento) {
     if (evento.target === $('modal')) fecharModal();
