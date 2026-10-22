@@ -1378,7 +1378,7 @@ $('linhas').innerHTML =
             '</td>' +
             '<td>' +
               (
-                vvendedor.faturamento == null
+                vendedor.faturamento == null
   ? '—'
   : moeda.format(numero(vendedor.faturamento))
               ) +
