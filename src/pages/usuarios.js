@@ -367,7 +367,7 @@ export function usuariosPage() {
           id="busca"
           class="busca"
           type="search"
-          placeholder="Pesquisar usuário, e-mail ou perfil"
+          placeholder="Pesquisar nome, usuário, e-mail ou perfil"
         >
       </div>
 
@@ -381,6 +381,7 @@ export function usuariosPage() {
         <table>
           <thead>
             <tr>
+              <th>Nome</th>
               <th>Usuário</th>
               <th>E-mail</th>
               <th>Perfil</th>
@@ -418,6 +419,9 @@ export function usuariosPage() {
 
         <form id="formEdicao">
           <input id="idUsuario" type="hidden">
+
+          <label for="nomeEdit">Nome</label>
+          <input id="nomeEdit" maxlength="120" autocomplete="name" required>
 
           <label for="usuarioEdit">Usuário</label>
           <input id="usuarioEdit" minlength="3" required>
@@ -509,6 +513,7 @@ export function usuariosPage() {
 
         const filtrados = usuarios.filter((usuario) =>
           [
+            usuario.nome,
             usuario.username,
             usuario.email,
             usuario.role
@@ -521,6 +526,7 @@ export function usuariosPage() {
 
         linhas.innerHTML = filtrados.map((usuario) =>
           '<tr>' +
+            '<td>' + seguro(usuario.nome || '—') + '</td>' +
             '<td>' + seguro(usuario.username) + '</td>' +
             '<td>' + seguro(usuario.email) + '</td>' +
             '<td>' + seguro(usuario.role) + '</td>' +
@@ -565,6 +571,7 @@ export function usuariosPage() {
         }
 
         document.getElementById('idUsuario').value = usuario.id;
+        document.getElementById('nomeEdit').value = usuario.nome || '';
         document.getElementById('usuarioEdit').value = usuario.username;
         document.getElementById('emailEdit').value = usuario.email;
         document.getElementById('perfilEdit').value = usuario.role;
@@ -655,6 +662,7 @@ export function usuariosPage() {
                 method:'PUT',
 
                 body: JSON.stringify({
+                  nome:document.getElementById('nomeEdit').value.trim(),
                   username:document.getElementById('usuarioEdit').value,
                   email:document.getElementById('emailEdit').value,
                   role:document.getElementById('perfilEdit').value
