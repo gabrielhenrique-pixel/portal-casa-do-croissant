@@ -30,6 +30,7 @@ import {
   comporRedesDashboard
 } from './dashboard-rentabilidade-service.js';
 import { dashboardVendasPage } from './pages/dashboard-vendas.js';
+import { dashboardVendedoresPage } from './pages/dashboard-vendedores.js';
 import { metasVendasPage } from './pages/metas-vendas.js';
 import {
   listarDre,
@@ -666,7 +667,24 @@ if (vendedorVinculado) {
   }
 }
 
-      if (url.pathname === '/dashboard-vendas' && request.method === 'GET') {
+      if (
+  url.pathname === '/dashboard-vendas/vendedores' &&
+  request.method === 'GET'
+) {
+  const acesso = await obterAcessoModulo(
+    request,
+    env,
+    'DASHBOARD_VENDAS'
+  );
+
+  if (!acesso?.permissions?.view) {
+    return new Response('Acesso não autorizado.', { status: 403 });
+  }
+
+  return dashboardVendedoresPage();
+}
+
+if (url.pathname === '/dashboard-vendas' && request.method === 'GET') {
   const permitido = await podeConsultarModulo(
     request,
     env,
