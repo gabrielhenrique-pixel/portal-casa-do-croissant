@@ -116,6 +116,7 @@ const filtroVendedoresCadastrados =
     "  AND CAB.TIPMOV = 'V'",
     "  AND CAB.STATUSNOTA = 'L'",
     '  AND CAB.CODTIPOPER IN (1101, 1107)',
+     filtroCabVendedoresCadastrados,
     'GROUP BY CAB.CODVEND, VEN.APELIDO',
     'ORDER BY FATURAMENTO DESC'
   ].filter(Boolean).join('\n');
