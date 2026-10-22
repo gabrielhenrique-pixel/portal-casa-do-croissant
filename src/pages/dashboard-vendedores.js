@@ -235,6 +235,7 @@ export function dashboardVendedoresPage() {
   selo.textContent = valor;
 
   var metaAlta = vendedor.percentualMeta >= 0.8;
+  var metaBaixa = vendedor.percentualMeta < 0.4;
 
   selo.style.cssText =
     'display:inline-block;' +
@@ -244,8 +245,10 @@ export function dashboardVendedoresPage() {
     'text-align:center;' +
     'font-size:12px;' +
     'font-weight:700;' +
-    'background:' + (metaAlta ? '#dcfce7' : '#fff3cd') + ';' +
-    'color:' + (metaAlta ? '#008a45' : '#ef8500') + ';';
+    'background:' +
+     (metaAlta ? '#dcfce7' : metaBaixa ? '#fee2e2' : '#fff3cd') + ';' +
+    'color:' +
+     (metaAlta ? '#008a45' : metaBaixa ? '#dc2626' : '#ef8500') + ';';
 
   celula.replaceChildren(selo);
 }
