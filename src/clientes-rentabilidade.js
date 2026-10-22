@@ -7,6 +7,75 @@ export const REDES_RENTABILIDADE = Object.freeze([
   'ZAMPROGNA', 'IMPERATRIZ', 'SEM REDE'
 ]);
 
+async function garantirTabelaRedes(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS rentabilidade_redes (
+      nome TEXT PRIMARY KEY NOT NULL,
+      criado_em TEXT NOT NULL,
+      criado_por TEXT NOT NULL
+    )
+  `).run();
+}
+
+export async function listarRedesRentabilidade(env) {
+  await garantirTabelaRedes(env);
+
+  const resultado = await env.DB.prepare(
+    'SELECT nome FROM rentabilidade_redes ORDER BY nome'
+  ).all();
+
+  if (!Array.isArray(resultado.results)) {
+    throw new Error('Não foi possível carregar as redes.');
+  }
+
+  return [
+    ...new Set([
+      ...REDES_RENTABILIDADE.filter(nome => nome !== 'SEM REDE'),
+      ...resultado.results.map(item => item.nome)
+    ]),
+    'SEM REDE'
+  ];
+}
+
+export async function cadastrarRedeRentabilidade(env, valor, username) {
+  const nome = typeof valor === 'string'
+    ? valor.normalize('NFKC').trim().replace(/\s+/g, ' ').toUpperCase()
+    : '';
+
+  if (
+    nome.length < 2 ||
+    nome.length > 80 ||
+    /[\u0000-\u001f\u007f<>]/u.test(nome)
+  ) {
+    return {
+      status: 400,
+      error: 'Informe um nome de rede entre 2 e 80 caracteres.'
+    };
+  }
+
+  const existentes = await listarRedesRentabilidade(env);
+
+  if (existentes.includes(nome)) {
+    return { status: 409, error: 'Essa rede já está cadastrada.' };
+  }
+
+  const resultado = await env.DB.prepare(`
+    INSERT INTO rentabilidade_redes (nome, criado_em, criado_por)
+    VALUES (?, ?, ?)
+    ON CONFLICT(nome) DO NOTHING
+  `).bind(
+    nome,
+    new Date().toISOString(),
+    String(username || 'Portal')
+  ).run();
+
+  if (!resultado.meta?.changes) {
+    return { status: 409, error: 'Essa rede já está cadastrada.' };
+  }
+
+  return { status: 201, rede: nome };
+}
+
 function camposDaLinhaSankhya(linha) {
   if (Array.isArray(linha)) return linha;
   if (linha && Array.isArray(linha.row)) return linha.row;
@@ -229,7 +298,7 @@ export async function atualizarClientesRentabilidadeEmLote(
   let comissao;
 
   try {
-    rede = alterarRede ? redeEditavel(dados.rede) : null;
+    rede = alterarRede ? await redeEditavel(env, dados.rede) : null;
 
     desconto = alterarDesconto
       ? normalizarPercentualRentabilidade(
