@@ -12,7 +12,14 @@ import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
 import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
-import {carregarClientesRentabilidade,atualizarPercentuaisClienteRentabilidade,atualizarClientesRentabilidadeEmLote,sincronizarClientesRentabilidadeSankhya,REDES_RENTABILIDADE} from './clientes-rentabilidade.js';
+import {carregarClientesRentabilidade,
+        atualizarPercentuaisClienteRentabilidade,
+        atualizarClientesRentabilidadeEmLote,
+        sincronizarClientesRentabilidadeSankhya,
+        REDES_RENTABILIDADE,
+        listarRedesRentabilidade,
+        cadastrarRedeRentabilidade
+       } from './clientes-rentabilidade.js';
 import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
 import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
@@ -1614,6 +1621,36 @@ if (investimentoPendenteMatch && request.method === 'PUT') {
   });
 }
 
+      if (
+  url.pathname === '/api/rentabilidade/redes' &&
+  request.method === 'POST'
+) {
+  const administrador = await requireAdministrator(request, env);
+  const dados = await bodyAsJson(request);
+
+  const resultado = await cadastrarRedeRentabilidade(
+    env,
+    dados?.nome,
+    administrador.username
+  );
+
+  if (resultado.error) {
+    return json({ error: resultado.error }, resultado.status);
+  }
+
+  await writeAudit(
+    env,
+    administrador.username,
+    'RENTABILIDADE_REDE_CADASTRADA',
+    'Rede cadastrada: ' + resultado.rede
+  );
+
+  return json({
+    rede: resultado.rede,
+    redes: await listarRedesRentabilidade(env)
+  }, 201);
+}
+
 if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') {
   const acesso = await obterAcessoModulo(
     request,
@@ -1630,7 +1667,8 @@ if (url.pathname === '/api/rentabilidade/clientes' && request.method === 'GET') 
 
     return json({
   total: clientes.length,
-  redes: REDES_RENTABILIDADE,
+  redes: await listarRedesRentabilidade(env),
+  canCadastrarRede: acesso.session.role === 'Administrador',
   clientes,
   canSync: Boolean(acesso?.permissions?.update)
 });
