@@ -230,9 +230,25 @@ export function dashboardVendedoresPage() {
           celula.textContent = valor;
 
           if (indice === 5) celula.className = 'devolucao';
-          if (indice === 3 && vendedor.percentualMeta >= 1) {
-            celula.className = 'atingida';
-          }
+          if (indice === 3 && vendedor.percentualMeta != null) {
+  var selo = document.createElement('span');
+  selo.textContent = valor;
+
+  var metaAlta = vendedor.percentualMeta >= 0.8;
+
+  selo.style.cssText =
+    'display:inline-block;' +
+    'min-width:58px;' +
+    'padding:5px 10px;' +
+    'border-radius:999px;' +
+    'text-align:center;' +
+    'font-size:12px;' +
+    'font-weight:700;' +
+    'background:' + (metaAlta ? '#dcfce7' : '#fff3cd') + ';' +
+    'color:' + (metaAlta ? '#008a45' : '#ef8500') + ';';
+
+  celula.replaceChildren(selo);
+}
 
           linha.appendChild(celula);
         });
