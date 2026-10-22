@@ -13,6 +13,9 @@ export async function listarMonitoramentoVendasSankhya(
   vendedorObrigatorio = ''
 ) {
   const url = new URL(request.url);
+
+const detalharVendedores =
+  url.searchParams.get('detalhes') === 'vendedores';
   const hoje = new Date();
 
   const primeiroDiaDoMes = new Date(
@@ -191,7 +194,44 @@ const filtroVendedoresCadastrados =
         executarConsultaSankhya(token, sqlDevolucoes)
   ]);
 
-  const linhasVendedores = resultados[0];
+  const detalhesVendedores = detalharVendedores
+  ? await Promise.all([
+      executarConsultaSankhya(
+        token,
+        sqlPedidosAFaturar.replace(
+          'SELECT',
+          'SELECT CAB.CODVEND AS CODIGO_VENDEDOR,'
+        ) + '\nGROUP BY CAB.CODVEND'
+      ),
+      executarConsultaSankhya(
+        token,
+        sqlDevolucoes.replace(
+          'SELECT',
+          'SELECT CAB.CODVEND AS CODIGO_VENDEDOR,'
+        ) + '\nGROUP BY CAB.CODVEND'
+      )
+    ])
+  : [[], []];
+
+const pedidosPorVendedor = new Map(
+  detalhesVendedores[0].map(function (linha) {
+    return [
+      String(linha[0]).trim(),
+      numero(linha[1])
+    ];
+  })
+);
+
+const devolucoesPorVendedor = new Map(
+  detalhesVendedores[1].map(function (linha) {
+    return [
+      String(linha[0]).trim(),
+      numero(linha[1])
+    ];
+  })
+);
+
+const linhasVendedores = resultados[0];
   const linhasOpcoesVendedores = resultados[1];
   const metasVendedores = resultados[2];
   const metaEmpresa = numero(resultados[3]);
@@ -241,6 +281,11 @@ const vendasPorCodigo = new Map(
 );
 
 const vendedores = vendedoresCadastrados
+  .filter(function (vendedorCadastrado) {
+    return !vendedorBloqueado ||
+      String(vendedorCadastrado.codigoVendedor).trim() ===
+        vendedorSelecionado;
+  })
   .map(function(vendedorCadastrado) {
     const codigoVendedor =
       vendedorCadastrado.codigoVendedor;
@@ -264,12 +309,16 @@ const vendedores = vendedoresCadastrados
         venda?.vendedor ||
         vendedorCadastrado.usuario.toUpperCase(),
       faturamento: podeVerFaturamento
-        ? faturamentoReal
-        : null,
-      meta,
-      percentualMeta: meta > 0
-        ? faturamentoReal / meta
-        : null
+  ? faturamentoReal
+  : null,
+meta,
+pedidosAFaturar:
+  pedidosPorVendedor.get(String(codigoVendedor).trim()) || 0,
+devolucoes:
+  devolucoesPorVendedor.get(String(codigoVendedor).trim()) || 0,
+percentualMeta: meta > 0
+  ? faturamentoReal / meta
+  : null
     };
   })
   .sort(function(primeiro, segundo) {
