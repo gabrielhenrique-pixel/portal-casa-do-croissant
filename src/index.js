@@ -1164,10 +1164,23 @@ if (!acesso?.permissions.view) {
 }
 
   try {
-  const vendedorVinculado = await obterVendedorVinculado(
-    env,
-    acesso.session.user_id
-  );
+  const podeVerTodosValores = [
+  'Administrador',
+  'Gestor'
+].includes(acesso.session.role);
+
+const vendedorVinculado = podeVerTodosValores
+  ? ''
+  : await obterVendedorVinculado(
+      env,
+      acesso.session.user_id
+    );
+
+if (!podeVerTodosValores && !vendedorVinculado) {
+  return json({
+    error: 'Seu usuário não possui um vendedor vinculado.'
+  }, 403);
+}
 
   const resultado = await listarMonitoramentoVendasSankhya(
     request,
