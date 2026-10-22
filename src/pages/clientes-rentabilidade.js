@@ -462,7 +462,6 @@ async function cadastrarNovaRede(evento) {
 
     $('formNovaRede').style.display =
     dados.canCadastrarRede ? 'flex' : 'none';
-      }).join('');
 
     $('estado').className = 'estado';
 
