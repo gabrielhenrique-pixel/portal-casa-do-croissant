@@ -1271,6 +1271,550 @@ $('fim').addEventListener('change', carregar);
       carregar();
     })();
   </script>
+<style>
+  .card[data-evolucao] {
+    cursor:pointer;
+  }
+
+  .card[data-evolucao]:hover {
+    outline:2px solid #1f4e78;
+  }
+
+  .card[data-evolucao]:focus-visible {
+    outline:3px solid #168447;
+    outline-offset:3px;
+  }
+
+  #janelaEvolucao {
+    width:min(1000px,94vw);
+    max-height:90vh;
+    padding:24px;
+    border:0;
+    border-radius:18px;
+    color:#102e49;
+    background:#fff;
+    box-shadow:0 20px 70px #102e4940;
+    overflow:auto;
+    font-family:Arial,sans-serif;
+  }
+
+  #janelaEvolucao::backdrop {
+    background:rgba(16,46,73,.55);
+  }
+
+  .evolucao-topo {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+  }
+
+  #tituloEvolucao {
+    margin:0;
+    font-size:22px;
+  }
+
+  #periodoEvolucao {
+    margin:7px 0 0;
+    color:#637589;
+    font-size:13px;
+  }
+
+  #fecharEvolucao {
+    width:36px;
+    height:36px;
+    flex-shrink:0;
+    border:0;
+    border-radius:50%;
+    background:#edf3f9;
+    color:#102e49;
+    font-size:25px;
+    cursor:pointer;
+  }
+
+  #estadoEvolucao {
+    color:#637589;
+    font-size:14px;
+  }
+
+  #areaEvolucao {
+    overflow-x:auto;
+    margin-top:18px;
+  }
+
+  #areaEvolucao svg {
+    display:block;
+    width:100%;
+    min-width:760px;
+    height:auto;
+  }
+
+  #repetirEvolucao {
+    padding:10px 16px;
+    border:0;
+    border-radius:8px;
+    background:#102e49;
+    color:white;
+    cursor:pointer;
+  }
+
+  @media(max-width:600px) {
+    #janelaEvolucao {
+      padding:18px;
+    }
+
+    #tituloEvolucao {
+      font-size:19px;
+    }
+  }
+</style>
+
+<dialog id="janelaEvolucao" aria-labelledby="tituloEvolucao">
+  <div class="evolucao-topo">
+    <div>
+      <h2 id="tituloEvolucao"></h2>
+      <p id="periodoEvolucao"></p>
+    </div>
+
+    <button
+      id="fecharEvolucao"
+      type="button"
+      aria-label="Fechar gráfico"
+      autofocus
+    >×</button>
+  </div>
+
+  <p id="estadoEvolucao" role="status"></p>
+
+  <button id="repetirEvolucao" type="button" hidden>
+    Tentar novamente
+  </button>
+
+  <div id="areaEvolucao"></div>
+</dialog>
+
+<script>
+(function () {
+  var dialogo = document.getElementById('janelaEvolucao');
+  var titulo = document.getElementById('tituloEvolucao');
+  var periodo = document.getElementById('periodoEvolucao');
+  var estado = document.getElementById('estadoEvolucao');
+  var area = document.getElementById('areaEvolucao');
+  var repetir = document.getElementById('repetirEvolucao');
+
+  var controlador = null;
+  var indicadorAtual = null;
+  var cache = new Map();
+
+  var meses = [
+    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+  ];
+
+  var indicadores = {
+    faturamento: {
+      titulo:'Faturamento bruto',
+      tipo:'dinheiro'
+    },
+    receita: {
+      titulo:'Receita líquida',
+      tipo:'dinheiro'
+    },
+    resultado: {
+      titulo:'Resultado',
+      tipo:'dinheiro'
+    },
+    margem: {
+      titulo:'Margem',
+      tipo:'percentual'
+    },
+    clientes: {
+      titulo:'Clientes positivados',
+      tipo:'inteiro'
+    }
+  };
+
+  var dinheiro = new Intl.NumberFormat('pt-BR', {
+    style:'currency',
+    currency:'BRL'
+  });
+
+  var porcentagem = new Intl.NumberFormat('pt-BR', {
+    style:'percent',
+    minimumFractionDigits:1,
+    maximumFractionDigits:1
+  });
+
+  var inteiro = new Intl.NumberFormat('pt-BR', {
+    maximumFractionDigits:0
+  });
+
+  function numero(valor) {
+    var convertido = Number(valor);
+    return Number.isFinite(convertido) ? convertido : 0;
+  }
+
+  function dois(valor) {
+    return String(valor).padStart(2, '0');
+  }
+
+  function hojeBrasil() {
+    var partes = new Intl.DateTimeFormat('en-US', {
+      timeZone:'America/Sao_Paulo',
+      year:'numeric',
+      month:'2-digit',
+      day:'2-digit'
+    }).formatToParts(new Date());
+
+    var valores = {};
+
+    partes.forEach(function (parte) {
+      valores[parte.type] = parte.value;
+    });
+
+    return {
+      ano:Number(valores.year),
+      mes:Number(valores.month),
+      dia:Number(valores.day)
+    };
+  }
+
+  function formatar(valor, indicador) {
+    var tipo = indicadores[indicador].tipo;
+
+    if (tipo === 'dinheiro') return dinheiro.format(valor);
+    if (tipo === 'percentual') return porcentagem.format(valor);
+
+    return inteiro.format(valor);
+  }
+
+  function resumir(dados) {
+    if (!Array.isArray(dados.redes)) {
+      throw new Error('A consulta não retornou os dados das redes.');
+    }
+
+    function soma(campo) {
+      return dados.redes.reduce(function (total, rede) {
+        return total + numero(rede[campo]);
+      }, 0);
+    }
+
+    var receita = soma('receitaLiquida');
+    var resultado = soma('resultadoFinal');
+
+    return {
+      faturamento:typeof dados.faturamentoGeral === 'number'
+        ? numero(dados.faturamentoGeral)
+        : soma('faturamentoBruto'),
+      receita:receita,
+      resultado:resultado,
+      margem:receita ? resultado / Math.abs(receita) : 0,
+      clientes:soma('clientesPositivados')
+    };
+  }
+
+  async function consultarMes(inicio, fim, signal) {
+    var chave = inicio + '/' + fim;
+    var salvo = cache.get(chave);
+
+    if (salvo && Date.now() - salvo.horario < 300000) {
+      return salvo.dados;
+    }
+
+    var parametros = new URLSearchParams({
+      inicio:inicio,
+      fim:fim
+    });
+
+    var resposta = await fetch(
+      '/api/rentabilidade/dashboard?' + parametros.toString(),
+      {
+        credentials:'same-origin',
+        cache:'no-store',
+        signal:signal
+      }
+    );
+
+    if (resposta.status === 401 || resposta.status === 403) {
+      cache.clear();
+    }
+
+    var dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.error || 'Não foi possível consultar este mês.'
+      );
+    }
+
+    var resumo = resumir(dados);
+
+    cache.set(chave, {
+      horario:Date.now(),
+      dados:resumo
+    });
+
+    return resumo;
+  }
+
+  function elementoSvg(nome, atributos, texto) {
+    var elemento = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      nome
+    );
+
+    Object.keys(atributos || {}).forEach(function (chave) {
+      elemento.setAttribute(chave, atributos[chave]);
+    });
+
+    if (texto !== undefined) elemento.textContent = texto;
+
+    return elemento;
+  }
+
+  function desenhar(dados, indicador) {
+    area.replaceChildren();
+
+    var largura = Math.max(800, dados.length * 115);
+    var altura = 370;
+    var esquerda = 105;
+    var direita = largura - 70;
+    var topo = 55;
+    var base = 305;
+
+    var valores = dados.map(function (item) {
+      return item.valores[indicador];
+    });
+
+    var minimo = Math.min.apply(null, [0].concat(valores));
+    var maximo = Math.max.apply(null, [0].concat(valores));
+    var intervalo = maximo - minimo || 1;
+
+    maximo += intervalo * 0.15;
+    if (minimo < 0) minimo -= intervalo * 0.15;
+
+    function x(indice) {
+      if (dados.length === 1) return (esquerda + direita) / 2;
+
+      return esquerda +
+        indice * (direita - esquerda) / (dados.length - 1);
+    }
+
+    function y(valor) {
+      return base -
+        (valor - minimo) / (maximo - minimo) * (base - topo);
+    }
+
+    var svg = elementoSvg('svg', {
+      viewBox:'0 0 ' + largura + ' ' + altura,
+      role:'img',
+      'aria-label':indicadores[indicador].titulo + ': ' +
+        dados.map(function (item) {
+          return item.mes + ' ' +
+            formatar(item.valores[indicador], indicador);
+        }).join('; ')
+    });
+
+    for (var i = 0; i <= 4; i++) {
+      var valorEixo = minimo + (maximo - minimo) * i / 4;
+      var posicaoY = y(valorEixo);
+
+      svg.appendChild(elementoSvg('line', {
+        x1:esquerda,
+        x2:direita,
+        y1:posicaoY,
+        y2:posicaoY,
+        stroke:'#e1e8ef'
+      }));
+
+      var textoEixo = indicadores[indicador].tipo === 'dinheiro'
+        ? new Intl.NumberFormat('pt-BR', {
+            notation:'compact',
+            maximumFractionDigits:1
+          }).format(valorEixo)
+        : formatar(valorEixo, indicador);
+
+      svg.appendChild(elementoSvg('text', {
+        x:esquerda - 12,
+        y:posicaoY + 4,
+        'text-anchor':'end',
+        fill:'#637589',
+        'font-size':12
+      }, textoEixo));
+    }
+
+    svg.appendChild(elementoSvg('line', {
+      x1:esquerda,
+      x2:direita,
+      y1:y(0),
+      y2:y(0),
+      stroke:'#9aafc2'
+    }));
+
+    svg.appendChild(elementoSvg('polyline', {
+      points:valores.map(function (valor, indice) {
+        return x(indice) + ',' + y(valor);
+      }).join(' '),
+      fill:'none',
+      stroke:'#1f4e78',
+      'stroke-width':3,
+      'stroke-linejoin':'round'
+    }));
+
+    dados.forEach(function (item, indice) {
+      var valor = valores[indice];
+      var cor = valor < 0 ? '#dc2626' : '#1f4e78';
+
+      var ponto = elementoSvg('circle', {
+        cx:x(indice),
+        cy:y(valor),
+        r:5,
+        fill:cor,
+        stroke:'#fff',
+        'stroke-width':2
+      });
+
+      ponto.appendChild(elementoSvg(
+        'title',
+        {},
+        item.mes + ': ' + formatar(valor, indicador)
+      ));
+
+      svg.appendChild(ponto);
+
+      svg.appendChild(elementoSvg('text', {
+        x:x(indice),
+        y:y(valor) - 15,
+        'text-anchor':'middle',
+        fill:cor,
+        'font-size':11,
+        'font-weight':700
+      }, formatar(valor, indicador)));
+
+      svg.appendChild(elementoSvg('text', {
+        x:x(indice),
+        y:base + 30,
+        'text-anchor':'middle',
+        fill:'#102e49',
+        'font-size':13
+      }, item.mes));
+    });
+
+    area.appendChild(svg);
+  }
+
+  async function abrir(indicador) {
+    if (controlador) controlador.abort();
+
+    var requisicao = new AbortController();
+    controlador = requisicao;
+    indicadorAtual = indicador;
+
+    var hoje = hojeBrasil();
+    var dataFinal = hoje.ano + '-' +
+      dois(hoje.mes) + '-' + dois(hoje.dia);
+
+    titulo.textContent = indicadores[indicador].titulo;
+    periodo.textContent =
+      'Evolução mensal · 01/01/' + hoje.ano +
+      ' a ' + dois(hoje.dia) + '/' + dois(hoje.mes) +
+      '/' + hoje.ano + ' · mês atual parcial';
+
+    area.replaceChildren();
+    repetir.hidden = true;
+    estado.textContent = 'Carregando evolução mensal...';
+
+    if (!dialogo.open) dialogo.showModal();
+
+    var dados = [];
+
+    try {
+      for (var mes = 1; mes <= hoje.mes; mes++) {
+        if (requisicao.signal.aborted) return;
+
+        estado.textContent =
+          'Carregando ' + meses[mes - 1] + '/' + hoje.ano +
+          ' (' + mes + '/' + hoje.mes + ')...';
+
+        var inicio = hoje.ano + '-' + dois(mes) + '-01';
+
+        var ultimoDia = new Date(
+          Date.UTC(hoje.ano, mes, 0)
+        ).getUTCDate();
+
+        var fim = mes === hoje.mes
+          ? dataFinal
+          : hoje.ano + '-' + dois(mes) + '-' + dois(ultimoDia);
+
+        var resumo = await consultarMes(
+          inicio,
+          fim,
+          requisicao.signal
+        );
+
+        dados.push({
+          mes:meses[mes - 1],
+          valores:resumo
+        });
+      }
+
+      if (requisicao.signal.aborted) return;
+
+      desenhar(dados, indicador);
+      estado.textContent = '';
+    } catch (erro) {
+      if (requisicao.signal.aborted) return;
+
+      area.replaceChildren();
+      estado.textContent =
+        'Não foi possível carregar a evolução completa. ' +
+        erro.message;
+      repetir.hidden = false;
+    }
+  }
+
+  Object.keys(indicadores).forEach(function (indicador) {
+    var valor = document.getElementById(indicador);
+    var card = valor ? valor.closest('.card') : null;
+
+    if (!card) return;
+
+    card.dataset.evolucao = indicador;
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-haspopup', 'dialog');
+    card.setAttribute('aria-controls', 'janelaEvolucao');
+    card.setAttribute(
+      'aria-label',
+      'Ver evolução mensal de ' + indicadores[indicador].titulo
+    );
+
+    card.addEventListener('click', function () {
+      abrir(indicador);
+    });
+
+    card.addEventListener('keydown', function (evento) {
+      if (evento.key === 'Enter' || evento.key === ' ') {
+        evento.preventDefault();
+        abrir(indicador);
+      }
+    });
+  });
+
+  document.getElementById('fecharEvolucao')
+    .addEventListener('click', function () {
+      dialogo.close();
+    });
+
+  dialogo.addEventListener('close', function () {
+    if (controlador) controlador.abort();
+  });
+
+  repetir.addEventListener('click', function () {
+    if (indicadorAtual) abrir(indicadorAtual);
+  });
+})();
+</script>
 </body>
 </html>`, {
     headers: {
