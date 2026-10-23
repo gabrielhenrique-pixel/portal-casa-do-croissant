@@ -700,16 +700,26 @@ export function dashboardRentabilidadePage() {
 
   <article class="card">
     <span class="icone verde">
-  <img
-    src="https://raw.githubusercontent.com/gabrielhenrique-pixel/portal-casa-do-croissant/main/icons8-dinheiro-50.png"
-    alt=""
-    aria-hidden="true"
+  <svg
+    viewBox="0 0 32 32"
     width="32"
     height="32"
-    style="display:block;object-fit:contain"
+    fill="none"
+    stroke="#102e49"
+    stroke-width="1.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
   >
+    <rect x="3" y="8" width="26" height="16" rx="2"></rect>
+    <path d="M3 13a5 5 0 0 0 5-5"></path>
+    <path d="M24 8a5 5 0 0 0 5 5"></path>
+    <path d="M3 19a5 5 0 0 1 5 5"></path>
+    <path d="M24 24a5 5 0 0 1 5-5"></path>
+    <ellipse cx="16" cy="16" rx="4" ry="5"></ellipse>
+    <path d="M10 16h1M21 16h1"></path>
+  </svg>
 </span>
-
     <div>
       <span class="rotulo">Receita líquida</span>
       <strong id="receita" class="valor">—</strong>
