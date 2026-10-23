@@ -1582,12 +1582,18 @@ $('fim').addEventListener('change', carregar);
     var topo = 55;
     var base = 305;
 
-    var valores = dados.map(function (item) {
-      return item.valores[indicador];
+        var valores = dados.map(function (item) {
+      return item.valores == null
+        ? null
+        : item.valores[indicador];
     });
 
-    var minimo = Math.min.apply(null, [0].concat(valores));
-    var maximo = Math.max.apply(null, [0].concat(valores));
+    var disponiveis = valores.filter(function (valor) {
+      return valor !== null;
+    });
+
+    var minimo = Math.min.apply(null, [0].concat(disponiveis));
+    var maximo = Math.max.apply(null, [0].concat(disponiveis));
     var intervalo = maximo - minimo || 1;
 
     maximo += intervalo * 0.15;
@@ -1610,8 +1616,10 @@ $('fim').addEventListener('change', carregar);
       role:'img',
       'aria-label':indicadores[indicador].titulo + ': ' +
         dados.map(function (item) {
-          return item.mes + ' ' +
-            formatar(item.valores[indicador], indicador);
+                    return item.mes + ' ' +
+            (item.valores == null
+              ? 'Pendente'
+              : formatar(item.valores[indicador], indicador));
         }).join('; ')
     });
 
@@ -1651,18 +1659,52 @@ $('fim').addEventListener('change', carregar);
       stroke:'#9aafc2'
     }));
 
-    svg.appendChild(elementoSvg('polyline', {
-      points:valores.map(function (valor, indice) {
-        return x(indice) + ',' + y(valor);
-      }).join(' '),
+        var caminho = '';
+    var continuarLinha = false;
+
+    valores.forEach(function (valor, indice) {
+      if (valor === null) {
+        continuarLinha = false;
+        return;
+      }
+
+      caminho += (continuarLinha ? ' L ' : ' M ') +
+        x(indice) + ' ' + y(valor);
+
+      continuarLinha = true;
+    });
+
+    svg.appendChild(elementoSvg('path', {
+      d:caminho,
       fill:'none',
       stroke:'#1f4e78',
       'stroke-width':3,
       'stroke-linejoin':'round'
     }));
 
-    dados.forEach(function (item, indice) {
+        dados.forEach(function (item, indice) {
       var valor = valores[indice];
+
+      if (valor === null) {
+        svg.appendChild(elementoSvg('text', {
+          x:x(indice),
+          y:base - 15,
+          'text-anchor':'middle',
+          fill:'#8a97a5',
+          'font-size':11
+        }, 'Pendente'));
+
+        svg.appendChild(elementoSvg('text', {
+          x:x(indice),
+          y:base + 30,
+          'text-anchor':'middle',
+          fill:'#102e49',
+          'font-size':13
+        }, item.mes));
+
+        return;
+      }
+
       var cor = valor < 0 ? '#dc2626' : '#1f4e78';
 
       var ponto = elementoSvg('circle', {
@@ -1677,7 +1719,14 @@ $('fim').addEventListener('change', carregar);
       ponto.appendChild(elementoSvg(
         'title',
         {},
-        item.mes + ': ' + formatar(valor, indicador)
+                item.mes + ': ' + formatar(valor, indicador) +
+        (item.atualizadoEm
+          ? ' — salvo em ' +
+            new Date(item.atualizadoEm).toLocaleString('pt-BR', {
+              timeZone:'America/Sao_Paulo'
+            })
+          : '') +
+        (item.vencido ? ' — atualização pendente' : '')
       ));
 
       svg.appendChild(ponto);
@@ -1704,74 +1753,201 @@ $('fim').addEventListener('change', carregar);
   }
 
   async function abrir(indicador) {
-    if (controlador) controlador.abort();
+  if (controlador) controlador.abort();
 
-    var requisicao = new AbortController();
-    controlador = requisicao;
-    indicadorAtual = indicador;
+  var requisicao = new AbortController();
+  controlador = requisicao;
+  indicadorAtual = indicador;
 
-    var hoje = hojeBrasil();
-    var dataFinal = hoje.ano + '-' +
-      dois(hoje.mes) + '-' + dois(hoje.dia);
+  titulo.textContent = indicadores[indicador].titulo;
+  area.replaceChildren();
+  repetir.hidden = true;
+  repetir.textContent = 'Atualizar consulta';
+  estado.textContent = 'Lendo dados salvos...';
 
-    titulo.textContent = indicadores[indicador].titulo;
+  if (!dialogo.open) dialogo.showModal();
+
+  function ativo() {
+    return !requisicao.signal.aborted && dialogo.open;
+  }
+
+  async function lerSalvos() {
+    var resposta = await fetch(
+      '/api/rentabilidade/evolucao-salva',
+      {
+        credentials:'same-origin',
+        cache:'no-store',
+        signal:requisicao.signal
+      }
+    );
+
+    var dados = await resposta.json();
+
+    if (!resposta.ok) {
+      throw new Error(
+        dados.error || 'Não foi possível ler os dados salvos.'
+      );
+    }
+
+    if (!Array.isArray(dados.meses)) {
+      throw new Error('A consulta não retornou os meses.');
+    }
+
+    return dados;
+  }
+
+  function mostrarSalvos(dados) {
+    if (!ativo()) return;
+
+    var partes = dados.hoje.split('-');
+
     periodo.textContent =
-      'Evolução mensal · 01/01/' + hoje.ano +
-      ' a ' + dois(hoje.dia) + '/' + dois(hoje.mes) +
-      '/' + hoje.ano + ' · mês atual parcial';
+      'Evolução mensal · 01/01/' + partes[0] +
+      ' a ' + partes[2] + '/' + partes[1] + '/' + partes[0] +
+      ' · mês atual parcial';
 
-    area.replaceChildren();
-    repetir.hidden = true;
-    estado.textContent = 'Carregando evolução mensal...';
+    var pontos = dados.meses.map(function (item) {
+      return {
+        mes:meses[item.mes - 1],
+        valores:item.dados ? resumir(item.dados) : null,
+        atualizadoEm:item.atualizadoEm,
+        vencido:item.vencido
+      };
+    });
 
-    if (!dialogo.open) dialogo.showModal();
+    desenhar(pontos, indicador);
 
-    var dados = [];
+    var faltantes = dados.meses.filter(function (item) {
+      return !item.dados;
+    }).length;
 
-    try {
-      for (var mes = 1; mes <= hoje.mes; mes++) {
-        if (requisicao.signal.aborted) return;
+    var vencidos = dados.meses.filter(function (item) {
+      return item.dados && item.vencido;
+    }).length;
 
-        estado.textContent =
-          'Carregando ' + meses[mes - 1] + '/' + hoje.ano +
-          ' (' + mes + '/' + hoje.mes + ')...';
+    var avisos = [];
 
-        var inicio = hoje.ano + '-' + dois(mes) + '-01';
+    if (faltantes) {
+      avisos.push(faltantes + ' mês(es) pendente(s)');
+    }
 
-        var ultimoDia = new Date(
-          Date.UTC(hoje.ano, mes, 0)
-        ).getUTCDate();
+    if (vencidos) {
+      avisos.push(vencidos + ' mês(es) com atualização pendente');
+    }
 
-        var fim = mes === hoje.mes
-          ? dataFinal
-          : hoje.ano + '-' + dois(mes) + '-' + dois(ultimoDia);
+    estado.textContent = avisos.join(' · ');
+    repetir.hidden = !(faltantes || vencidos);
+  }
 
-        var resumo = await consultarMes(
-          inicio,
-          fim,
-          requisicao.signal
+  try {
+    // Uma única leitura mostra todos os meses disponíveis.
+    var salvos = await lerSalvos();
+
+    if (!ativo()) return;
+
+    mostrarSalvos(salvos);
+
+    // Primeiro o mês atual, depois os anteriores.
+    var pendentes = salvos.meses.filter(function (item) {
+      return !item.dados || item.vencido;
+    });
+
+    var mesAtual = Number(salvos.hoje.slice(5, 7));
+
+    pendentes.sort(function (a, b) {
+      if (a.mes === mesAtual) return -1;
+      if (b.mes === mesAtual) return 1;
+      return a.mes - b.mes;
+    });
+
+    var falhas = [];
+
+    for (var i = 0; i < pendentes.length; i++) {
+      if (!ativo()) return;
+
+      var item = pendentes[i];
+
+      // Não disputa um cálculo já reservado.
+      if (item.bloqueadoAte > Date.now()) continue;
+
+      estado.textContent =
+        'Atualizando ' + meses[item.mes - 1] + '...';
+
+      var parametros = new URLSearchParams({
+        inicio:item.inicio,
+        fim:item.fim
+      });
+
+      try {
+        // Não aborta este cálculo ao fechar apenas a janela.
+        // A próxima atualização só começa se a janela seguir aberta.
+        var resposta = await fetch(
+          '/api/rentabilidade/dashboard?' + parametros.toString(),
+          {
+            credentials:'same-origin',
+            cache:'no-store',
+            headers:{
+              'x-rentabilidade-preparar':'1'
+            }
+          }
         );
 
-        dados.push({
-          mes:meses[mes - 1],
-          valores:resumo
-        });
+        var retorno = await resposta.json();
+
+        if (!ativo()) return;
+
+        if (resposta.status === 401 || resposta.status === 403) {
+          area.replaceChildren();
+          throw new Error('Sessão expirada ou acesso não autorizado.');
+        }
+
+        if (!resposta.ok) {
+          falhas.push(meses[item.mes - 1]);
+          continue;
+        }
+
+        if (resposta.status === 202) continue;
+      } catch (erro) {
+        if (!ativo()) return;
+
+        if (
+          erro.message ===
+          'Sessão expirada ou acesso não autorizado.'
+        ) {
+          throw erro;
+        }
+
+        falhas.push(meses[item.mes - 1]);
+        continue;
       }
 
-      if (requisicao.signal.aborted) return;
+      // Atualiza o gráfico sem esperar os demais meses.
+      salvos = await lerSalvos();
 
-      desenhar(dados, indicador);
-      estado.textContent = '';
-    } catch (erro) {
-      if (requisicao.signal.aborted) return;
+      if (!ativo()) return;
 
-      area.replaceChildren();
-      estado.textContent =
-        'Não foi possível carregar a evolução completa. ' +
-        erro.message;
+      mostrarSalvos(salvos);
+    }
+
+    if (!ativo()) return;
+
+    salvos = await lerSalvos();
+    mostrarSalvos(salvos);
+
+    if (falhas.length) {
+      estado.textContent +=
+        (estado.textContent ? ' · ' : '') +
+        'Falha ao atualizar: ' + falhas.join(', ');
+
       repetir.hidden = false;
     }
+  } catch (erro) {
+    if (!ativo()) return;
+
+    estado.textContent = erro.message;
+    repetir.hidden = false;
   }
+}
 
   Object.keys(indicadores).forEach(function (indicador) {
     var valor = document.getElementById(indicador);
