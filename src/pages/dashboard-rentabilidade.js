@@ -1160,7 +1160,7 @@ function render(d) {
     }
 
     var respostaMesAtual = await fetch(
-      '/api/rentabilidade/margem-rede?inicio=' +
+      '/api/rentabilidade/dashboard?inicio=' +
         encodeURIComponent(inicioMesAtual) +
         '&fim=' +
         encodeURIComponent(fimMesAtual)
