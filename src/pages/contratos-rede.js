@@ -268,7 +268,6 @@ export function contratosRedePage() {
             <th>Contrato (%)</th>
             <th>Custo do contrato</th>
             <th>Resultado</th>
-            <th>Contrato sobre a receita (%)</th>
           </tr>
         </thead>
 
@@ -324,15 +323,17 @@ export function contratosRedePage() {
 
     function criarLinha(nome, receita, contratoPct, custo) {
       var resultado = receita - custo;
-      var sobreReceita = receita === 0 ? null : custo / receita;
       var linha = document.createElement('tr');
 
       celula(linha, nome);
       celula(linha, moeda.format(receita), receita);
-      celula(linha, porcentagem(contratoPct), contratoPct);
+      celula(
+  linha,
+  nome === 'TOTAL' ? '' : porcentagem(contratoPct),
+  contratoPct
+);
       celula(linha, moeda.format(custo), custo);
       celula(linha, moeda.format(resultado), resultado);
-      celula(linha, porcentagem(sobreReceita), sobreReceita);
 
       return linha;
     }
