@@ -22,6 +22,7 @@ import {carregarClientesRentabilidade,
        } from './clientes-rentabilidade.js';
 import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
+import { consultarDashboardCache } from './rentabilidade-cache.js';
 import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {
@@ -1435,11 +1436,19 @@ if (
 
   const session = await getSession(request, env);
 
-  return listarMargemRedeSankhya(
+  if (!session) {
+    return json({ error: 'Sessão não encontrada.' }, 401);
+  }
+
+  return consultarDashboardCache(
     request,
     env,
-    session,
-    comporRedesDashboard
+    () => listarMargemRedeSankhya(
+      request,
+      env,
+      session,
+      comporRedesDashboard
+    )
   );
 }
 
@@ -5368,8 +5377,91 @@ async function carregarPerfilNoMenu() {
     $('viewEmMigracao').classList.remove('oculto');
   }
 
-  function startDashboard(data) {
+  var preparandoRentabilidade = false;
+
+async function prepararRentabilidadeAoEntrar() {
+  if (
+    preparandoRentabilidade ||
+    !hasModule('DASHBOARD_RENTABILIDADE')
+  ) {
+    return;
+  }
+
+  preparandoRentabilidade = true;
+
+  try {
+    var partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+
+    var campos = {};
+
+    partes.forEach(function (parte) {
+      campos[parte.type] = parte.value;
+    });
+
+    var ano = Number(campos.year);
+    var mesAtual = Number(campos.month);
+    var hoje = campos.year + '-' + campos.month + '-' + campos.day;
+
+    // Primeiro prepara os cards do mês atual.
+    var ordem = [mesAtual];
+
+    for (var mes = 1; mes < mesAtual; mes++) {
+      ordem.push(mes);
+    }
+
+    for (var indice = 0; indice < ordem.length; indice++) {
+      var numeroMes = ordem[indice];
+      var mesTexto = String(numeroMes).padStart(2, '0');
+      var inicio = ano + '-' + mesTexto + '-01';
+
+      var ultimoDia = new Date(
+        Date.UTC(ano, numeroMes, 0)
+      ).getUTCDate();
+
+      var fim = numeroMes === mesAtual
+        ? hoje
+        : ano + '-' + mesTexto + '-' +
+          String(ultimoDia).padStart(2, '0');
+
+      var parametros = new URLSearchParams({
+        inicio: inicio,
+        fim: fim
+      });
+
+      var resposta = await fetch(
+        '/api/rentabilidade/dashboard?' + parametros.toString(),
+        {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        }
+      );
+
+      if (!resposta.ok) {
+        throw new Error(
+          'Preparação da rentabilidade interrompida: HTTP ' +
+          resposta.status
+        );
+      }
+
+      await resposta.json();
+    }
+  } catch (erro) {
+    // Não bloqueia a entrada no portal.
+    // A página de rentabilidade pode retomar as consultas.
+    console.warn(erro.message);
+  } finally {
+    preparandoRentabilidade = false;
+  }
+}
+
+function startDashboard(data) {
     sessionData = data;
+    prepararRentabilidadeAoEntrar();
 
     $('greeting').textContent =
       'Bem-vindo, ' + (data.user.nome || data.user.username) + '.';
