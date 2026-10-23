@@ -2235,14 +2235,10 @@ async function confirmarRecuperacaoSenha(request, env) {
     dados.confirmarSenha || ''
   );
 
-  if (novaSenha.length < 8) {
-    return json(
-      {
-        error:
-          'A nova senha precisa ter pelo menos 8 caracteres.'
-      },
-      400
-    );
+    const erroSenha = validarNovaSenha(novaSenha);
+
+  if (erroSenha) {
+    return json({ error: erroSenha }, 400);
   }
 
   if (novaSenha !== confirmarSenha) {
@@ -2355,7 +2351,13 @@ async function bootstrap(request, env) {
   const username = normalizeUsername(data.username);
   const email = normalizeEmail(data.email);
   const password = String(data.password || '');
-  validateAccount(username, email, password);
+  const erroSenha = validarNovaSenha(password);
+
+if (erroSenha) {
+  return json({ error: erroSenha }, 400);
+}
+
+validateAccount(username, email, password);
 
   const salt = randomToken(16);
   const passwordHash = await hashPassword(password, salt);
@@ -2722,11 +2724,10 @@ async function alterarSenhaDoPerfil(request, env) {
     return json({ error: 'A senha atual está incorreta.' }, 400);
   }
 
-  if (novaSenha.length < 8) {
-    return json(
-      { error: 'A nova senha precisa ter pelo menos 8 caracteres.' },
-      400
-    );
+    const erroSenha = validarNovaSenha(novaSenha);
+
+  if (erroSenha) {
+    return json({ error: erroSenha }, 400);
   }
 
   if (novaSenha !== confirmarSenha) {
@@ -2835,7 +2836,13 @@ if (nome.length > 120 || (data.nome !== undefined && !nome)) {
   ? 'Colaborador'
   : role;
 
-  validateAccount(username, email, password);
+  const erroSenha = validarNovaSenha(password);
+
+if (erroSenha) {
+  return json({ error: erroSenha }, 400);
+}
+
+validateAccount(username, email, password);
 
   if (
     !['Administrador', 'Gestor', 'Colaborador', 'Vendedor']
@@ -3959,6 +3966,20 @@ function normalizeUsername(value) {
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function validarNovaSenha(senha) {
+  const valor = String(senha || '');
+
+  const valida =
+    Array.from(valor).length >= 8 &&
+    /\p{Lu}/u.test(valor) &&
+    /[0-9]/.test(valor) &&
+    /[^\p{L}\p{N}\s]/u.test(valor);
+
+  return valida
+    ? null
+    : 'A senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, um número e um caractere especial, como @, !, # ou %.';
 }
 
 function validateAccount(username, email, password) {
