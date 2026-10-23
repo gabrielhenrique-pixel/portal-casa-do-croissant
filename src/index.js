@@ -22,7 +22,10 @@ import {carregarClientesRentabilidade,
        } from './clientes-rentabilidade.js';
 import { margemRedePage } from './pages/margem-rede.js';
 import { listarMargemRedeSankhya } from './margem-rede-service.js';
-import { consultarDashboardCache } from './rentabilidade-cache.js';
+import {
+  consultarDashboardCache,
+  lerEvolucaoSalva
+} from './rentabilidade-cache.js';
 import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
 import {
@@ -1420,6 +1423,23 @@ if (url.pathname === '/api/rentabilidade/sku' && request.method === 'GET') {
 }
 
       
+if (
+  url.pathname === '/api/rentabilidade/evolucao-salva' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_RENTABILIDADE'
+  );
+
+  if (!permitido) {
+    return json({ error: 'Acesso não autorizado.' }, 403);
+  }
+
+  return lerEvolucaoSalva(env);
+}
+
 if (
   url.pathname === '/api/rentabilidade/dashboard' &&
   request.method === 'GET'
@@ -5433,11 +5453,14 @@ async function prepararRentabilidadeAoEntrar() {
         fim: fim
       });
 
-      var resposta = await fetch(
+            var resposta = await fetch(
         '/api/rentabilidade/dashboard?' + parametros.toString(),
         {
           credentials: 'same-origin',
-          cache: 'no-store'
+          cache: 'no-store',
+          headers: {
+            'x-rentabilidade-preparar': '1'
+          }
         }
       );
 
