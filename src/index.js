@@ -72,7 +72,13 @@ import {
   listarGruposProdutos,
 } from './produtos-painel-service.js';
 
+import {
+  scriptInatividade,
+  incluirControleInatividade
+} from './sessao-inatividade.js';
+
 const SESSION_SECONDS = 8 * 60 * 60;
+const INATIVIDADE_MS = 10 * 60 * 1000;
 const PASSWORD_ITERATIONS = 100000;
 const LOGIN_MAX_FALHAS = 5;
 const LOGIN_JANELA_SEGUNDOS = 15 * 60;
@@ -130,6 +136,13 @@ async function obterVendedorVinculado(env, userId) {
 
 export default {
   async fetch(request, env) {
+    const resposta = await portal.fetch(request, env);
+    return incluirControleInatividade(resposta);
+  }
+};
+
+const portal = {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     try {
@@ -171,7 +184,64 @@ if (
         return login(request, env);
       }
 
-      if (url.pathname === '/api/logout' && request.method === 'POST') {
+      if (
+  url.pathname === '/sessao-inatividade.js' &&
+  request.method === 'GET'
+) {
+  return scriptInatividade();
+}
+
+if (
+  url.pathname === '/api/session/activity' &&
+  ['GET', 'POST'].includes(request.method)
+) {
+  if (
+    request.method === 'POST' &&
+    request.headers.get('origin') !== url.origin
+  ) {
+    return json({ error: 'Origem não autorizada.' }, 403);
+  }
+
+  const session = await getSession(request, env);
+
+  if (!session) {
+    return json(
+      { error: 'Sessão encerrada. Entre novamente.' },
+      401,
+      { 'set-cookie': expiredSessionCookie() }
+    );
+  }
+
+  if (request.method === 'POST') {
+    const agora = Date.now();
+
+    // Não permite reativar uma sessão que expirou durante a requisição.
+    const resultado = await env.DB.prepare(
+      `UPDATE sessions
+       SET last_activity = MAX(last_activity, ?)
+       WHERE id = ?
+         AND last_activity > ?
+         AND expires_at > ?`
+    ).bind(
+      agora,
+      session.id,
+      agora - INATIVIDADE_MS,
+      new Date(agora).toISOString()
+    ).run();
+
+    if (!Number(resultado.meta?.changes || 0)) {
+      return json(
+        { error: 'Sessão encerrada. Entre novamente.' },
+        401,
+        { 'set-cookie': expiredSessionCookie() }
+      );
+    }
+  }
+
+  return json({ ok: true });
+}
+
+if (url.pathname === '/api/logout' && request.method === 'POST') {
         return logout(request, env);
       }
 
@@ -3479,8 +3549,16 @@ async function createSessionResponse(env, userId, username, email, role) {
   const expiresAt = new Date(Date.now() + SESSION_SECONDS * 1000).toISOString();
 
   await env.DB.prepare(
-    'INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)'
-  ).bind(tokenHash, userId, expiresAt, new Date().toISOString()).run();
+        `INSERT INTO sessions
+       (id, user_id, expires_at, created_at, last_activity)
+     VALUES (?, ?, ?, ?, ?)`
+  ).bind(
+    tokenHash,
+    userId,
+    expiresAt,
+    new Date().toISOString(),
+    Date.now()
+  ).run();
 
   return json({
     user: { id: userId, username, email, role }
@@ -3492,18 +3570,41 @@ async function getSession(request, env) {
   if (!token) return null;
 
   const tokenHash = await sha256(token);
-  const now = new Date().toISOString();
+  const agora = Date.now();
+  const limite = agora - INATIVIDADE_MS;
+  const agoraIso = new Date(agora).toISOString();
+
   const session = await env.DB.prepare(
-    `SELECT sessions.id, users.id AS user_id, users.nome, users.username, users.email, users.role
+    `SELECT
+       sessions.id,
+       sessions.last_activity,
+       users.id AS user_id,
+       users.nome,
+       users.username,
+       users.email,
+       users.role
      FROM sessions
      JOIN users ON users.id = sessions.user_id
-     WHERE sessions.id = ? AND sessions.expires_at > ?`
-  ).bind(tokenHash, now).first();
+     WHERE sessions.id = ?
+       AND sessions.expires_at > ?
+       AND sessions.last_activity > ?`
+  ).bind(tokenHash, agoraIso, limite).first();
 
   if (!session) {
-    await env.DB.prepare('DELETE FROM sessions WHERE id = ?').bind(tokenHash).run();
+    // A condição evita apagar uma sessão renovada por outra aba.
+    await env.DB.prepare(
+      `DELETE FROM sessions
+       WHERE id = ?
+         AND (
+           expires_at <= ?
+           OR last_activity <= ?
+         )`
+    ).bind(tokenHash, agoraIso, limite).run();
+
+    return null;
   }
-  return session || null;
+
+  return session;
 }
 
 async function listAuditLog(request, env) {
@@ -5505,6 +5606,7 @@ async function prepararRentabilidadeAoEntrar() {
 
 function startDashboard(data) {
     sessionData = data;
+    window.dispatchEvent(new Event('portal-login'));
     prepararRentabilidadeAoEntrar();
 
     $('greeting').textContent =
