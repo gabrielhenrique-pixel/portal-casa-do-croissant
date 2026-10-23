@@ -123,7 +123,47 @@ export function dashboardVendedoresPage() {
       .filtros label,.filtros button{width:100%}
       input{width:100%;min-width:0}
     }
-  </style>
+  @media (max-width: 650px) {
+  #filtros,
+  #filtros * {
+    box-sizing: border-box;
+  }
+
+  #filtros {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  #filtros > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #filtros input[type="date"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 44px;
+    padding: 8px 12px;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  #filtros input[type="date"]::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+
+  #atualizar {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+</style>
 </head>
 
 <body>
