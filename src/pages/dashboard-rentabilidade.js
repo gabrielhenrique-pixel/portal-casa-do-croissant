@@ -602,7 +602,40 @@ export function dashboardRentabilidadePage() {
     }
 
     @media(max-width:700px) {
-      .cards { grid-template-columns:repeat(3,1fr); }
+      .cards {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+
+.cards .card {
+  min-width:0;
+  grid-template-columns:1fr;
+  justify-items:center;
+  gap:8px;
+  padding:12px 8px;
+  text-align:center;
+}
+
+.cards .card > div {
+  min-width:0;
+  width:100%;
+}
+
+.cards .rotulo {
+  display:block;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  font-size:10px;
+}
+
+.cards .valor {
+  display:block;
+  margin-top:5px;
+  font-size:14px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
       .grade { grid-template-columns:1fr; }
       .tabela-area { min-height:0; }
     }
