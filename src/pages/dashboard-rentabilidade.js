@@ -893,10 +893,18 @@ export function dashboardRentabilidadePage() {
       </section>
     </section>
 
-    <nav class="acoes">
-      <a href="/margem-rede">Abrir Margem por Rede</a>
-      <a href="/rentabilidade-sku">Abrir Rentabilidade SKU</a>
-    </nav>
+          <nav class="acoes">
+        <a href="/margem-rede">Abrir Margem por Rede</a>
+        <a href="/rentabilidade-sku">Abrir Rentabilidade SKU</a>
+
+        <a
+          href="/contratos-rede"
+          onclick="this.href = '/contratos-rede?' + new URLSearchParams({
+            inicio: document.getElementById('inicio').value,
+            fim: document.getElementById('fim').value
+          }).toString();"
+        >Contratos por rede</a>
+      </nav>
   </main>
 
   <script>
