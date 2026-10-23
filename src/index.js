@@ -28,6 +28,7 @@ import {
 } from './rentabilidade-cache.js';
 import {redesRentabilidade,salvarInvestimentoRentabilidade,excluirInvestimento,listarTodosInvestimentos,listarInvestimentosPendentes,informarValorRealInvestimento} from './investimentos-rentabilidade.js';
 import { dashboardRentabilidadePage } from './pages/dashboard-rentabilidade.js';
+import { contratosRedePage } from './pages/contratos-rede.js';
 import {
   carregarMetaFaturamento,
   salvarMetaFaturamento,
@@ -511,7 +512,24 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
     });
 }
 
- if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
+ if (
+  url.pathname === '/contratos-rede' &&
+  request.method === 'GET'
+) {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'DASHBOARD_RENTABILIDADE'
+  );
+
+  if (!permitido) {
+    return redirectToPortal();
+  }
+
+  return contratosRedePage();
+}
+
+if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
   const permitido = await podeConsultarModulo(
     request,
     env,
