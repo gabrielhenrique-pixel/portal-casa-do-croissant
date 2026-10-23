@@ -44,6 +44,69 @@ function respostaSalva(registro) {
   });
 }
 
+export async function lerEvolucaoSalva(env) {
+  const hoje = hojeBrasil();
+  const ano = Number(hoje.slice(0, 4));
+  const mesAtual = Number(hoje.slice(5, 7));
+  const periodos = [];
+
+  for (let mes = 1; mes <= mesAtual; mes++) {
+    const numeroMes = String(mes).padStart(2, '0');
+    const inicio = ano + '-' + numeroMes + '-01';
+
+    const ultimoDia = new Date(
+      Date.UTC(ano, mes, 0)
+    ).getUTCDate();
+
+    const fim = mes === mesAtual
+      ? hoje
+      : ano + '-' + numeroMes + '-' +
+        String(ultimoDia).padStart(2, '0');
+
+    periodos.push({
+      mes,
+      inicio,
+      fim,
+      chave: VERSAO + ':' + inicio + ':' + fim
+    });
+  }
+
+  const registros = await env.DB.prepare(
+    `SELECT chave, dados, atualizado_em, valido_ate, bloqueado_ate
+     FROM rentabilidade_cache_periodos
+     WHERE chave IN (${periodos.map(() => '?').join(',')})`
+  ).bind(...periodos.map(periodo => periodo.chave)).all();
+
+  const porChave = new Map(
+    (registros.results || []).map(registro => [
+      registro.chave,
+      registro
+    ])
+  );
+
+  const agora = Date.now();
+
+  return responder({
+    hoje,
+    meses: periodos.map(periodo => {
+      const registro = porChave.get(periodo.chave);
+      const dados = registro?.dados
+        ? JSON.parse(registro.dados)
+        : null;
+
+      return {
+        mes: periodo.mes,
+        inicio: periodo.inicio,
+        fim: periodo.fim,
+        dados,
+        atualizadoEm: registro?.atualizado_em || null,
+        vencido: !dados || Number(registro.valido_ate) <= agora,
+        bloqueadoAte: Number(registro?.bloqueado_ate || 0)
+      };
+    })
+  });
+}
+
 export async function consultarDashboardCache(
   request,
   env,
@@ -169,7 +232,11 @@ export async function consultarDashboardCache(
       }
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    if (request.headers.get('x-rentabilidade-preparar') === '1') {
+  return responder({ preparando: true }, 202);
+}
+
+await new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   return responder({
