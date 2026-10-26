@@ -743,17 +743,23 @@ tfoot td:first-child {
       </button>
     </header>
 
-    <form class="controles">
-      <label class="campo">
-        Data inicial
-        <input id="inicio" type="date" required>
-      </label>
+    <form id="filtrosBsc" class="controles">
+  <label class="campo">
+    Data inicial
+    <input id="inicio" type="date" required>
+  </label>
 
-      <label class="campo">
-        Data final
-        <input id="fim" type="date" required>
-      </label>
-    </form>
+  <label class="campo">
+    Data final
+    <input id="fim" type="date" required>
+  </label>
+
+  <button
+    id="aplicarBsc"
+    type="submit"
+    style="height:42px;padding:0 22px;border:0;border-radius:8px;background:#102e49;color:#fff;font-weight:700;cursor:pointer;align-self:end"
+  >Aplicar</button>
+</form>
 
     <section class="abas" aria-label="Abas do BSC">
   <button
@@ -1846,9 +1852,18 @@ function renderizarPositivacao(dados) {
   $('estado').className = 'estado';
 }
 
-      async function carregar() {
-        var inicio = $('inicio').value;
-        var fim = $('fim').value;
+      var periodoAplicadoBsc = null;
+
+async function carregar() {
+  if (!periodoAplicadoBsc) {
+    periodoAplicadoBsc = {
+      inicio: $('inicio').value,
+      fim: $('fim').value
+    };
+  }
+
+  var inicio = periodoAplicadoBsc.inicio;
+  var fim = periodoAplicadoBsc.fim;
 
         if (!inicio || !fim) return;
 
@@ -2534,8 +2549,55 @@ $('fim').value = iso(
   new Date(hoje.getFullYear(), hoje.getMonth(), 0)
 );
 
-      $('inicio').addEventListener('change', carregar);
-      $('fim').addEventListener('change', carregar);
+      $('filtrosBsc').addEventListener('submit', async function (evento) {
+  evento.preventDefault();
+
+  var botao = $('aplicarBsc');
+
+  if (botao.disabled) return;
+
+  var inicio = $('inicio').value;
+  var fim = $('fim').value;
+
+  if (!inicio || !fim || inicio > fim) {
+    $('estado').textContent = 'Informe um período válido.';
+    $('estado').className = 'estado erro';
+    return;
+  }
+
+  periodoAplicadoBsc = {
+    inicio: inicio,
+    fim: fim
+  };
+
+  var controles = [
+    botao,
+    $('inicio'),
+    $('fim')
+  ].concat(Array.from(document.querySelectorAll('[data-aba]')));
+
+  var estadosAnteriores = controles.map(function (controle) {
+    return controle.disabled;
+  });
+
+  controles.forEach(function (controle) {
+    controle.disabled = true;
+  });
+
+  botao.textContent = 'Carregando...';
+  botao.style.opacity = '0.6';
+
+  try {
+    await carregar();
+  } finally {
+    controles.forEach(function (controle, indice) {
+      controle.disabled = estadosAnteriores[indice];
+    });
+
+    botao.textContent = 'Aplicar';
+    botao.style.opacity = '';
+  }
+});
       $('exportarBsc').addEventListener('click', exportarPlanilhaBsc);
 
       document.querySelectorAll('[data-aba]').forEach(function(botao) {
