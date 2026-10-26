@@ -481,7 +481,22 @@ tbody .linha-resultado td.coluna-total {
 <body>
   <main>
     <header class="cabecalho">
-      <a class="voltar" href="/dre" aria-label="Voltar à seleção do DRE">←</a>
+      <nav
+  aria-label="Navegação"
+  style="display:flex;gap:8px;flex-shrink:0"
+>
+  <a
+    class="voltar"
+    href="/dre"
+    aria-label="Voltar à seleção do DRE"
+  >←</a>
+
+  <a
+    class="voltar"
+    href="/"
+    aria-label="Página inicial"
+  >⌂</a>
+</nav>
 
       <div>
         <h1>${titulo}</h1>
