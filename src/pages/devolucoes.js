@@ -1082,19 +1082,19 @@ export function devolucoesPage() {
       <div class="filtro">
   <label>Data inicial</label>
   <input
-    id="filtroInicio"
-    type="date"
-    onchange="carregarDevolucoes()"
-  >
+  id="filtroInicio"
+  type="date"
+  required
+>
 </div>
 
 <div class="filtro">
   <label>Data final</label>
   <input
-    id="filtroFim"
-    type="date"
-    onchange="carregarDevolucoes()"
-  >
+  id="filtroFim"
+  type="date"
+  required
+>
 </div>
 
       <div class="filtro">
@@ -1104,12 +1104,19 @@ export function devolucoesPage() {
   </select>
 </div>
 
-      <div class="filtro">
+            <div class="filtro">
         <label>Produto</label>
         <select id="filtroProduto" onchange="aplicarFiltros()">
           <option value="">Todos</option>
         </select>
       </div>
+
+      <button
+        id="aplicarDevolucoes"
+        type="button"
+        onclick="carregarDevolucoes()"
+        style="height:39px;padding:0 22px;border:0;border-radius:8px;background:#102e49;color:#fff;font-weight:700;cursor:pointer"
+      >Aplicar</button>
     </section>
 
     <section class="indicadores">
@@ -1390,10 +1397,29 @@ function aplicarIconesVetoriais() {
 }
 
     function carregarDevolucoes() {
-      mostrarCarregando(true);
+  var botao = document.getElementById('aplicarDevolucoes');
 
-      var inicio = document.getElementById('filtroInicio').value;
-      var fim = document.getElementById('filtroFim').value;
+  if (botao.disabled) return;
+
+  var campoInicio = document.getElementById('filtroInicio');
+  var campoFim = document.getElementById('filtroFim');
+
+  var inicio = campoInicio.value;
+  var fim = campoFim.value;
+
+  if (!inicio || !fim || inicio > fim) {
+    mostrarErro('Informe um período válido.');
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = 'Carregando...';
+  botao.style.opacity = '0.6';
+
+  campoInicio.disabled = true;
+  campoFim.disabled = true;
+
+  mostrarCarregando(true);
 
       fetch('/api/devolucoes?inicio=' + encodeURIComponent(inicio) +
         '&fim=' + encodeURIComponent(fim))
@@ -1417,8 +1443,15 @@ function aplicarIconesVetoriais() {
           mostrarErro(erro.message || 'Não foi possível carregar as devoluções do Sankhya.');
         })
         .finally(function() {
-          mostrarCarregando(false);
-        });
+  mostrarCarregando(false);
+
+  botao.disabled = false;
+  botao.textContent = 'Aplicar';
+  botao.style.opacity = '';
+
+  campoInicio.disabled = false;
+  campoFim.disabled = false;
+});
     }
 
     function preencherFiltros() {
