@@ -599,12 +599,17 @@ tbody tr.linha-total td.coluna-receita-ajustada.negativo {
       }
 
       function definirPeriodoInicial() {
-        var hoje = new Date();
-        var mesAnterior = new Date(hoje);
-        mesAnterior.setMonth(mesAnterior.getMonth() - 1);
-        inicio.value = dataParaInput(mesAnterior);
-        fim.value = dataParaInput(hoje);
-      }
+  var hoje = new Date();
+
+  var primeiroDiaMes = new Date(
+    hoje.getFullYear(),
+    hoje.getMonth(),
+    1
+  );
+
+  inicio.value = dataParaInput(primeiroDiaMes);
+  fim.value = dataParaInput(hoje);
+}
 
       function moeda(valor) {
         var numero = Number(valor || 0);
