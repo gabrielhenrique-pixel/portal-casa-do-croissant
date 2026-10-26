@@ -1248,9 +1248,6 @@ function mostrarAlertas(dados) {
   }
 });
       botaoExportarExcel.addEventListener('click', exportarExcelMargem);
-      inicio.addEventListener('change', carregar);
-      fim.addEventListener('change', carregar);
-
       definirPeriodoInicial();
       carregar();
     })();
