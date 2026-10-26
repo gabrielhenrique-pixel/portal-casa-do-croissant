@@ -521,7 +521,12 @@ tbody tr.linha-total td.margem-boa {
     <span>Data final</span>
     <input id="fim" name="fim" type="date" required>
   </label>
-  
+
+  <button
+    id="aplicarSku"
+    type="submit"
+    style="height:39px;padding:0 22px;border:0;border-radius:8px;background:#102e49;color:#fff;font-weight:700;cursor:pointer;align-self:end"
+  >Aplicar</button>
 </form>
 
     <p class="estado" id="estado" aria-live="polite">Carregando dados...</p>
@@ -1297,8 +1302,36 @@ function prepararFiltrosColunas() {
         }
       }
 
-      inicio.addEventListener('change', carregarDados);
-      fim.addEventListener('change', carregarDados);
+      form.addEventListener('submit', async function(evento) {
+  evento.preventDefault();
+
+  var botao = document.getElementById('aplicarSku');
+
+  if (botao.disabled) return;
+
+  if (!inicio.value || !fim.value || inicio.value > fim.value) {
+    mostrarEstado('Informe um período válido.', true);
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = 'Carregando...';
+  botao.style.opacity = '0.6';
+
+  inicio.disabled = true;
+  fim.disabled = true;
+
+  try {
+    await carregarDados();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = 'Aplicar';
+    botao.style.opacity = '';
+
+    inicio.disabled = false;
+    fim.disabled = false;
+  }
+});
 
       exportarExcel.addEventListener('click', exportarExcelFiltrado);
 
