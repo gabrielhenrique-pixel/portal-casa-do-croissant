@@ -710,7 +710,12 @@ export function dashboardRentabilidadePage() {
         <input id="fim" type="date" required>
       </label>
 
-    </form>
+      <button
+    id="aplicarFiltros"
+    type="submit"
+    style="height:42px;padding:0 22px;border:0;border-radius:8px;background:#102e49;color:#fff;font-weight:700;cursor:pointer;align-self:end"
+  >Aplicar</button>
+</form>
 
     <p id="estado" class="estado">Carregando dados...</p>
 
@@ -1301,8 +1306,42 @@ function render(d) {
 
       $('fim').value = iso(hoje);
 
-      $('inicio').addEventListener('change', carregar);
-$('fim').addEventListener('change', carregar);
+      $('filtros').addEventListener('submit', async function (evento) {
+  evento.preventDefault();
+
+  var botao = $('aplicarFiltros');
+
+  if (botao.disabled) return;
+
+  if (
+    !$('inicio').value ||
+    !$('fim').value ||
+    $('inicio').value > $('fim').value
+  ) {
+    $('estado').textContent = 'Informe um período válido.';
+    $('estado').className = 'estado erro';
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = 'Carregando...';
+  botao.style.opacity = '0.6';
+
+  $('inicio').disabled = true;
+  $('fim').disabled = true;
+  $('estado').className = 'estado';
+
+  try {
+    await carregar();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = 'Aplicar';
+    botao.style.opacity = '';
+
+    $('inicio').disabled = false;
+    $('fim').disabled = false;
+  }
+});
 
       $('editarMeta').addEventListener('click', editar);
       $('salvarMeta').addEventListener('click', salvar);
