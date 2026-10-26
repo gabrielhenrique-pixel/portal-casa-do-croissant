@@ -537,7 +537,13 @@ tbody tr.linha-total td.coluna-receita-ajustada.negativo {
     <input id="fim" type="date" required>
   </label>
 
+  <button
+    id="aplicarMargem"
+    type="submit"
+    style="height:39px;padding:0 22px;border:0;border-radius:8px;background:#102e49;color:#fff;font-weight:700;cursor:pointer"
+  >Aplicar</button>
 </form>
+
     <p class="estado" id="estado" aria-live="polite">Carregando dados...</p>
     <div class="alertas" id="alertas" role="status"></div>
 
@@ -1215,10 +1221,32 @@ function mostrarAlertas(dados) {
               } 
       }
 
-      form.addEventListener('submit', function(evento) {
-        evento.preventDefault();
-        carregar();
-      });
+      form.addEventListener('submit', async function(evento) {
+  evento.preventDefault();
+
+  var botao = document.getElementById('aplicarMargem');
+
+  if (botao.disabled) return;
+
+  if (!inicio.value || !fim.value || inicio.value > fim.value) {
+    mostrarEstado('Informe um período válido.', true);
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = 'Carregando...';
+  inicio.disabled = true;
+  fim.disabled = true;
+
+  try {
+    await carregar();
+  } finally {
+    botao.disabled = false;
+    botao.textContent = 'Aplicar';
+    inicio.disabled = false;
+    fim.disabled = false;
+  }
+});
       botaoExportarExcel.addEventListener('click', exportarExcelMargem);
       inicio.addEventListener('change', carregar);
       fim.addEventListener('change', carregar);
