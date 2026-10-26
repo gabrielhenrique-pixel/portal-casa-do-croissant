@@ -161,7 +161,13 @@ const filtroVendedoresCadastrados =
     "    WHEN UPPER(TRIM(NVL(ITE.CODVOL, PRO.CODVOL))) IN ('CX', 'CAIXA') THEN ABS(NVL(ITE.QTDNEG, 0))",
     '    WHEN NVL(PRO.MULTIPVENDA, 0) > 0 THEN ABS(NVL(ITE.QTDNEG, 0)) / PRO.MULTIPVENDA',
     '    ELSE ABS(NVL(ITE.QTDNEG, 0))',
-    '  END), 0) AS CAIXAS',
+        '  END), 0) AS CAIXAS,',
+    '  NVL(SUM(CASE WHEN CAB.CODTIPOPER = 1202 THEN NVL(ITE.VLRTOT, 0) ELSE 0 END), 0) AS ITENS_1202,',
+    '  NVL(SUM(CASE WHEN CAB.CODTIPOPER = 1202 THEN NVL(ITE.VLRDESC, 0) ELSE 0 END), 0) AS DESCONTOS_1202,',
+    '  NVL(SUM(CASE WHEN CAB.CODTIPOPER = 1202 THEN NVL(ITE.VLRSUBST, 0) ELSE 0 END), 0) AS ST_1202,',
+    '  NVL(SUM(CASE WHEN CAB.CODTIPOPER = 1203 THEN NVL(ITE.VLRTOT, 0) ELSE 0 END), 0) AS ITENS_1203,',
+    '  NVL(SUM(CASE WHEN CAB.CODTIPOPER = 1203 THEN NVL(ITE.VLRDESC, 0) ELSE 0 END), 0) AS DESCONTOS_1203,',
+    '  NVL(SUM(CASE WHEN CAB.CODTIPOPER = 1203 THEN NVL(ITE.VLRSUBST, 0) ELSE 0 END), 0) AS ST_1203',
     'FROM TGFCAB CAB',
     'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
     'INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
@@ -249,6 +255,25 @@ const devolucoes = {
   valor: numero(linhaDevolucoes[0]),
   caixas: numero(linhaDevolucoes[1])
 };
+
+if (url.searchParams.get('auditoria') === 'devolucoes') {
+  return {
+    inicio,
+    fim,
+    vendedorSelecionado: vendedorSelecionado || 'Todos os cadastrados',
+    totalExibido: devolucoes.valor,
+    top1202: {
+      valorItens: numero(linhaDevolucoes[2]),
+      descontos: numero(linhaDevolucoes[3]),
+      st: numero(linhaDevolucoes[4])
+    },
+    top1203: {
+      valorItens: numero(linhaDevolucoes[5]),
+      descontos: numero(linhaDevolucoes[6]),
+      st: numero(linhaDevolucoes[7])
+    }
+  };
+}
 
   const metasPorVendedor = new Map(
     metasVendedores.map((meta) => [
