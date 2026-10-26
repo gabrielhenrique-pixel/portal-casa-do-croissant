@@ -169,6 +169,7 @@ const filtroVendedoresCadastrados =
     "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
     "  AND CAB.TIPMOV = 'D'",
     "  AND CAB.STATUSNOTA = 'L'",
+    '  AND CAB.CODTIPOPER IN (1202, 1203)',
        filtroCabVendedoresCadastrados,
        filtroVendedor
   ].filter(Boolean).join('\n');
