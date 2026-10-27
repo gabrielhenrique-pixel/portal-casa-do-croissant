@@ -257,21 +257,102 @@ const devolucoes = {
 };
 
 if (url.searchParams.get('auditoria') === 'devolucoes') {
+  const sqlAuditoria = [
+    'SELECT',
+    '  CAB.NUNOTA,',
+    '  CAB.NUMNOTA,',
+    '  CAB.CODTIPOPER,',
+    '  CAB.CODPARC,',
+    '  CAB.CODVEND,',
+    '  ITE.CODPROD,',
+    '  NVL(CAB.VLRNOTA, 0),',
+    '  NVL(CAB.VLRDESCTOT, 0),',
+    '  NVL(CAB.VLRDESCTOTITEM, 0),',
+    '  SUM(NVL(ITE.VLRTOT, 0)),',
+    '  SUM(NVL(ITE.VLRDESC, 0)),',
+    '  SUM(NVL(ITE.VLRSUBST, 0))',
+    'FROM TGFCAB CAB',
+    'INNER JOIN TGFITE ITE ON ITE.NUNOTA = CAB.NUNOTA',
+    'INNER JOIN TGFPRO PRO ON PRO.CODPROD = ITE.CODPROD',
+    "WHERE CAB.DTNEG >= TO_DATE('" + inicio + "', 'YYYY-MM-DD')",
+    "  AND CAB.DTNEG < TO_DATE('" + fim + "', 'YYYY-MM-DD') + 1",
+    "  AND CAB.TIPMOV = 'D'",
+    "  AND CAB.STATUSNOTA = 'L'",
+    '  AND CAB.CODTIPOPER IN (1202, 1203)',
+    filtroCabVendedoresCadastrados,
+    filtroVendedor,
+    'GROUP BY',
+    '  CAB.NUNOTA, CAB.NUMNOTA, CAB.CODTIPOPER,',
+    '  CAB.CODPARC, CAB.CODVEND, ITE.CODPROD,',
+    '  CAB.VLRNOTA, CAB.VLRDESCTOT, CAB.VLRDESCTOTITEM',
+    'ORDER BY CAB.NUNOTA, ITE.CODPROD'
+  ].filter(Boolean).join('\n');
+
+  const linhas = await executarConsultaSankhya(token, sqlAuditoria);
+  const notas = new Map();
+  const produtos = new Map();
+  const arredondar = valor => Math.round(valor * 100) / 100;
+
+  for (const linha of linhas) {
+    const id = String(linha[0]);
+    const produto = String(linha[5]);
+    const bruto = numero(linha[9]);
+    const desconto = numero(linha[10]);
+    const st = numero(linha[11]);
+    const liquido = bruto - desconto + st;
+
+    if (!notas.has(id)) {
+      notas.set(id, {
+        numeroUnico: id,
+        numeroNota: String(linha[1]),
+        top: numero(linha[2]),
+        parceiro: String(linha[3]),
+        vendedor: String(linha[4]),
+        valorNotaCabecalho: numero(linha[6]),
+        descontoTotalCabecalho: numero(linha[7]),
+        descontoItensCabecalho: numero(linha[8]),
+        somaItensComSt: 0,
+        produtos: []
+      });
+    }
+
+    const nota = notas.get(id);
+    nota.somaItensComSt += liquido;
+    nota.produtos.push({
+      codigo: produto,
+      bruto: arredondar(bruto),
+      desconto: arredondar(desconto),
+      st: arredondar(st),
+      liquido: arredondar(liquido)
+    });
+
+    produtos.set(produto, (produtos.get(produto) || 0) + liquido);
+  }
+
+  const listaNotas = [...notas.values()].map(nota => ({
+    ...nota,
+    somaItensComSt: arredondar(nota.somaItensComSt),
+    diferencaCabecalhoItens: arredondar(
+      nota.valorNotaCabecalho - nota.somaItensComSt
+    )
+  }));
+
   return {
     inicio,
     fim,
-    vendedorSelecionado: vendedorSelecionado || 'Todos os cadastrados',
-    totalExibido: devolucoes.valor,
-    top1202: {
-      valorItens: numero(linhaDevolucoes[2]),
-      descontos: numero(linhaDevolucoes[3]),
-      st: numero(linhaDevolucoes[4])
-    },
-    top1203: {
-      valorItens: numero(linhaDevolucoes[5]),
-      descontos: numero(linhaDevolucoes[6]),
-      st: numero(linhaDevolucoes[7])
-    }
+    totalMonitoramento: devolucoes.valor,
+    totalCabecalhos: arredondar(
+      listaNotas.reduce((total, nota) => total + nota.valorNotaCabecalho, 0)
+    ),
+    totalItensComSt: arredondar(
+      listaNotas.reduce((total, nota) => total + nota.somaItensComSt, 0)
+    ),
+    quantidadeNotas: listaNotas.length,
+    totaisPorProduto: [...produtos.entries()].map(([codigo, valor]) => ({
+      codigo,
+      valor: arredondar(valor)
+    })),
+    notas: listaNotas
   };
 }
 
