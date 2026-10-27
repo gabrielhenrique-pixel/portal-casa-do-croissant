@@ -1,4 +1,4 @@
-const VERSAO = 'dashboard-v1';
+const VERSAO = 'dashboard-v2';
 const MINUTO = 60 * 1000;
 
 function responder(dados, status = 200) {
