@@ -1688,11 +1688,18 @@ function render(d) {
     maximo += intervalo * 0.15;
     if (minimo < 0) minimo -= intervalo * 0.15;
 
-    function x(indice) {
-      if (dados.length === 1) return (esquerda + direita) / 2;
+        function x(indice) {
+      var margemLateral = 85;
+      var inicioGrafico = esquerda + margemLateral;
+      var fimGrafico = direita - margemLateral;
 
-      return esquerda +
-        indice * (direita - esquerda) / (dados.length - 1);
+      if (dados.length === 1) {
+        return (inicioGrafico + fimGrafico) / 2;
+      }
+
+      return inicioGrafico +
+        indice * (fimGrafico - inicioGrafico) /
+        (dados.length - 1);
     }
 
     function y(valor) {
