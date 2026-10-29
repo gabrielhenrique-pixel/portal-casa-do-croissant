@@ -12,6 +12,8 @@ import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
 import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
+import { cadastroComissoes } from './comissoes-cadastro.js';
+import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -85,6 +87,7 @@ const LOGIN_MAX_FALHAS = 5;
 const LOGIN_JANELA_SEGUNDOS = 15 * 60;
 
 const MODULOS_ACESSO = [
+  ['COMISSOES_CADASTRO', 'Comissões — Cadastro de vendedores', 38],
   ['CLIENTES', 'Clientes', 20],
   ['PRODUTOS', 'Produtos', 21],
   ['INVESTIMENTOS', 'Investimentos', 25],
@@ -147,6 +150,38 @@ const portal = {
     const url = new URL(request.url);
 
     try {
+
+            if (
+        url.pathname === '/comissoes/vendedores' ||
+        url.pathname === '/api/comissoes/cadastro'
+      ) {
+        const acesso = await obterAcessoModulo(
+          request,
+          env,
+          'COMISSOES_CADASTRO'
+        );
+
+        if (!acesso?.session || !acesso?.permissions?.view) {
+          return json({
+            error: 'Você não tem acesso ao cadastro de comissões.'
+          }, 403);
+        }
+
+        if (url.pathname === '/comissoes/vendedores') {
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405);
+          }
+
+          return comissoesVendedoresPage();
+        }
+
+        await garantirVinculosVendedores(env);
+
+        return await cadastroComissoes(request, env, acesso);
+      }
+            
       if (url.pathname === '/health') {
         return json({ status: 'ok' });
       }
@@ -5113,6 +5148,15 @@ const APP_HTML = `<!doctype html>
 >
   Dashboards
 </button>
+
+<a
+  class="nav-btn oculto"
+  data-module="COMISSOES_CADASTRO"
+  href="/comissoes/vendedores"
+  style="display:block;text-decoration:none;"
+>
+  Vendedores / Comissões
+</a>
 
 <button
   id="navDre"
