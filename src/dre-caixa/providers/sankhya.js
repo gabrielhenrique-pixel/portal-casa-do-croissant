@@ -20,7 +20,9 @@ export async function criarSankhyaProvider(env) {
         categoria: String(Number(row[1]) || 0),
         descricao: String(row[2] || 'Sem natureza'),
         centavos: centavosValidos(row[3]),
-        grupo: identificarGrupoDre(String(Number(row[1]) || 0))
+                grupo: Number(row[1]) === 3070200
+          ? 9 // ACORDOS COMERCIAIS → Despesas Comerciais
+          : identificarGrupoDre(String(Number(row[1]) || 0))
       }));
     },
     async listarLancamentos(filtros) {
