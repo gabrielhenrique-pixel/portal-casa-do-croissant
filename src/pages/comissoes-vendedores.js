@@ -363,7 +363,7 @@ export function comissoesVendedoresPage() {
     <h1>VENDEDORES / COMISSÕES</h1>
   </header>
 
-  <div class="barra">
+  <div id="list-toolbar" class="barra">
     <button id="new" class="novo" type="button"
       title="Cadastrar vendedor" aria-label="Cadastrar vendedor" disabled>+</button>
 
@@ -380,7 +380,7 @@ export function comissoesVendedoresPage() {
 
   <p id="status" role="status" aria-live="polite"></p>
 
-  <div class="lista">
+  <div id="list-container" class="lista">
     <table aria-label="Vendedores cadastrados">
       <thead>
         <tr>
@@ -560,6 +560,33 @@ export function comissoesVendedoresPage() {
       : model?.permissoes.create);
   }
 
+    function showScreen(editMode) {
+    $('list-toolbar').hidden = editMode;
+    $('list-container').hidden = editMode;
+    $('form').hidden = !editMode;
+  }
+
+  function returnToList(record = selected) {
+    selected = record;
+    editing = false;
+    dirty = false;
+
+    showScreen(false);
+    renderList();
+    controls();
+
+    const selectedRow = [...$('rows').querySelectorAll('tr[data-id]')]
+      .find(row => row.dataset.id === selected?.id);
+
+    if (selectedRow) {
+      selectedRow.focus({ preventScroll: true });
+      selectedRow.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth'
+      });
+    }
+  }
+
   function controls() {
     const locked = busy || reloadRequired;
     const writable = editing && allowed() && !locked;
@@ -636,14 +663,20 @@ export function comissoesVendedoresPage() {
         row.append(cell);
       });
 
-      function select() {
-        if (busy || reloadRequired) return;
-        if (editing) {
-          message('Salve ou cancele a edição antes de selecionar outro vendedor.', true);
-          return;
-        }
+            function select() {
+        if (busy || reloadRequired || editing) return;
+
+        selected = record;
         message('');
-        openRecord(record, false);
+
+        $('rows').querySelectorAll('tr[data-id]').forEach(item => {
+          item.classList.toggle(
+            'selecionado',
+            item.dataset.id === record.id
+          );
+        });
+
+        controls();
       }
 
       row.addEventListener('click', select);
@@ -778,7 +811,7 @@ export function comissoesVendedoresPage() {
     editing = editMode;
     dirty = false;
 
-    $('form').hidden = false;
+        showScreen(editMode);
     $('title').textContent = record
       ? record.codigo_origem + ' — ' + record.dados.nome
       : 'Novo vendedor';
@@ -836,11 +869,22 @@ export function comissoesVendedoresPage() {
     return !dirty || confirm('Descartar as alterações não salvas?');
   }
 
-  $('back').addEventListener('click', () => {
-    if (!mayLeave()) return;
+    $('back').addEventListener('click', () => {
+    if (busy || reloadRequired || !mayLeave()) return;
+
+    if (editing) {
+      message('');
+      returnToList();
+      return;
+    }
+
     dirty = false;
-    if (history.length > 1) history.back();
-    else location.href = '/';
+
+    if (history.length > 1) {
+      history.back();
+    } else {
+      location.href = '/';
+    }
   });
 
   $('home').addEventListener('click', event => {
@@ -901,17 +945,11 @@ export function comissoesVendedoresPage() {
     controls();
   });
 
-  $('cancel').addEventListener('click', () => {
+    $('cancel').addEventListener('click', () => {
     if (busy || reloadRequired || !mayLeave()) return;
-    dirty = false;
-    editing = false;
-    message('');
 
-    if (selected) openRecord(selected, false);
-    else {
-      $('form').hidden = true;
-      controls();
-    }
+    message('');
+    returnToList();
   });
 
   $('form').addEventListener('submit', async event => {
@@ -956,9 +994,10 @@ export function comissoesVendedoresPage() {
 
       if (!record) throw new Error('Não foi possível atualizar o cadastro salvo.');
 
-      model = fresh;
+            model = fresh;
       $('search').value = '';
-      openRecord(record, false);
+
+      returnToList(record);
       message('Cadastro salvo com sucesso.');
     } catch (error) {
       reloadRequired = true;
