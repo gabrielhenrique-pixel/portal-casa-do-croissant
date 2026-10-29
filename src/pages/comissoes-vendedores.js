@@ -3,269 +3,485 @@ export function comissoesVendedoresPage() {
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vendedores / Comissões</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vendedores / Comissões</title>
 
-  <style>
-    * { box-sizing: border-box; }
+<style>
+  :root {
+    --navy: #102e49;
+    --blue: #1769aa;
+    --green: #168447;
+    --border: #d5dfe8;
+    --background: #f5f7f6;
+  }
 
-    body {
-      margin: 0;
-      background: #f0f4f5;
-      color: #10314b;
-      font: 14px Arial, sans-serif;
-    }
+  * { box-sizing: border-box; }
 
-    main {
-      max-width: 1280px;
-      margin: auto;
-      padding: 24px;
-    }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--navy);
+    font: 14px Arial, sans-serif;
+  }
 
-    header, section {
-      background: white;
-      border: 1px solid #dde5e9;
-      border-radius: 14px;
-      padding: 24px;
-    }
+  main {
+    max-width: 1440px;
+    margin: auto;
+    padding: 6px 8px 38px;
+  }
 
-    header {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      margin-bottom: 16px;
-    }
+  .topo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 34px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.92);
+    box-shadow: 0 8px 22px #1730521c;
+  }
 
-    header a {
-      color: #10314b;
-      text-decoration: none;
-    }
+  .navegacao-topo {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
 
-    h1 { margin: 0; font-size: 26px; }
-    h2 { margin-top: 0; font-size: 19px; }
-    p { line-height: 1.5; }
-    .muted { color: #667987; }
+  .nav-icone {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 5px 15px #1730521c;
+    color: var(--navy);
+    font-size: 25px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+  }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
-    }
+  .nav-icone:hover { background: #edf3f9; }
 
-    .fields {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
+  h1 {
+    margin: 0;
+    font-size: 30px;
+    color: var(--navy);
+  }
 
-    label {
-      display: grid;
-      gap: 7px;
-      font-size: 13px;
-    }
+  .barra {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 15px;
+    padding: 14px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 6px 18px #17305214;
+  }
 
-    input, select, button {
-      font: inherit;
-      padding: 11px;
-      border: 1px solid #bdccd6;
-      border-radius: 7px;
-    }
+  button, input, select { font: inherit; }
 
-    input, select {
-      width: 100%;
-      min-width: 0;
-      color: #10314b;
-      background: white;
-    }
+  button {
+    cursor: pointer;
+    border: 0;
+    border-radius: 7px;
+    padding: 10px 16px;
+  }
 
-    input[readonly] { background: #f0f4f7; }
+  button:disabled {
+    opacity: .5;
+    cursor: default;
+  }
 
-    button {
-      background: #10314b;
-      color: white;
-      cursor: pointer;
-    }
+  .novo {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    background: var(--green);
+    color: white;
+    font-size: 30px;
+    line-height: 1;
+  }
 
-    button:disabled {
-      opacity: .55;
-      cursor: default;
-    }
+  .editar {
+    height: 42px;
+    background: var(--blue);
+    color: white;
+    font-weight: 700;
+  }
 
-    .secondary {
-      background: white;
-      color: #10314b;
-    }
+  .pesquisa {
+    flex: 1;
+    max-width: 450px;
+    min-width: 180px;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #c6d4e4;
+    border-radius: 7px;
+    color: var(--navy);
+  }
 
-    .seller-list {
-      display: grid;
-      gap: 9px;
-      margin-top: 18px;
-    }
+  .contador {
+    margin-left: auto;
+    color: #647789;
+    font-size: 12px;
+  }
 
-    .seller-list button {
-      text-align: left;
-      overflow-wrap: anywhere;
-    }
+  #status {
+    margin: 9px 4px;
+    min-height: 18px;
+    font-size: 13px;
+    white-space: pre-wrap;
+  }
 
-    .exception {
-      border: 1px solid #dde5e9;
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 12px;
-      background: #f9fbfc;
-    }
+  #status.error { color: #b42318; }
 
-    .exception-fields {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
+  .lista {
+    max-height: 350px;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+  }
 
-    .exception-rates {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 12px;
-      align-items: end;
-    }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
 
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 24px;
-    }
+  th, td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid #e4e9ee;
+    text-align: left;
+    white-space: nowrap;
+  }
 
-    .exceptions-heading { margin-top: 28px; }
+  th {
+    position: sticky;
+    top: 0;
+    background: #edf2f7;
+    color: #17375f;
+    font-weight: 700;
+    z-index: 1;
+  }
 
-    #status {
-      min-height: 24px;
-      white-space: pre-wrap;
-    }
+  tbody tr:nth-child(even) { background: #f4f6f8; }
+  tbody tr[data-id] { cursor: pointer; }
+  tbody tr[data-id]:hover { background: #eef6fc; }
+  tbody tr.selecionado { background: #dceefd; }
 
-    #status.error { color: #b42318; }
-    [hidden] { display: none !important; }
+  tbody tr.selecionado td:first-child {
+    box-shadow: inset 3px 0 var(--blue);
+  }
 
-    @media (max-width: 850px) {
-      .layout, .fields, .exception-fields, .exception-rates {
-        grid-template-columns: 1fr;
-      }
+  .numero { text-align: right; }
+  .situacao { font-weight: 700; }
+  .ativo { color: #168447; }
+  .inativo { color: #8a5260; }
 
-      main { padding: 12px; }
-      header, section { padding: 16px; }
-      h1 { font-size: 22px; }
-    }
-  </style>
+  .detalhes {
+    margin-top: 18px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .resumo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .resumo strong { font-size: 16px; }
+
+  .modo {
+    color: #647789;
+    font-size: 12px;
+  }
+
+  .guias {
+    display: flex;
+    gap: 4px;
+    padding: 12px 18px 0;
+    border-bottom: 1px solid var(--border);
+    background: #fafbfc;
+  }
+
+  .guia {
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: 6px 6px 0 0;
+    background: #edf1f5;
+    color: #52677b;
+    padding: 12px 20px;
+  }
+
+  .guia[aria-selected="true"] {
+    background: white;
+    color: var(--navy);
+    box-shadow: inset 0 3px var(--green);
+    font-weight: 700;
+  }
+
+  .painel { padding: 24px 20px; }
+
+  .campos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  label {
+    display: grid;
+    gap: 7px;
+    font-size: 13px;
+    color: #435a70;
+  }
+
+  label input, label select {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    border: 1px solid #c6d4e4;
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--navy);
+    background: white;
+  }
+
+  input:disabled, select:disabled, input[readonly] {
+    background: #f3f6f8;
+    color: #52677b;
+    opacity: 1;
+  }
+
+  .ajuda {
+    margin: 0 0 18px;
+    color: #647789;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .excecao {
+    display: grid;
+    grid-template-columns: 120px minmax(180px, 2fr) 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+    padding: 16px 0;
+    border-bottom: 1px solid #e5ebf0;
+  }
+
+  .secundario {
+    background: white;
+    color: var(--navy);
+    border: 1px solid #c6d4e4;
+  }
+
+  .remover {
+    height: 40px;
+    background: #fff3f2;
+    color: #a52d26;
+    border: 1px solid #efcfcc;
+  }
+
+  #add { margin-top: 16px; }
+
+  .rodape {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: #fafbfc;
+  }
+
+  .salvar {
+    background: var(--green);
+    color: white;
+    font-weight: 700;
+  }
+
+  #revision {
+    margin: 0 0 0 auto;
+    color: #647789;
+    font-size: 12px;
+  }
+
+  .aviso {
+    margin: 14px 4px;
+    color: #647789;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  [hidden] { display: none !important; }
+
+  :focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 900px) {
+    .campos { grid-template-columns: 1fr 1fr; }
+    .excecao { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 23px; }
+    .topo { padding: 18px; }
+  }
+
+  @media (max-width: 560px) {
+    .campos, .excecao { grid-template-columns: 1fr; }
+    .topo { gap: 12px; padding: 16px 12px; }
+    .nav-icone { width: 40px; height: 40px; }
+    h1 { font-size: 19px; }
+    .contador { width: 100%; margin-left: 0; }
+    .guia { padding: 12px; }
+    #revision { width: 100%; margin-left: 0; }
+  }
+</style>
 </head>
 
 <body>
 <main>
-  <header>
-    <a href="/" aria-label="Voltar à página inicial">← Início</a>
-    <div>
-      <h1>Vendedores / Comissões</h1>
-      <p class="muted">Cadastro e regras de comissão</p>
-    </div>
+  <header class="topo">
+    <nav class="navegacao-topo" aria-label="Navegação">
+      <button id="back" class="nav-icone" type="button"
+        title="Voltar" aria-label="Voltar">←</button>
+      <a id="home" class="nav-icone" href="/"
+        title="Página inicial" aria-label="Página inicial">⌂</a>
+    </nav>
+    <h1>VENDEDORES / COMISSÕES</h1>
   </header>
+
+  <div class="barra">
+    <button id="new" class="novo" type="button"
+      title="Cadastrar vendedor" aria-label="Cadastrar vendedor" disabled>+</button>
+
+    <button id="edit" class="editar" type="button" disabled>
+      Editar
+    </button>
+
+    <input id="search" class="pesquisa" type="search"
+      placeholder="Pesquisar código, vendedor ou usuário..."
+      aria-label="Pesquisar vendedores">
+
+    <span id="count" class="contador"></span>
+  </div>
 
   <p id="status" role="status" aria-live="polite"></p>
 
-  <div class="layout">
-    <section>
-      <h2>Vendedores cadastrados</h2>
-      <button id="new" type="button" disabled>Novo vendedor</button>
-      <div id="list" class="seller-list"></div>
-    </section>
-
-    <section>
-      <p id="empty">
-        Selecione um vendedor ou clique em Novo vendedor.
-      </p>
-
-      <form id="form" hidden>
-        <h2 id="title">Novo vendedor</h2>
-
-        <div class="fields">
-          <label>
-            Usuário vinculado
-            <select id="user" required></select>
-          </label>
-
-          <label>
-            Código do vendedor no Sankhya
-            <input id="code" readonly>
-          </label>
-
-          <label>
-            Nome do vendedor
-            <input id="name" maxlength="120" required>
-          </label>
-
-          <label>
-            Situação
-            <select id="active">
-              <option value="1">Ativo</option>
-              <option value="0">Inativo</option>
-            </select>
-          </label>
-
-          <label>
-            Comissão padrão de venda (%)
-            <input
-              id="sale"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              required
-            >
-          </label>
-
-          <label>
-            Comissão padrão de devolução (%)
-            <input
-              id="return"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              required
-            >
-          </label>
-        </div>
-
-        <h2 class="exceptions-heading">Exceções por rede ou cliente</h2>
-
-        <p class="muted">
-          A exceção do cliente tem prioridade sobre a da rede.
-          Sem exceção, será utilizada a comissão padrão.
-          Zero significa comissão de 0%.
-        </p>
-
-        <div id="exceptions"></div>
-
-        <button id="add" class="secondary" type="button">
-          Adicionar exceção
-        </button>
-
-        <div class="actions">
-          <button id="save" type="submit">Salvar cadastro</button>
-          <button id="cancel" class="secondary" type="button">
-            Cancelar
-          </button>
-        </div>
-
-        <p id="revision" class="muted"></p>
-      </form>
-
-      <p class="muted">
-        Nesta etapa, o cadastro ainda não gera comissões ou pagamentos
-        e não altera os cálculos da rentabilidade.
-      </p>
-    </section>
+  <div class="lista">
+    <table aria-label="Vendedores cadastrados">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Vendedor</th>
+          <th>Usuário vinculado</th>
+          <th>Ativo</th>
+          <th class="numero">Comissão venda (%)</th>
+          <th class="numero">Comissão devolução (%)</th>
+          <th class="numero">Exceções</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
   </div>
+
+  <form id="form" class="detalhes" hidden novalidate>
+    <div class="resumo">
+      <strong id="title"></strong>
+      <span id="mode" class="modo"></span>
+    </div>
+
+    <div class="guias" role="tablist" aria-label="Dados do vendedor">
+      <button id="tab-general" class="guia" type="button"
+        role="tab" aria-selected="true" aria-controls="general">
+        Geral
+      </button>
+      <button id="tab-groups" class="guia" type="button"
+        role="tab" aria-selected="false" aria-controls="groups" tabindex="-1">
+        Comissão por grupo
+      </button>
+    </div>
+
+    <section id="general" class="painel"
+      role="tabpanel" aria-labelledby="tab-general">
+      <div class="campos">
+        <label>
+          Código do vendedor no Sankhya
+          <input id="code" readonly>
+        </label>
+
+        <label>
+          Nome / Apelido
+          <input id="name" maxlength="120" required>
+        </label>
+
+        <label>
+          Ativo
+          <select id="active">
+            <option value="1">Sim</option>
+            <option value="0">Não</option>
+          </select>
+        </label>
+
+        <label>
+          Usuário vinculado
+          <select id="user" required></select>
+        </label>
+
+        <label>
+          Comissão de venda (%)
+          <input id="sale" type="number" min="0" max="100"
+            step="0.01" required>
+        </label>
+
+        <label>
+          Comissão de devolução (%)
+          <input id="refund" type="number" min="0" max="100"
+            step="0.01" required>
+        </label>
+      </div>
+    </section>
+
+    <section id="groups" class="painel" hidden
+      role="tabpanel" aria-labelledby="tab-groups">
+      <p class="ajuda">
+        Cadastre uma comissão diferente por rede ou cliente.
+        A regra do cliente tem prioridade sobre a da rede.
+        Sem exceção, vale o percentual da guia Geral.
+      </p>
+
+      <div id="exceptions"></div>
+      <p id="no-exceptions" class="ajuda">
+        Nenhuma exceção cadastrada. Serão utilizados os percentuais padrão.
+      </p>
+
+      <button id="add" class="secundario" type="button">
+        + Adicionar exceção
+      </button>
+    </section>
+
+    <footer class="rodape">
+      <button id="save" class="salvar" type="submit">Salvar</button>
+      <button id="cancel" class="secundario" type="button">Cancelar</button>
+      <p id="revision"></p>
+    </footer>
+  </form>
+
+  <p class="aviso">
+    Este cadastro ainda não gera pagamentos nem altera os cálculos da rentabilidade.
+  </p>
 </main>
 
 <script>
@@ -273,10 +489,13 @@ export function comissoesVendedoresPage() {
 
   let model = null;
   let selected = null;
+  let editing = false;
   let busy = false;
+  let dirty = false;
+  let reloadRequired = false;
 
-  function showStatus(message, error = false) {
-    $('status').textContent = message;
+  function message(text, error = false) {
+    $('status').textContent = text;
     $('status').className = error ? 'error' : '';
   }
 
@@ -291,13 +510,8 @@ export function comissoesVendedoresPage() {
         credentials: 'same-origin'
       });
 
-      const contentType = response.headers.get('content-type') || '';
-
-      if (!contentType.includes('application/json')) {
-        throw new Error(
-          'A resposta do portal não foi reconhecida. ' +
-          'Confira sua sessão e recarregue a página.'
-        );
+      if (!(response.headers.get('content-type') || '').includes('application/json')) {
+        throw new Error('Resposta inesperada. Confira sua sessão e recarregue a página.');
       }
 
       const data = await response.json();
@@ -312,144 +526,230 @@ export function comissoesVendedoresPage() {
     }
   }
 
-  function addOption(select, value, text) {
-    const option = document.createElement('option');
-    option.value = String(value);
-    option.textContent = text;
-    select.append(option);
+  function option(select, value, text) {
+    const node = document.createElement('option');
+    node.value = String(value);
+    node.textContent = text;
+    select.append(node);
   }
 
-  function canEdit() {
-    if (!model) return false;
-
-    return selected
-      ? model.permissoes.update
-      : model.permissoes.create;
+  function userName(id) {
+    const user = model.usuarios.find(item => String(item.id) === String(id));
+    return user ? (user.nome || user.username) : 'Vínculo indisponível';
   }
 
-  function updateControls() {
-    const editable = canEdit() && !busy;
+  function rate(value) {
+    return (Number(value) / 100).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
 
-    $('form').querySelectorAll('input, select, button').forEach(node => {
-      node.disabled = !editable;
+  function tab(name) {
+    ['general', 'groups'].forEach(key => {
+      const active = key === name;
+      $(key).hidden = !active;
+      $('tab-' + key).setAttribute('aria-selected', String(active));
+      $('tab-' + key).tabIndex = active ? 0 : -1;
+    });
+  }
+
+  function allowed() {
+    return Boolean(selected
+      ? model?.permissoes.update
+      : model?.permissoes.create);
+  }
+
+  function controls() {
+    const locked = busy || reloadRequired;
+    const writable = editing && allowed() && !locked;
+
+    $('new').disabled = locked || editing || !model?.permissoes.create;
+    $('edit').disabled = locked || editing || !selected || !model?.permissoes.update;
+    $('search').disabled = locked || editing;
+
+    $('form').querySelectorAll('input, select').forEach(node => {
+      node.disabled = !writable;
     });
 
-    $('user').disabled = Boolean(selected) || !editable;
-    $('cancel').disabled = busy;
-    $('new').disabled = busy || !model?.permissoes.create;
+    $('user').disabled = Boolean(selected) || !writable;
+    $('add').hidden = !editing;
+    $('add').disabled = !writable;
+
+    document.querySelectorAll('.remover').forEach(button => {
+      button.hidden = !editing;
+      button.disabled = !writable;
+    });
+
+    $('save').hidden = !editing;
+    $('save').disabled = !writable;
+    $('cancel').hidden = !editing;
+    $('cancel').disabled = locked;
+    $('back').disabled = locked;
+
+    $('mode').textContent = editing
+      ? (selected ? 'Editando cadastro' : 'Novo cadastro')
+      : 'Consulta • clique em Editar para alterar';
   }
 
-  function userChanged(fillName = true) {
-    const user = model.usuarios.find(
-      item => String(item.id) === $('user').value
-    );
+  function renderList() {
+    const term = $('search').value.trim().toLocaleLowerCase('pt-BR');
 
-    $('code').value = user
-      ? user.codigo_vendedor
-      : selected?.codigo_origem || '';
+    const records = model.vendedores
+      .filter(record => {
+        const text = [
+          record.codigo_origem,
+          record.dados.nome,
+          userName(record.user_id)
+        ].join(' ').toLocaleLowerCase('pt-BR');
 
-    if (fillName && user) {
-      $('name').value = user.nome || user.username;
+        return text.includes(term);
+      })
+      .sort((a, b) => a.dados.nome.localeCompare(b.dados.nome, 'pt-BR'));
+
+    $('rows').replaceChildren();
+
+    records.forEach(record => {
+      const row = document.createElement('tr');
+      row.dataset.id = record.id;
+      row.tabIndex = 0;
+      row.classList.toggle('selecionado', selected?.id === record.id);
+      row.setAttribute('aria-label', 'Selecionar ' + record.dados.nome);
+
+      const values = [
+        record.codigo_origem,
+        record.dados.nome,
+        userName(record.user_id),
+        record.dados.ativo ? 'Sim' : 'Não',
+        rate(record.dados.venda),
+        rate(record.dados.devolucao),
+        record.dados.excecoes.length
+      ];
+
+      values.forEach((value, index) => {
+        const cell = document.createElement('td');
+        cell.textContent = value;
+        if (index >= 4) cell.className = 'numero';
+        if (index === 3) {
+          cell.className = 'situacao ' + (record.dados.ativo ? 'ativo' : 'inativo');
+        }
+        row.append(cell);
+      });
+
+      function select() {
+        if (busy || reloadRequired) return;
+        if (editing) {
+          message('Salve ou cancele a edição antes de selecionar outro vendedor.', true);
+          return;
+        }
+        message('');
+        openRecord(record, false);
+      }
+
+      row.addEventListener('click', select);
+      row.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          select();
+        }
+      });
+
+      $('rows').append(row);
+    });
+
+    if (!records.length) {
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.textContent = model.vendedores.length
+        ? 'Nenhum vendedor encontrado para esta pesquisa.'
+        : 'Nenhum vendedor cadastrado. Clique em + para cadastrar.';
+      row.append(cell);
+      $('rows').append(row);
     }
+
+    $('count').textContent =
+      records.length + ' de ' + model.vendedores.length + ' vendedor(es)';
+  }
+
+  function exceptionEmpty() {
+    $('no-exceptions').hidden = $('exceptions').children.length > 0;
   }
 
   function addException(data = {
-    tipo: 'rede',
-    alvo: '',
-    venda: '',
-    devolucao: ''
+    tipo: 'rede', alvo: '', venda: '', devolucao: ''
   }) {
     const row = document.createElement('div');
-    row.className = 'exception';
+    row.className = 'excecao';
 
-    const destinationFields = document.createElement('div');
-    destinationFields.className = 'exception-fields';
-
-    const rateFields = document.createElement('div');
-    rateFields.className = 'exception-rates';
-
-    row.append(destinationFields, rateFields);
-
-    function field(container, title, control) {
+    function field(title, tag) {
       const label = document.createElement('label');
       label.textContent = title;
-      label.append(control);
-      container.append(label);
-      return control;
+      const node = document.createElement(tag);
+      label.append(node);
+      row.append(label);
+      return node;
     }
 
-    const type = field(
-      destinationFields,
-      'Tipo de exceção',
-      document.createElement('select')
-    );
-
-    addOption(type, 'rede', 'Rede');
-    addOption(type, 'cliente', 'Cliente');
+    const type = field('Tipo', 'select');
+    option(type, 'rede', 'Rede');
+    option(type, 'cliente', 'Cliente');
     type.value = data.tipo;
 
-    const target = field(
-      destinationFields,
-      'Aplicar para',
-      document.createElement('select')
-    );
-
+    const target = field('Rede / Cliente', 'select');
     target.required = true;
 
-    function fillTargets() {
+    function targets() {
       target.replaceChildren();
-      addOption(target, '', 'Selecione');
+      option(target, '', 'Selecione');
 
       if (type.value === 'rede') {
-        model.redes.forEach(rede => {
-          addOption(target, rede, rede);
-        });
+        model.redes.forEach(name => option(target, name, name));
       } else {
-        model.clientes.forEach(cliente => {
-          addOption(
-            target,
-            cliente.codigo,
-            cliente.nome + ' — ' + cliente.codigo
-          );
+        model.clientes.forEach(client => {
+          option(target, client.codigo, client.nome + ' — ' + client.codigo);
         });
       }
     }
 
-    fillTargets();
+    targets();
+
+    if (
+      data.alvo &&
+      ![...target.options].some(item => item.value === String(data.alvo))
+    ) {
+      option(target, data.alvo, data.alvo + ' — cadastro indisponível');
+    }
+
     target.value = data.alvo;
-    type.addEventListener('change', fillTargets);
+    type.addEventListener('change', targets);
 
-    function rateField(title, value) {
-      const input = field(
-        rateFields,
-        title,
-        document.createElement('input')
-      );
-
+    function percent(title, value) {
+      const input = field(title, 'input');
       input.type = 'number';
       input.min = '0';
       input.max = '100';
       input.step = '0.01';
       input.required = true;
       input.value = value;
-
       return input;
     }
 
-    const sale = rateField('Comissão de venda (%)', data.venda);
-    const refund = rateField('Comissão de devolução (%)', data.devolucao);
+    const sale = percent('Comissão venda (%)', data.venda);
+    const refund = percent('Comissão devolução (%)', data.devolucao);
 
     const remove = document.createElement('button');
     remove.type = 'button';
-    remove.className = 'secondary';
+    remove.className = 'remover';
     remove.textContent = 'Remover';
-
     remove.addEventListener('click', () => {
-      if (!busy && canEdit()) row.remove();
+      if (!editing || busy || reloadRequired) return;
+      row.remove();
+      dirty = true;
+      exceptionEmpty();
     });
 
-    rateFields.append(remove);
-
+    row.append(remove);
     row.read = () => ({
       tipo: type.value,
       alvo: target.value,
@@ -458,125 +758,175 @@ export function comissoesVendedoresPage() {
     });
 
     $('exceptions').append(row);
+    exceptionEmpty();
   }
 
-  function edit(record) {
+  function userChanged(fillName) {
+    const user = model.usuarios.find(
+      item => String(item.id) === $('user').value
+    );
+
+    $('code').value = user?.codigo_vendedor || selected?.codigo_origem || '';
+
+    if (fillName && user) {
+      $('name').value = user.nome || user.username;
+    }
+  }
+
+  function openRecord(record, editMode) {
     selected = record;
+    editing = editMode;
+    dirty = false;
+
     $('form').hidden = false;
-    $('empty').hidden = true;
-    $('title').textContent = record ? 'Editar vendedor' : 'Novo vendedor';
+    $('title').textContent = record
+      ? record.codigo_origem + ' — ' + record.dados.nome
+      : 'Novo vendedor';
 
     $('user').replaceChildren();
-    addOption($('user'), '', 'Selecione um usuário');
+    option($('user'), '', 'Selecione um usuário');
 
     model.usuarios.forEach(user => {
-      addOption(
+      option(
         $('user'),
         user.id,
         (user.nome || user.username) + ' — ' + user.codigo_vendedor
       );
     });
 
-    // Preserva a identificação de um vínculo antigo que não esteja
-    // mais disponível na lista. O servidor verificará antes de salvar.
     if (
       record &&
       !model.usuarios.some(user => String(user.id) === String(record.user_id))
     ) {
-      addOption(
-        $('user'),
-        record.user_id,
-        'Usuário vinculado indisponível — revisar vínculo'
-      );
+      option($('user'), record.user_id, 'Vínculo indisponível — revisar');
     }
 
     const data = record?.dados;
-
     $('user').value = record ? String(record.user_id) : '';
     $('name').value = data?.nome || '';
     $('active').value = data?.ativo === false ? '0' : '1';
     $('sale').value = data ? data.venda / 100 : '';
-    $('return').value = data ? data.devolucao / 100 : '';
+    $('refund').value = data ? data.devolucao / 100 : '';
 
     $('exceptions').replaceChildren();
-
-    (data?.excecoes || []).forEach(exception => {
+    (data?.excecoes || []).forEach(item => {
       addException({
-        ...exception,
-        venda: exception.venda / 100,
-        devolucao: exception.devolucao / 100
+        ...item,
+        venda: item.venda / 100,
+        devolucao: item.devolucao / 100
       });
     });
+
+    exceptionEmpty();
+    userChanged(false);
 
     $('revision').textContent = record
       ? 'Revisão ' + record.revisao +
-        ' · Alterado por ' + record.atualizado_por +
-        ' · ' + new Date(record.atualizado_em).toLocaleString('pt-BR')
+        ' • ' + record.atualizado_por +
+        ' • ' + new Date(record.atualizado_em).toLocaleString('pt-BR')
       : '';
 
-    userChanged(false);
-    updateControls();
+    tab('general');
+    renderList();
+    controls();
   }
 
-  async function load() {
-    model = await api();
-    $('list').replaceChildren();
+  function mayLeave() {
+    if (busy) return false;
+    return !dirty || confirm('Descartar as alterações não salvas?');
+  }
 
-    model.vendedores.forEach(record => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'secondary';
+  $('back').addEventListener('click', () => {
+    if (!mayLeave()) return;
+    dirty = false;
+    if (history.length > 1) history.back();
+    else location.href = '/';
+  });
 
-      button.textContent =
-        record.dados.nome +
-        (record.dados.ativo ? '' : ' (inativo)');
+  $('home').addEventListener('click', event => {
+    if (!mayLeave()) event.preventDefault();
+    else dirty = false;
+  });
 
-      button.addEventListener('click', () => {
-        if (!busy) {
-          showStatus('');
-          edit(record);
-        }
-      });
+  window.addEventListener('beforeunload', event => {
+    if (!dirty && !busy) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 
-      $('list').append(button);
+  ['general', 'groups'].forEach(name => {
+    $('tab-' + name).addEventListener('click', () => tab(name));
+
+    $('tab-' + name).addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'general'
+        : event.key === 'End' ? 'groups'
+        : name === 'general' ? 'groups' : 'general';
+      tab(next);
+      $('tab-' + next).focus();
     });
+  });
 
-    if (!model.vendedores.length) {
-      $('list').textContent = 'Nenhum vendedor cadastrado.';
-    }
-
-    updateControls();
-  }
-
-  $('user').addEventListener('change', () => userChanged());
+  $('search').addEventListener('input', renderList);
 
   $('new').addEventListener('click', () => {
-    if (!busy && model?.permissoes.create) {
-      showStatus('');
-      edit(null);
-    }
+    if (!model?.permissoes.create || editing || busy || reloadRequired) return;
+    message('');
+    openRecord(null, true);
+    $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  $('edit').addEventListener('click', () => {
+    if (!selected || !model?.permissoes.update || busy || reloadRequired) return;
+    message('');
+    openRecord(selected, true);
+    $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  $('user').addEventListener('change', () => userChanged(true));
+
+  $('form').addEventListener('input', () => {
+    if (editing) dirty = true;
+  });
+
+  $('form').addEventListener('change', () => {
+    if (editing) dirty = true;
   });
 
   $('add').addEventListener('click', () => {
-    if (!busy && canEdit()) {
-      addException();
-      updateControls();
-    }
+    if (!editing || !allowed() || busy || reloadRequired) return;
+    addException();
+    dirty = true;
+    controls();
   });
 
   $('cancel').addEventListener('click', () => {
-    if (busy) return;
+    if (busy || reloadRequired || !mayLeave()) return;
+    dirty = false;
+    editing = false;
+    message('');
 
-    selected = null;
-    $('form').hidden = true;
-    $('empty').hidden = false;
-    showStatus('');
+    if (selected) openRecord(selected, false);
+    else {
+      $('form').hidden = true;
+      controls();
+    }
   });
 
   $('form').addEventListener('submit', async event => {
     event.preventDefault();
 
-    if (busy || !canEdit()) return;
+    if (!editing || !allowed() || busy || reloadRequired) return;
+
+    const invalid = [...$('form').querySelectorAll('input, select')]
+      .find(input => !input.disabled && !input.checkValidity());
+
+    if (invalid) {
+      tab(invalid.closest('#groups') ? 'groups' : 'general');
+      invalid.reportValidity();
+      return;
+    }
 
     const payload = {
       id: selected?.id,
@@ -585,76 +935,62 @@ export function comissoesVendedoresPage() {
       nome: $('name').value,
       ativo: $('active').value === '1',
       venda: $('sale').value,
-      devolucao: $('return').value,
+      devolucao: $('refund').value,
       excecoes: [...$('exceptions').children].map(row => row.read())
     };
 
     busy = true;
-    updateControls();
-    showStatus('Salvando cadastro...');
-
-    let saved = null;
+    controls();
+    message('Salvando cadastro...');
 
     try {
-      saved = await api({
+      const saved = await api({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      await load();
+      dirty = false;
+      const fresh = await api();
+      const record = fresh.vendedores.find(item => item.id === saved.id);
 
-      const record = model.vendedores.find(item => item.id === saved.id);
+      if (!record) throw new Error('Não foi possível atualizar o cadastro salvo.');
 
-      if (!record) {
-        throw new Error('O cadastro salvo não apareceu na atualização.');
-      }
-
-      edit(record);
-      showStatus('Cadastro salvo com sucesso.');
+      model = fresh;
+      $('search').value = '';
+      openRecord(record, false);
+      message('Cadastro salvo com sucesso.');
     } catch (error) {
-      let message = error.message;
-
-      if (saved) {
-        message =
-          'O cadastro foi salvo, mas a tela não conseguiu atualizar. ' +
-          'Recarregue a página para conferir.';
-      } else if (
-        error.name === 'AbortError' ||
-        error instanceof TypeError
-      ) {
-        message =
-          'Não foi possível confirmar a gravação. ' +
-          'Recarregue a página e confira o cadastro antes de tentar novamente.';
-      }
-
-      showStatus(message, true);
-
-      // Evita reenviar um cadastro após uma gravação sem confirmação.
-      if (saved || error.name === 'AbortError' || error instanceof TypeError) {
-        $('form').hidden = true;
-        $('empty').hidden = false;
-        $('empty').textContent = 'Recarregue a página para continuar.';
-        return;
-      }
+      reloadRequired = true;
+      dirty = false;
+      message(
+        (error.name === 'AbortError'
+          ? 'Tempo de espera excedido.'
+          : error.message) +
+        ' Recarregue a página e confira o cadastro antes de tentar novamente.',
+        true
+      );
     } finally {
       busy = false;
-      updateControls();
+      controls();
     }
   });
 
-  showStatus('Carregando vendedores...');
+  message('Carregando vendedores...');
 
-  load()
-    .then(() => showStatus(''))
-    .catch(error => {
-      showStatus(
-        error.name === 'AbortError'
-          ? 'A consulta demorou demais. Recarregue a página.'
-          : error.message,
-        true
-      );
-    });
+  api().then(data => {
+    model = data;
+    renderList();
+    controls();
+    message('');
+  }).catch(error => {
+    message(
+      error.name === 'AbortError'
+        ? 'A consulta demorou demais. Recarregue a página.'
+        : error.message,
+      true
+    );
+  });
 </script>
 </body>
 </html>
