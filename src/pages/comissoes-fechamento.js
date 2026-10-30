@@ -170,6 +170,22 @@ export function comissoesFechamentoPage() {
     .filtros { padding: 16px; }
     #pesquisa { width: 100%; }
   }
+
+  .botao-fechar {
+    border: 0;
+    border-radius: 7px;
+    padding: 9px 14px;
+    color: white;
+    background: #138545;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .botao-fechar:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+  
 </style>
 </head>
 
@@ -214,6 +230,7 @@ export function comissoesFechamentoPage() {
           <th class="numero">Comissão líquida</th>
           <th>Situação</th>
           <th>Observação</th>
+          <th>Ação</th>
         </tr>
       </thead>
       <tbody id="linhas"></tbody>
@@ -238,6 +255,8 @@ export function comissoesFechamentoPage() {
 
   let linhas = [];
   let ocupado = false;
+  let podeFechar = false;
+  let bloqueado = false;
 
   function moeda(valor) {
     return valor === null || valor === undefined
@@ -307,6 +326,25 @@ export function comissoesFechamentoPage() {
         tr.append(td);
       });
 
+            const tdAcao = document.createElement('td');
+
+      if (podeFechar && item.situacao === 'EM_ABERTO') {
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'botao-fechar';
+        botao.textContent = 'Fechar';
+        botao.title = 'Conferir e fechar comissão deste vendedor';
+        botao.disabled = ocupado || bloqueado;
+
+        botao.addEventListener('click', () => confirmarFechamento(item));
+
+        tdAcao.append(botao);
+      } else {
+        tdAcao.textContent = '—';
+      }
+
+      tr.append(tdAcao);
+
       fragmento.append(tr);
     }
 
@@ -314,6 +352,7 @@ export function comissoesFechamentoPage() {
       const tr = document.createElement('tr');
       const td = document.createElement('td');
       td.colSpan = 8;
+      td.colSpan = 9;
       td.textContent = 'Nenhum vendedor encontrado.';
       tr.append(td);
       fragmento.append(tr);
@@ -366,6 +405,7 @@ export function comissoesFechamentoPage() {
       }
 
       linhas = dados.linhas;
+      podeFechar = Boolean(dados.permissoes?.fechar);
       desenhar();
 
       $('aviso').textContent = dados.aviso || '';
@@ -382,6 +422,128 @@ export function comissoesFechamentoPage() {
       clearTimeout(timer);
       ocupado = false;
       $('mes').disabled = false;
+    }
+  }
+
+    async function enviarAcao(dados) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+
+    try {
+      const response = await fetch(
+        '/api/comissoes/fechamentos/acao',
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(dados),
+          signal: controller.signal
+        }
+      );
+
+      if (
+        !(response.headers.get('content-type') || '')
+          .includes('application/json')
+      ) {
+        throw new Error('Resposta inesperada. Confira sua sessão.');
+      }
+
+      const resultado = await response.json();
+
+      if (!response.ok) {
+        throw new Error(resultado.error || 'Não foi possível continuar.');
+      }
+
+      return resultado;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function confirmarFechamento(item) {
+    if (ocupado || bloqueado || !podeFechar) return;
+
+    ocupado = true;
+    $('mes').disabled = true;
+    desenhar();
+    mensagem('Conferindo os valores antes do fechamento...');
+
+    const mes = $('mes').value;
+
+    try {
+      const conferencia = await enviarAcao({
+        acao: 'preparar',
+        mes,
+        vendedor: item.codigo
+      });
+
+      const valorExato = new Intl.NumberFormat('pt-BR', {
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4
+      });
+
+      const confirmar = window.confirm(
+        'FECHAR COMISSÃO\n\n' +
+        'Vendedor: ' + conferencia.nome + '\n' +
+        'Mês: ' + mes + '\n' +
+        'Movimentos: ' + conferencia.resumo.movimentos + '\n\n' +
+        'Comissão das vendas: ' +
+          moeda(conferencia.resumo.comissaoVendas) + '\n' +
+        'Perda por devoluções: ' +
+          moeda(conferencia.resumo.perdaDevolucoes) + '\n' +
+        'Comissão líquida: ' +
+          moeda(conferencia.resumo.comissaoLiquida) + '\n' +
+        'Valor preservado: ' +
+          valorExato.format(Number(conferencia.resumo.comissaoLiquida)) +
+          '\n\n' +
+        'Última importação: ' +
+          new Date(conferencia.dadosImportadosEm).toLocaleString(
+            'pt-BR',
+            { timeZone: 'America/Sao_Paulo' }
+          ) +
+          '\n\n' +
+        'Os valores serão guardados para este mês.\n' +
+        'Esta ação não registra pagamento.\n' +
+        'A reabertura ainda não está disponível nesta etapa.\n\n' +
+        'Deseja confirmar?'
+      );
+
+      if (!confirmar) {
+        mensagem('');
+        return;
+      }
+
+      mensagem('Gravando fechamento...');
+
+      await enviarAcao({
+        acao: 'confirmar',
+        mes,
+        vendedor: item.codigo,
+        assinatura: conferencia.assinatura,
+        operacaoId: crypto.randomUUID()
+      });
+
+      bloqueado = true;
+      mensagem('Fechamento registrado. Atualizando a tela...');
+      location.reload();
+    } catch (erro) {
+      bloqueado = true;
+
+      mensagem(
+        (
+          erro.name === 'AbortError'
+            ? 'A solicitação demorou demais.'
+            : erro.message
+        ) +
+        ' Atualize a página para conferir a situação antes de tentar novamente.',
+        true
+      );
+    } finally {
+      ocupado = false;
+      $('mes').disabled = bloqueado;
+      desenhar();
     }
   }
 
