@@ -40,7 +40,7 @@ function decimal4(valor) {
   );
 }
 
-function resumir(linhas) {
+export function resumir(linhas) {
   let vendas = 0n;
   let devolucoes = 0n;
   let comissaoVendas = 0n;
