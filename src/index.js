@@ -152,6 +152,43 @@ const portal = {
 
     try {
 
+                  if (
+        url.pathname === '/comissoes/importacao' ||
+        url.pathname === '/api/comissoes/importacao'
+      ) {
+        const acesso = await obterAcessoModulo(
+          request,
+          env,
+          'COMISSOES_CADASTRO'
+        );
+
+        if (
+          !acesso?.session ||
+          !acesso?.permissions?.view ||
+          !acesso?.permissions?.update
+        ) {
+          return json({
+            error: 'Sem permissão para sincronizar os dados de comissão.'
+          }, 403);
+        }
+
+        if (url.pathname === '/comissoes/importacao') {
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405);
+          }
+
+          return importacaoComissoesPage();
+        }
+
+        return await importarComissoes(
+          request,
+          env,
+          acesso
+        );
+      }
+
                   if (url.pathname === '/api/comissoes/conferencia-baixas') {
         const acesso = await obterAcessoModulo(
           request,
