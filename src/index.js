@@ -14,7 +14,7 @@ import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
-import {conferirBaixasComissoes} from './comissoes-sankhya.js';
+import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
 import {
   importarComissoes,
   importacaoComissoesPage
