@@ -157,17 +157,88 @@ export async function demonstrativoComissoes(
     : codigoProprio;
 
   try {
-    const previa = await calcularPreviaComissoes(
-      env,
-      url.searchParams.get('mes')
+     const mes = url.searchParams.get('mes') || '';
+
+    if (
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes) ||
+      mes < '2026-10' ||
+      mes > '2100-12'
+    ) {
+      return resposta({
+        error: 'Informe um mês válido a partir de outubro de 2026.'
+      }, 400);
+    }
+
+    // codigoFiltro já foi validado pelas permissões acima.
+    const consultaFechados = await env.DB.prepare(`
+      SELECT *
+      FROM comissao_fechamentos
+      WHERE mes = ?
+        AND origem = 'sankhya'
+        AND status = 'FECHADO'
+        AND (? = '' OR codigo_origem = ?)
+    `).bind(mes, codigoFiltro, codigoFiltro).all();
+
+    const fechados = consultaFechados.results || [];
+
+    const consultaItens = await env.DB.prepare(`
+      SELECT
+        I.fechamento_id,
+        I.calculo_snapshot
+      FROM comissao_fechamento_itens I
+      INNER JOIN comissao_fechamentos F
+        ON F.id = I.fechamento_id
+      WHERE F.mes = ?
+        AND F.origem = 'sankhya'
+        AND F.status = 'FECHADO'
+        AND (? = '' OR F.codigo_origem = ?)
+    `).bind(mes, codigoFiltro, codigoFiltro).all();
+
+    const itensFechados = consultaItens.results || [];
+
+    for (const fechamento of fechados) {
+      const quantidade = itensFechados.filter(
+        item => item.fechamento_id === fechamento.id
+      ).length;
+
+      if (quantidade !== fechamento.quantidade_movimentos) {
+        throw new Error('Quantidade de itens do fechamento divergente.');
+      }
+    }
+
+    const linhasFechadas = itensFechados.map(item => ({
+      ...JSON.parse(item.calculo_snapshot),
+      fechamentoId: item.fechamento_id
+    }));
+
+    const codigosFechados = new Set(
+      fechados.map(item => item.codigo_origem)
     );
 
-    // Filtra no servidor ANTES de montar os dados da resposta.
-    const linhasPermitidas = podeVerTodos
-      ? previa.linhas
-      : previa.linhas.filter(
-          linha => linha.vendedorCodigo === codigoProprio
-        );
+    const soFechado = Boolean(codigoFiltro && fechados.length === 1);
+
+    // Quando o vendedor já está fechado, não recalcula sua comissão.
+    const previa = soFechado
+      ? null
+      : await calcularPreviaComissoes(env, mes);
+
+    const linhasDaPrevia = (previa?.linhas || []).filter(linha =>
+      !codigosFechados.has(linha.vendedorCodigo) &&
+      (podeVerTodos || linha.vendedorCodigo === codigoProprio)
+    );
+
+    const linhasPermitidas = [
+      ...linhasDaPrevia,
+      ...linhasFechadas
+    ];
+
+    const etapa = soFechado
+      ? 'FECHADO'
+      : fechados.length
+        ? linhasDaPrevia.length
+          ? 'MISTO'
+          : 'FECHADO'
+        : 'PREVIA';
 
     const vendedores = new Map();
 
@@ -192,21 +263,36 @@ export async function demonstrativoComissoes(
       })
     );
 
-    return resposta({
-      mes: previa.mes,
-      etapa: 'PREVIA',
+       return resposta({
+      mes,
+      etapa,
       podeVerTodos: Boolean(podeVerTodos),
       vendedorSelecionado: codigoFiltro,
 
-      dadosImportadosEm: previa.dadosImportadosEm,
-      calculadoEm: previa.calculadoEm,
-      versaoCalculo: previa.versaoCalculo,
+      dadosImportadosEm: soFechado
+        ? fechados[0].dados_importados_em
+        : previa?.dadosImportadosEm || null,
+
+      calculadoEm: soFechado
+        ? fechados[0].calculado_em
+        : previa?.calculadoEm || null,
+
+      versaoCalculo: soFechado
+        ? fechados[0].versao_calculo
+        : previa?.versaoCalculo || null,
+
+      fechadoEm: soFechado
+        ? fechados[0].fechado_em
+        : null,
 
       vendedores: [...vendedores.values()].sort(
         (a, b) => a.nome.localeCompare(b.nome, 'pt-BR')
       ),
 
-      resumo: resumir(linhas),
+      resumo: soFechado
+        ? JSON.parse(fechados[0].resumo_snapshot)
+        : resumir(linhas),
+
       linhas
     });
   } catch (e) {
