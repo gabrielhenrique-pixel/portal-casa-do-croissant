@@ -7,6 +7,10 @@ export function comissoesDemonstrativoPage() {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Demonstrativo de Comissões</title>
 
+  #exportar-excel {
+    background: #138545;
+  }
+
 <style>
   * { box-sizing: border-box; }
 
@@ -389,6 +393,11 @@ export function comissoesDemonstrativoPage() {
       PDF
     </button>
 
+        <button id="exportar-excel" class="botao-exportar"
+      type="button" title="Exportar tabela para Excel" disabled>
+      Excel
+    </button>
+
     <span class="selo">PRÉVIA — NÃO FECHADO</span>
   </div>
 
@@ -523,6 +532,7 @@ export function comissoesDemonstrativoPage() {
   function limparResultado() {
     dadosExibidos = null;
     $('exportar-pdf').disabled = true;
+    $('exportar-excel').disabled = true;
     $('identificacao-impressao').textContent = '';
     ['vendas', 'devolucoes', 'comissao', 'perda', 'liquida']
       .forEach(id => $(id).textContent = '—');
@@ -737,6 +747,8 @@ export function comissoesDemonstrativoPage() {
         '\nDados importados em: ' + dataHora(dados.dadosImportadosEm);
 
       $('exportar-pdf').disabled = dados.linhas.length === 0;
+            $('exportar-excel').disabled =
+        exportandoExcel || dados.linhas.length === 0;
       mensagem('');
     } catch (erro) {
       mensagem(
@@ -771,6 +783,212 @@ export function comissoesDemonstrativoPage() {
 
     window.print();
   });
+
+       let exportandoExcel = false;
+  let bibliotecaExcel = null;
+
+  function numeroExcel(valor) {
+    if (valor === null || valor === undefined || valor === '') {
+      return null;
+    }
+
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+      throw new Error('Existe um valor inválido na tabela.');
+    }
+
+    return numero;
+  }
+
+  function dataExcel(valor) {
+    if (!valor) return null;
+
+    const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+
+    if (!partes) {
+      throw new Error('Existe uma data inválida na tabela.');
+    }
+
+    const ano = Number(partes[1]);
+    const mes = Number(partes[2]);
+    const dia = Number(partes[3]);
+    const data = new Date(Date.UTC(ano, mes - 1, dia));
+
+    if (
+      data.getUTCFullYear() !== ano ||
+      data.getUTCMonth() !== mes - 1 ||
+      data.getUTCDate() !== dia
+    ) {
+      throw new Error('Existe uma data inválida na tabela.');
+    }
+
+    return (
+      data.getTime() - Date.UTC(1899, 11, 30)
+    ) / 86400000;
+  }
+
+  async function exportarTabelaExcel() {
+    if (
+      ocupado ||
+      exportandoExcel ||
+      !dadosExibidos ||
+      !dadosExibidos.linhas.length
+    ) {
+      return;
+    }
+
+    const dados = dadosExibidos;
+    const botao = $('exportar-excel');
+
+    exportandoExcel = true;
+    botao.disabled = true;
+    botao.textContent = 'Gerando...';
+
+    try {
+      if (!bibliotecaExcel) {
+        bibliotecaExcel = import(
+          'https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs'
+        ).catch(() => {
+          bibliotecaExcel = null;
+          throw new Error(
+            'Não foi possível carregar a exportação Excel. ' +
+            'Confira a conexão e tente novamente.'
+          );
+        });
+      }
+
+      const XLSX = await bibliotecaExcel;
+
+      if (ocupado || dadosExibidos !== dados) {
+        throw new Error(
+          'O filtro foi alterado. Aguarde o carregamento e clique em Excel novamente.'
+        );
+      }
+
+      const cabecalho = [
+        'Baixa',
+        'Nota',
+        'Financeiro',
+        'Vendedor',
+        'Cliente',
+        'Movimento',
+        'Valor da nota',
+        'Base comissão',
+        '%',
+        'Comissão',
+        'Regra',
+        'Situação'
+      ];
+
+      const linhas = dados.linhas.map(linha => {
+        const taxa = numeroExcel(linha.percentual);
+
+        const regra = linha.regraAplicada === 'padrao'
+          ? 'Padrão'
+          : linha.regraAplicada === 'sem_comissao'
+            ? 'Sem comissão'
+            : linha.regraAplicada || '—';
+
+        return [
+          dataExcel(linha.dataBaixa),
+          String(linha.numeroNota ?? ''),
+          String(linha.financeiroId ?? ''),
+          String(linha.vendedorNome ?? ''),
+          String(linha.clienteNome ?? ''),
+          linha.tipo === 'venda' ? 'Venda' : 'Devolução',
+          numeroExcel(linha.valorNota),
+          numeroExcel(linha.baseCalculo),
+          taxa === null ? null : taxa / 100,
+          numeroExcel(linha.comissao),
+          regra,
+          situacoes[linha.status] || String(linha.status ?? '')
+        ];
+      });
+
+      const planilha = XLSX.utils.aoa_to_sheet([
+        cabecalho,
+        ...linhas
+      ]);
+
+      const formatos = {
+        0: 'dd/mm/yyyy',
+        6: '#,##0.00',
+        7: '#,##0.00',
+        8: '0.00%',
+        9: '#,##0.0000'
+      };
+
+      for (let linha = 1; linha <= linhas.length; linha++) {
+        for (const [coluna, formato] of Object.entries(formatos)) {
+          const endereco = XLSX.utils.encode_cell({
+            r: linha,
+            c: Number(coluna)
+          });
+
+          if (planilha[endereco]) {
+            planilha[endereco].z = formato;
+          }
+        }
+      }
+
+      planilha['!cols'] = [
+        { wch: 12 },
+        { wch: 15 },
+        { wch: 15 },
+        { wch: 25 },
+        { wch: 48 },
+        { wch: 14 },
+        { wch: 19 },
+        { wch: 19 },
+        { wch: 10 },
+        { wch: 19 },
+        { wch: 24 },
+        { wch: 30 }
+      ];
+
+      planilha['!autofilter'] = {
+        ref: planilha['!ref']
+      };
+
+      const arquivo = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+        arquivo,
+        planilha,
+        'Comissões'
+      );
+
+      const vendedorArquivo = String(
+        dados.vendedorSelecionado || 'todos'
+      ).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      const nomeArquivo =
+        'comissoes-previa-' + dados.mes +
+        '-vendedor-' + vendedorArquivo + '.xlsx';
+
+      XLSX.writeFileXLSX(arquivo, nomeArquivo, {
+        compression: true
+      });
+
+      mensagem('');
+    } catch (erro) {
+      mensagem(
+        erro.message || 'Não foi possível exportar a tabela.',
+        true
+      );
+    } finally {
+      exportandoExcel = false;
+      botao.textContent = 'Excel';
+      botao.disabled =
+        ocupado || !dadosExibidos || !dadosExibidos.linhas.length;
+    }
+  }
+
+  $('exportar-excel').addEventListener(
+    'click',
+    exportarTabelaExcel
+  );
 
   $('mes').addEventListener('change', carregar);
   $('vendedor').addEventListener('change', carregar);
