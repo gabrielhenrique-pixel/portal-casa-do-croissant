@@ -19,6 +19,9 @@ import {
   importarComissoes,
   importacaoComissoesPage
 } from './comissoes-importacao.js';
+import {
+  conferirCalculoComissoes
+} from './comissoes-calculo.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -155,6 +158,20 @@ const portal = {
     const url = new URL(request.url);
 
     try {
+
+            if (url.pathname === '/api/comissoes/conferencia-calculo') {
+        const acesso = await obterAcessoModulo(
+          request,
+          env,
+          'COMISSOES_CADASTRO'
+        );
+
+        return await conferirCalculoComissoes(
+          request,
+          env,
+          acesso
+        );
+      }
 
                   if (
         url.pathname === '/comissoes/importacao' ||
