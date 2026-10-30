@@ -219,6 +219,145 @@ export function comissoesDemonstrativoPage() {
     #campo-vendedor { width: 100%; }
     .selo { margin-left: 0; }
   }
+
+  .botao-exportar {
+    height: 40px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 7px;
+    background: #1769aa;
+    color: white;
+    font: 700 14px Arial, sans-serif;
+    cursor: pointer;
+  }
+
+  .botao-exportar:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+
+  #identificacao-impressao {
+    display: none;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  @media print {
+    body {
+      background: white;
+      color: black;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    main {
+      max-width: none;
+      padding: 0;
+    }
+
+    .navegacao,
+    .filtros,
+    #status,
+    .informacoes {
+      display: none !important;
+    }
+
+    .topo {
+      padding: 0 0 4mm;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    h1 {
+      font-size: 18px;
+    }
+
+    #identificacao-impressao {
+      display: block;
+      margin: 0 0 5mm;
+      font-size: 10px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .cards {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 2mm;
+      break-inside: avoid;
+    }
+
+    .card {
+      padding: 3mm;
+      border-radius: 2mm;
+      box-shadow: none;
+    }
+
+    .card span {
+      min-height: 24px;
+      font-size: 8px;
+    }
+
+    .card strong {
+      margin-top: 2mm;
+      font-size: 14px;
+    }
+
+    .card.total {
+      grid-column: auto;
+    }
+
+    #aviso {
+      font-size: 10px;
+      break-inside: avoid;
+    }
+
+    .tabela {
+      overflow: visible;
+      max-height: none;
+      margin-top: 5mm;
+      border: 0;
+      border-radius: 0;
+    }
+
+    table {
+      width: 100%;
+      table-layout: fixed;
+      font-size: 8px;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    tr {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    th, td {
+      padding: 2mm 1mm;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      vertical-align: top;
+    }
+
+    th {
+      position: static;
+    }
+
+    th:nth-child(4),
+    th:nth-child(5) {
+      width: 12%;
+    }
+
+    th:nth-child(9) {
+      width: 5%;
+    }
+  }
+  
 </style>
 </head>
 
@@ -245,10 +384,17 @@ export function comissoesDemonstrativoPage() {
       <select id="vendedor"></select>
     </label>
 
+        <button id="exportar-pdf" class="botao-exportar"
+      type="button" title="Salvar demonstrativo em PDF" disabled>
+      PDF
+    </button>
+
     <span class="selo">PRÉVIA — NÃO FECHADO</span>
   </div>
 
   <p id="status" role="status" aria-live="polite"></p>
+
+    <p id="identificacao-impressao"></p>
 
   <div class="cards">
     <div class="card">
@@ -349,6 +495,7 @@ export function comissoesDemonstrativoPage() {
   };
 
   let ocupado = false;
+  let dadosExibidos = null;
 
   function moeda(valor) {
     return valor === null || valor === undefined
@@ -374,6 +521,9 @@ export function comissoesDemonstrativoPage() {
   }
 
   function limparResultado() {
+    dadosExibidos = null;
+    $('exportar-pdf').disabled = true;
+    $('identificacao-impressao').textContent = '';
     ['vendas', 'devolucoes', 'comissao', 'perda', 'liquida']
       .forEach(id => $(id).textContent = '—');
 
@@ -561,8 +711,32 @@ export function comissoesDemonstrativoPage() {
         throw new Error(dados.error || 'Não foi possível carregar o demonstrativo.');
       }
 
-      permiteSelecionar = dados.podeVerTodos;
+            permiteSelecionar = dados.podeVerTodos;
       desenhar(dados);
+      dadosExibidos = dados;
+
+      const vendedorRelatorio = dados.vendedorSelecionado
+        ? dados.vendedores.find(
+            item => String(item.codigo) === String(dados.vendedorSelecionado)
+          )
+        : null;
+
+      const nomeRelatorio = dados.vendedorSelecionado
+        ? dados.vendedorSelecionado + ' — ' +
+          (vendedorRelatorio?.nome || 'Sem movimentos no período')
+        : 'Todos os vendedores';
+
+      const partesMes = dados.mes.split('-');
+      const periodoRelatorio = partesMes[1] + '/' + partesMes[0];
+
+      $('identificacao-impressao').textContent =
+        'Mês da baixa: ' + periodoRelatorio +
+        ' | Vendedor: ' + nomeRelatorio +
+        '\nPRÉVIA — NÃO FECHADO' +
+        ' | Consulta: ' + dataHora(dados.calculadoEm) +
+        '\nDados importados em: ' + dataHora(dados.dadosImportadosEm);
+
+      $('exportar-pdf').disabled = dados.linhas.length === 0;
       mensagem('');
     } catch (erro) {
       mensagem(
@@ -589,6 +763,14 @@ export function comissoesDemonstrativoPage() {
     year: 'numeric',
     month: '2-digit'
   }).format(new Date());
+
+    $('exportar-pdf').addEventListener('click', () => {
+    if (ocupado || !dadosExibidos || !dadosExibidos.linhas.length) {
+      return;
+    }
+
+    window.print();
+  });
 
   $('mes').addEventListener('change', carregar);
   $('vendedor').addEventListener('change', carregar);
