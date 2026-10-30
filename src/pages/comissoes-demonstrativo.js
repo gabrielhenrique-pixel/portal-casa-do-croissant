@@ -398,7 +398,7 @@ export function comissoesDemonstrativoPage() {
       Excel
     </button>
 
-    <span class="selo">PRÉVIA — NÃO FECHADO</span>
+    <span id="etapa" class="selo">PRÉVIA — NÃO FECHADO</span>
   </div>
 
   <p id="status" role="status" aria-live="polite"></p>
@@ -550,6 +550,27 @@ export function comissoesDemonstrativoPage() {
     $('vendedor').append(item);
   }
 
+    function nomeEtapa(dados) {
+    if (dados.etapa === 'FECHADO') return 'FECHADO';
+
+    if (dados.etapa === 'MISTO') {
+      return 'CONTÉM PRÉVIAS E FECHAMENTOS';
+    }
+
+    return 'PRÉVIA — NÃO FECHADO';
+  }
+
+  function nomeSituacaoLinha(linha) {
+    if (
+      linha.fechamentoId &&
+      linha.status === 'CALCULADO_PREVIA'
+    ) {
+      return 'Calculado — fechado';
+    }
+
+    return situacoes[linha.status] || String(linha.status || '');
+  }
+
   function desenhar(dados) {
     const resumo = dados.resumo;
 
@@ -558,6 +579,7 @@ export function comissoesDemonstrativoPage() {
     $('comissao').textContent = moeda(resumo.comissaoVendas);
     $('perda').textContent = moeda(resumo.perdaDevolucoes);
     $('liquida').textContent = moeda(resumo.comissaoLiquida);
+    $('etapa').textContent = nomeEtapa(dados);
 
     $('vendedor').replaceChildren();
 
@@ -637,7 +659,7 @@ export function comissoesDemonstrativoPage() {
           ? '—'
           : quatroCasas.format(Number(linha.comissao)),
         regra,
-        situacoes[linha.status] || linha.status
+                nomeSituacaoLinha(linha)
       ];
 
       valores.forEach((valor, indice) => {
@@ -742,8 +764,11 @@ export function comissoesDemonstrativoPage() {
       $('identificacao-impressao').textContent =
         'Mês da baixa: ' + periodoRelatorio +
         ' | Vendedor: ' + nomeRelatorio +
-        '\nPRÉVIA — NÃO FECHADO' +
-        ' | Consulta: ' + dataHora(dados.calculadoEm) +
+               '\n' + nomeEtapa(dados) +
+        ' | Base calculada em: ' + dataHora(dados.calculadoEm) +
+        (dados.fechadoEm
+          ? ' | Fechado em: ' + dataHora(dados.fechadoEm)
+          : '') +
         '\nDados importados em: ' + dataHora(dados.dadosImportadosEm);
 
       $('exportar-pdf').disabled = dados.linhas.length === 0;
@@ -902,7 +927,7 @@ export function comissoesDemonstrativoPage() {
           taxa === null ? null : taxa / 100,
           numeroExcel(linha.comissao),
           regra,
-          situacoes[linha.status] || String(linha.status ?? '')
+                    nomeSituacaoLinha(linha)
         ];
       });
 
@@ -963,8 +988,9 @@ export function comissoesDemonstrativoPage() {
         dados.vendedorSelecionado || 'todos'
       ).replace(/[^a-zA-Z0-9_-]/g, '_');
 
-      const nomeArquivo =
-        'comissoes-previa-' + dados.mes +
+            const nomeArquivo =
+        'comissoes-' + String(dados.etapa || 'PREVIA').toLowerCase() +
+        '-' + dados.mes +
         '-vendedor-' + vendedorArquivo + '.xlsx';
 
       XLSX.writeFileXLSX(arquivo, nomeArquivo, {
