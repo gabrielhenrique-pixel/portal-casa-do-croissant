@@ -22,6 +22,13 @@ import {
 import {
   conferirCalculoComissoes
 } from './comissoes-calculo.js';
+import {
+  demonstrativoComissoes
+} from './comissoes-demonstrativo.js';
+
+import {
+  comissoesDemonstrativoPage
+} from './pages/comissoes-demonstrativo.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -95,6 +102,8 @@ const LOGIN_MAX_FALHAS = 5;
 const LOGIN_JANELA_SEGUNDOS = 15 * 60;
 
 const MODULOS_ACESSO = [
+  ['COMISSOES_RELATORIO', 'Demonstrativo de comissões', 39],
+  ['COMISSOES_VISAO_GESTOR', 'Comissões — Visão de gestores', 40],
   ['COMISSOES_CADASTRO', 'Comissões — Cadastro de vendedores', 38],
   ['CLIENTES', 'Clientes', 20],
   ['PRODUTOS', 'Produtos', 21],
@@ -158,6 +167,64 @@ const portal = {
     const url = new URL(request.url);
 
     try {
+
+            if (
+        url.pathname === '/comissoes/demonstrativo' ||
+        url.pathname === '/api/comissoes/demonstrativo'
+      ) {
+        const acesso = await obterAcessoModulo(
+          request,
+          env,
+          'COMISSOES_RELATORIO'
+        );
+
+        if (!acesso?.session || !acesso?.permissions?.view) {
+          return json({
+            error: 'Você não tem acesso ao demonstrativo de comissões.'
+          }, 403);
+        }
+
+        const acessoGestor = await obterAcessoModulo(
+          request,
+          env,
+          'COMISSOES_VISAO_GESTOR'
+        );
+
+        const podeVerTodos = Boolean(
+          acessoGestor?.permissions?.view
+        );
+
+        const codigoVinculado = podeVerTodos
+          ? ''
+          : await obterVendedorVinculado(
+              env,
+              acesso.session.user_id
+            );
+
+        if (!podeVerTodos && !codigoVinculado) {
+          return json({
+            error: 'Seu usuário não possui código de vendedor vinculado.'
+          }, 403);
+        }
+
+        if (url.pathname === '/comissoes/demonstrativo') {
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405);
+          }
+
+          return comissoesDemonstrativoPage();
+        }
+
+        return await demonstrativoComissoes(
+          request,
+          env,
+          acesso,
+          podeVerTodos,
+          codigoVinculado
+        );
+      }
 
             if (url.pathname === '/api/comissoes/conferencia-calculo') {
         const acesso = await obterAcessoModulo(
@@ -5229,6 +5296,15 @@ const APP_HTML = `<!doctype html>
   style="display:block;text-decoration:none;"
 >
   Vendedores / Comissões
+</a>
+
+<a
+  class="nav-btn oculto"
+  data-module="COMISSOES_RELATORIO"
+  href="/comissoes/demonstrativo"
+  style="display:block;text-decoration:none;"
+>
+  Demonstrativo de Comissões
 </a>
 
 <button
