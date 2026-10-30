@@ -29,6 +29,13 @@ import {
 import {
   comissoesDemonstrativoPage
 } from './pages/comissoes-demonstrativo.js';
+import {
+  consultarFechamentos
+} from './comissoes-fechamento.js';
+
+import {
+  comissoesFechamentoPage
+} from './pages/comissoes-fechamento.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -168,6 +175,39 @@ const portal = {
     const url = new URL(request.url);
 
     try {
+
+              if (
+          url.pathname === '/comissoes/fechamentos' ||
+          url.pathname === '/api/comissoes/fechamentos'
+        ) {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'COMISSOES_FECHAMENTO'
+          );
+
+          if (!acesso?.session || !acesso?.permissions?.view) {
+            return json({
+              error: 'Você não tem acesso ao fechamento de comissões.'
+            }, 403);
+          }
+
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405);
+          }
+
+          if (url.pathname === '/comissoes/fechamentos') {
+            return comissoesFechamentoPage();
+          }
+
+          return await consultarFechamentos(
+            request,
+            env,
+            acesso
+          );
+        }
 
             if (
         url.pathname === '/comissoes/demonstrativo' ||
@@ -5306,6 +5346,15 @@ const APP_HTML = `<!doctype html>
   style="display:block;text-decoration:none;"
 >
   Demonstrativo de Comissões
+</a>
+
+<a
+  class="nav-btn oculto"
+  data-module="COMISSOES_FECHAMENTO"
+  href="/comissoes/fechamentos"
+  style="display:block;text-decoration:none;"
+>
+  Fechamento de Comissões
 </a>
 
 <button
