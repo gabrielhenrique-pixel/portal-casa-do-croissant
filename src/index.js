@@ -14,6 +14,7 @@ import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
+import {conferirBaixasComissoes} from './comissoes-sankhya.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -150,6 +151,20 @@ const portal = {
     const url = new URL(request.url);
 
     try {
+
+                  if (url.pathname === '/api/comissoes/conferencia-baixas') {
+        const acesso = await obterAcessoModulo(
+          request,
+          env,
+          'COMISSOES_CADASTRO'
+        );
+
+        return await conferirBaixasComissoes(
+          request,
+          env,
+          acesso
+        );
+      }
 
             if (
         url.pathname === '/comissoes/vendedores' ||
