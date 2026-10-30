@@ -8,10 +8,11 @@ import {
 
 const VERSAO_CALCULO = 'previa-v1';
 
-// Identificação na origem Sankhya.
-// Não confundir com o ID interno do cadastro do portal.
 const SEM_COMISSAO = new Set(['sankhya:10']);
-const FORA_DESTA_ETAPA = new Set(['sankhya:17']);
+const FORA_DESTA_ETAPA = new Set([
+  'sankhya:17',
+  'sankhya:6'
+]);
 
 function responder(dados, status = 200) {
   return new Response(JSON.stringify(dados), {
