@@ -171,6 +171,7 @@ export function comissoesDemonstrativoPage() {
     border: 1px solid #d5dfe8;
     border-radius: 10px;
     background: white;
+    margin-top: 16px;
   }
 
   table {
@@ -276,7 +277,7 @@ export function comissoesDemonstrativoPage() {
     </div>
   </div>
 
-  <div class="informacoes">
+  <div class="informacoes" hidden>
     <div id="atualizacao"></div>
     <div id="contagem"></div>
     <div>
