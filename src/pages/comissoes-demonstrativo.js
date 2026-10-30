@@ -7,10 +7,6 @@ export function comissoesDemonstrativoPage() {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Demonstrativo de Comissões</title>
 
-  #exportar-excel {
-    background: #138545;
-  }
-
 <style>
   * { box-sizing: border-box; }
 
@@ -360,6 +356,10 @@ export function comissoesDemonstrativoPage() {
     th:nth-child(9) {
       width: 5%;
     }
+  }
+
+    #exportar-excel {
+    background: #138545;
   }
   
 </style>
