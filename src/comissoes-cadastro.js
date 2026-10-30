@@ -167,7 +167,11 @@ export async function cadastroComissoes(request, env, acesso) {
       return resposta({ error: 'Cadastro inválido.' }, 400);
     }
 
-    const permissao = dados.id ? 'update' : 'create';
+        const permissao = dados.acao === 'excluir'
+      ? 'delete'
+      : dados.id
+        ? 'update'
+        : 'create';
 
     if (!acesso.permissions[permissao]) {
       return resposta({
@@ -250,6 +254,72 @@ export async function cadastroComissoes(request, env, acesso) {
         'Este cadastro foi alterado por outra pessoa. ' +
         'Recarregue a página antes de salvar.'
     }, 409);
+  }
+
+    if (dados.acao === 'excluir') {
+    if (!anterior) {
+      return resposta({
+        error: 'Informe um cadastro existente para excluir.'
+      }, 400);
+    }
+
+    const revisaoExclusao = anterior.revisao + 1;
+    const agoraExclusao = new Date().toISOString();
+    const autorExclusao = acesso.session.username;
+
+    const historicoExclusao = JSON.stringify({
+      ...JSON.parse(anterior.dados),
+      evento: 'exclusao',
+      usuarioVinculado: anterior.user_id,
+      origem: anterior.origem,
+      codigoOrigem: anterior.codigo_origem
+    });
+
+    try {
+      await env.DB.batch([
+        env.DB.prepare(`
+          INSERT INTO comissao_cadastro_historico (
+            vendedor_id,
+            revisao,
+            dados,
+            criado_em,
+            criado_por
+          )
+          VALUES (?, ?, ?, ?, ?)
+        `).bind(
+          anterior.id,
+          revisaoExclusao,
+          historicoExclusao,
+          agoraExclusao,
+          autorExclusao
+        ),
+
+        env.DB.prepare(`
+          DELETE FROM comissao_vendedores
+          WHERE id = ?
+            AND revisao = ?
+        `).bind(
+          anterior.id,
+          anterior.revisao
+        )
+      ]);
+    } catch (erroExclusao) {
+      if (/UNIQUE|constraint/i.test(String(erroExclusao.message))) {
+        return resposta({
+          error:
+            'O cadastro foi alterado ou possui um vínculo que impede a exclusão. ' +
+            'Recarregue a página antes de continuar.'
+        }, 409);
+      }
+
+      throw erroExclusao;
+    }
+
+    return resposta({
+      excluido: true,
+      id: anterior.id,
+      historicoPreservado: true
+    });
   }
 
   const usuarioId = anterior
