@@ -348,6 +348,40 @@ export function comissoesVendedoresPage() {
     .guia { padding: 12px; }
     #revision { width: 100%; margin-left: 0; }
   }
+
+  .botao-icone {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .botao-icone svg {
+    display: block;
+    pointer-events: none;
+  }
+
+  .editar.botao-icone {
+    background: #1769aa;
+    color: white;
+  }
+
+  .editar.botao-icone:hover:not(:disabled) {
+    background: #12558b;
+  }
+
+  .excluir {
+    background: #c0392b;
+    color: white;
+  }
+
+  .excluir:hover:not(:disabled) {
+    background: #a52f23;
+  }
+  
 </style>
 </head>
 
@@ -367,9 +401,55 @@ export function comissoesVendedoresPage() {
     <button id="new" class="novo" type="button"
       title="Cadastrar vendedor" aria-label="Cadastrar vendedor" disabled>+</button>
 
-    <button id="edit" class="editar" type="button" disabled>
-      Editar
-    </button>
+    <button
+  id="edit"
+  class="editar botao-icone"
+  type="button"
+  title="Editar vendedor"
+  aria-label="Editar vendedor"
+  disabled
+>
+  <svg
+    width="21"
+    height="21"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 20h9"></path>
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"></path>
+  </svg>
+</button>
+
+<button
+  id="delete"
+  class="excluir botao-icone"
+  type="button"
+  title="Excluir cadastro de comissão"
+  aria-label="Excluir cadastro de comissão"
+  disabled
+>
+  <svg
+    width="21"
+    height="21"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 6h18"></path>
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+    <path d="M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14"></path>
+    <path d="M10 10v7M14 10v7"></path>
+  </svg>
+</button>
 
     <input id="search" class="pesquisa" type="search"
       placeholder="Pesquisar código, vendedor ou usuário..."
@@ -593,6 +673,11 @@ export function comissoesVendedoresPage() {
 
     $('new').disabled = locked || editing || !model?.permissoes.create;
     $('edit').disabled = locked || editing || !selected || !model?.permissoes.update;
+        $('delete').disabled =
+      locked ||
+      editing ||
+      !selected ||
+      !model?.permissoes.delete;
     $('search').disabled = locked || editing;
 
     $('form').querySelectorAll('input, select').forEach(node => {
@@ -926,6 +1011,73 @@ export function comissoesVendedoresPage() {
     message('');
     openRecord(selected, true);
     $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+    $('delete').addEventListener('click', async () => {
+    if (
+      !selected ||
+      editing ||
+      busy ||
+      reloadRequired ||
+      !model?.permissoes.delete
+    ) {
+      return;
+    }
+
+    const registro = selected;
+
+    const confirmado = confirm(
+      'Excluir o cadastro de comissões de ' +
+      registro.dados.nome +
+      '?\n\n' +
+      'Os percentuais e as exceções serão removidos do cadastro ativo.\n' +
+      'O histórico será mantido.\n\n' +
+      'O usuário e os dados do Sankhya não serão excluídos.'
+    );
+
+    if (!confirmado) return;
+
+    busy = true;
+    controls();
+    message('Excluindo cadastro...');
+
+    let excluido = false;
+
+    try {
+      await api({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          acao: 'excluir',
+          id: registro.id,
+          revisao: registro.revisao
+        })
+      });
+
+      excluido = true;
+      model = await api();
+
+      returnToList(null);
+      message('Cadastro de comissões excluído. Histórico preservado.');
+    } catch (error) {
+      reloadRequired = true;
+
+      message(
+        excluido
+          ? 'O cadastro foi excluído, mas a lista não atualizou. Recarregue a página.'
+          : (
+              error.name === 'AbortError'
+                ? 'Tempo de espera excedido.'
+                : error.message
+            ) + ' Recarregue a página e confira o cadastro antes de tentar novamente.',
+        true
+      );
+    } finally {
+      busy = false;
+      controls();
+    }
   });
 
   $('user').addEventListener('change', () => userChanged(true));
