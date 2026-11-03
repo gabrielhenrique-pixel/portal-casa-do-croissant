@@ -185,6 +185,10 @@ export function comissoesFechamentoPage() {
     opacity: .5;
     cursor: not-allowed;
   }
+
+    .botao-reabrir {
+    background: #a96512;
+  }
   
 </style>
 </head>
@@ -256,6 +260,7 @@ export function comissoesFechamentoPage() {
   let linhas = [];
   let ocupado = false;
   let podeFechar = false;
+  let podeReabrir = false;
   let bloqueado = false;
 
   function moeda(valor) {
@@ -336,7 +341,28 @@ export function comissoesFechamentoPage() {
         botao.title = 'Conferir e fechar comissão deste vendedor';
         botao.disabled = ocupado || bloqueado;
 
-        botao.addEventListener('click', () => confirmarFechamento(item));
+        botao.addEventListener(
+          'click',
+          () => confirmarFechamento(item)
+        );
+
+        tdAcao.append(botao);
+      } else if (
+        podeReabrir &&
+        item.situacao === 'FECHADO' &&
+        item.fechamentoId
+      ) {
+        const botao = document.createElement('button');
+        botao.type = 'button';
+        botao.className = 'botao-fechar botao-reabrir';
+        botao.textContent = 'Reabrir';
+        botao.title = 'Reabrir fechamento informando o motivo';
+        botao.disabled = ocupado || bloqueado;
+
+        botao.addEventListener(
+          'click',
+          () => confirmarReabertura(item)
+        );
 
         tdAcao.append(botao);
       } else {
@@ -405,6 +431,7 @@ export function comissoesFechamentoPage() {
 
       linhas = dados.linhas;
       podeFechar = Boolean(dados.permissoes?.fechar);
+      podeReabrir = Boolean(dados.permissoes?.reabrir);
       desenhar();
 
       $('aviso').textContent = dados.aviso || '';
@@ -425,13 +452,16 @@ export function comissoesFechamentoPage() {
     }
   }
 
-    async function enviarAcao(dados) {
+    async function enviarAcao(
+    dados,
+    caminho = '/api/comissoes/fechamentos/acao'
+  ) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 45000);
 
     try {
-      const response = await fetch(
-        '/api/comissoes/fechamentos/acao',
+          const response = await fetch(
+        caminho,
         {
           method: 'POST',
           credentials: 'same-origin',
@@ -527,7 +557,7 @@ export function comissoesFechamentoPage() {
 
       bloqueado = true;
       mensagem('Fechamento registrado. Atualizando a tela...');
-      location.reload();
+      recarregarMesmoMes();
     } catch (erro) {
       bloqueado = true;
 
@@ -547,16 +577,114 @@ export function comissoesFechamentoPage() {
     }
   }
 
+    async function confirmarReabertura(item) {
+    if (
+      ocupado ||
+      bloqueado ||
+      !podeReabrir ||
+      item.situacao !== 'FECHADO' ||
+      !item.fechamentoId
+    ) {
+      return;
+    }
+
+    const digitado = window.prompt(
+      'REABRIR FECHAMENTO\n\n' +
+      'Vendedor: ' + item.vendedor + '\n' +
+      'Mês: ' + $('mes').value + '\n' +
+      'Versão: ' + item.versao + '\n\n' +
+      'Informe o motivo da reabertura:'
+    );
+
+    if (digitado === null) return;
+
+    const motivo = digitado.trim();
+
+    if (!motivo || motivo.length > 1000) {
+      mensagem(
+        'Informe um motivo com até 1.000 caracteres.',
+        true
+      );
+      return;
+    }
+
+    const confirmar = window.confirm(
+      'Confirmar reabertura de ' + item.vendedor + '?\n\n' +
+      'Mês: ' + $('mes').value + '\n' +
+      'Comissão líquida fechada: ' + moeda(item.comissaoLiquida) +
+      '\n\nMotivo: ' + motivo +
+      '\n\nO fechamento anterior será preservado.' +
+      '\nO demonstrativo voltará à prévia e poderá mostrar valores diferentes,' +
+      ' conforme os dados e regras atuais.' +
+      '\nEsta ação não desfaz pagamentos.'
+    );
+
+    if (!confirmar) return;
+
+    ocupado = true;
+    $('mes').disabled = true;
+    desenhar();
+    mensagem('Registrando reabertura...');
+
+    try {
+      await enviarAcao(
+        {
+          fechamentoId: item.fechamentoId,
+          versao: Number(item.versao),
+          motivo,
+          operacaoId: crypto.randomUUID()
+        },
+        '/api/comissoes/fechamentos/reabrir'
+      );
+
+      bloqueado = true;
+      mensagem('Reabertura registrada. Atualizando a tela...');
+      recarregarMesmoMes();
+    } catch (erro) {
+      bloqueado = true;
+
+      mensagem(
+        (
+          erro.name === 'AbortError'
+            ? 'A solicitação demorou demais.'
+            : erro.message
+        ) +
+        ' Atualize a página para conferir a situação antes de tentar novamente.',
+        true
+      );
+    } finally {
+      ocupado = false;
+      $('mes').disabled = bloqueado;
+      desenhar();
+    }
+  }
+
+  function recarregarMesmoMes() {
+    const destino = new URL(location.href);
+    destino.searchParams.set('mes', $('mes').value);
+    location.assign(destino.toString());
+  }
+
   $('voltar').addEventListener('click', () => {
     if (history.length > 1) history.back();
     else location.href = '/';
   });
 
-  $('mes').value = new Intl.DateTimeFormat('sv-SE', {
+  const mesDaUrl = new URL(location.href).searchParams.get('mes');
+
+  const mesAtual = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'America/Sao_Paulo',
     year: 'numeric',
     month: '2-digit'
   }).format(new Date());
+
+  $('mes').value =
+    mesDaUrl &&
+    /^\d{4}-(0[1-9]|1[0-2])$/.test(mesDaUrl) &&
+    mesDaUrl >= '2026-10' &&
+    mesDaUrl <= '2100-12'
+      ? mesDaUrl
+      : mesAtual;
 
   $('mes').addEventListener('change', carregar);
   $('pesquisa').addEventListener('input', desenhar);
