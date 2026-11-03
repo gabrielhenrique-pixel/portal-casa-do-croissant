@@ -39,6 +39,9 @@ import {
 import {
   fecharComissao
 } from './comissoes-fechar.js';
+import {
+  reabrirComissao
+} from './comissoes-reabrir.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -179,7 +182,15 @@ const portal = {
 
     try {
 
-      
+              if (url.pathname === '/api/comissoes/fechamentos/reabrir') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'COMISSOES_FECHAMENTO'
+          );
+
+          return await reabrirComissao(request, env, acesso);
+        }
 
               if (url.pathname === '/api/comissoes/fechamentos/acao') {
           const acesso = await obterAcessoModulo(
