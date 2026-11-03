@@ -351,7 +351,6 @@ export function comissoesFechamentoPage() {
     if (!filtradas.length) {
       const tr = document.createElement('tr');
       const td = document.createElement('td');
-      td.colSpan = 8;
       td.colSpan = 9;
       td.textContent = 'Nenhum vendedor encontrado.';
       tr.append(td);
@@ -418,10 +417,11 @@ export function comissoesFechamentoPage() {
           : erro.message,
         true
       );
-    } finally {
+       } finally {
       clearTimeout(timer);
       ocupado = false;
-      $('mes').disabled = false;
+      $('mes').disabled = bloqueado;
+      desenhar();
     }
   }
 
