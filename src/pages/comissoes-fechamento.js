@@ -536,7 +536,6 @@ export function comissoesFechamentoPage() {
           '\n\n' +
         'Os valores serão guardados para este mês.\n' +
         'Esta ação não registra pagamento.\n' +
-        'A reabertura ainda não está disponível nesta etapa.\n\n' +
         'Deseja confirmar?'
       );
 
