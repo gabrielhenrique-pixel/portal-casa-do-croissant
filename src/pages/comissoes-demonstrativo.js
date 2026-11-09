@@ -407,12 +407,12 @@ export function comissoesDemonstrativoPage() {
 
   <div class="cards">
     <div class="card">
-      <span>Vendas — notas com baixa</span>
+      <span>Vendas — líquido baixado</span>
       <strong id="vendas">—</strong>
     </div>
 
     <div class="card red">
-      <span>Devoluções — notas com baixa</span>
+      <span>Devoluções — líquido baixado</span>
       <strong id="devolucoes">—</strong>
     </div>
 
@@ -422,7 +422,7 @@ export function comissoesDemonstrativoPage() {
     </div>
 
     <div class="card red">
-      <span>Perda de comissão por devoluções</span>
+      <span>Descomissão das devoluções</span>
       <strong id="perda">—</strong>
     </div>
 
@@ -574,10 +574,14 @@ export function comissoesDemonstrativoPage() {
   function desenhar(dados) {
     const resumo = dados.resumo;
 
-    $('vendas').textContent = moeda(resumo.vendas);
-    $('devolucoes').textContent = moeda(resumo.devolucoes);
+        $('vendas').textContent = moeda(resumo.vendasBaixadas);
+    $('devolucoes').textContent = moeda(resumo.devolucoesBaixadas);
     $('comissao').textContent = moeda(resumo.comissaoVendas);
-    $('perda').textContent = moeda(resumo.perdaDevolucoes);
+    $('perda').textContent = moeda(
+      resumo.perdaDevolucoes == null
+        ? null
+        : -Math.abs(Number(resumo.perdaDevolucoes))
+    );
     $('liquida').textContent = moeda(resumo.comissaoLiquida);
     $('etapa').textContent = nomeEtapa(dados);
 
