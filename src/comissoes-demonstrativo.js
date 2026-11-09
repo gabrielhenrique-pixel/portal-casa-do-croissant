@@ -43,6 +43,8 @@ function decimal4(valor) {
 export function resumir(linhas) {
   let vendas = 0n;
   let devolucoes = 0n;
+  let vendasBaixadas = 0n;
+  let devolucoesBaixadas = 0n;
   let comissaoVendas = 0n;
   let perdaDevolucoes = 0n;
 
@@ -54,8 +56,11 @@ export function resumir(linhas) {
   const notasContadas = new Set();
 
   for (const linha of linhas) {
-    // Uma nota com mais de um financeiro não é somada
-    // mais de uma vez nos cards de valor das notas.
+        if (linha.tipo === 'venda') {
+      vendasBaixadas += valor4(linha.valorBaixa);
+    } else if (linha.tipo === 'devolucao') {
+      devolucoesBaixadas += valor4(linha.valorBaixa);
+    }
     const chaveNota = linha.tipo + ':' + linha.documentoId;
 
     if (!notasContadas.has(chaveNota)) {
@@ -99,6 +104,9 @@ export function resumir(linhas) {
 
     vendas: decimal4(vendas),
     devolucoes: decimal4(devolucoes),
+    vendasBaixadas: decimal4(vendasBaixadas),
+    devolucoesBaixadas: decimal4(-devolucoesBaixadas),
+    saldoBaixado: decimal4(vendasBaixadas - devolucoesBaixadas),
 
     comissaoVendas: possuiResultado
       ? decimal4(comissaoVendas)
