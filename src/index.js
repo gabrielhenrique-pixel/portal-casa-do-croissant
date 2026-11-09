@@ -15,6 +15,7 @@ import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
 import {
   interpretarMensagemValidade
 } from './validades-mensagem.js';
+import { validadesPage } from './pages/validades.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
@@ -392,6 +393,34 @@ const portal = {
 
         return await cadastroComissoes(request, env, acesso);
       }
+
+              if (url.pathname === '/validades') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'VALIDADES'
+          );
+
+          if (
+            !acesso?.session ||
+            !acesso?.permissions?.view ||
+            !acesso?.permissions?.create
+          ) {
+            return json({
+              error: 'Sem permissão para conferir mensagens de validade.'
+            }, 403);
+          }
+
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405, {
+              Allow: 'GET'
+            });
+          }
+
+          return validadesPage();
+        }
 
               if (url.pathname === '/api/validades/interpretar') {
           const acesso = await obterAcessoModulo(
