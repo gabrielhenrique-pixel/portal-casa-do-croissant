@@ -12,6 +12,9 @@ import { devolucoesPage } from './pages/devolucoes.js';
 import { acessosPage } from './pages/acessos.js';
 import { rentabilidadeSkuPage } from './pages/rentabilidade-sku.js';
 import { listarRentabilidadeSkuSankhya } from './rentabilidade-sku-service.js';
+import {
+  interpretarMensagemValidade
+} from './validades-mensagem.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
@@ -389,6 +392,74 @@ const portal = {
 
         return await cadastroComissoes(request, env, acesso);
       }
+
+              if (url.pathname === '/api/validades/interpretar') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'VALIDADES'
+          );
+
+          if (
+            !acesso?.session ||
+            !acesso?.permissions?.view ||
+            !acesso?.permissions?.create
+          ) {
+            return json({
+              error: 'Sem permissão para interpretar mensagens de validade.'
+            }, 403);
+          }
+
+          if (request.method !== 'POST') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405, {
+              Allow: 'POST'
+            });
+          }
+
+          const tipoConteudo =
+            request.headers.get('content-type') || '';
+
+          if (
+            tipoConteudo.split(';')[0].trim().toLowerCase()
+            !== 'application/json'
+          ) {
+            return json({
+              error: 'Envie os dados no formato JSON.'
+            }, 415);
+          }
+
+          let dados;
+
+          try {
+            dados = await request.json();
+          } catch {
+            return json({
+              error: 'JSON inválido.'
+            }, 400);
+          }
+
+          if (
+            !dados ||
+            typeof dados.mensagem !== 'string' ||
+            !dados.mensagem.trim()
+          ) {
+            return json({
+              error: 'Informe a mensagem que deseja conferir.'
+            }, 400);
+          }
+
+          if (dados.mensagem.length > 10000) {
+            return json({
+              error: 'A mensagem deve ter no máximo 10.000 caracteres.'
+            }, 413);
+          }
+
+          return json(
+            interpretarMensagemValidade(dados.mensagem)
+          );
+        }
             
       if (url.pathname === '/health') {
         return json({ status: 'ok' });
