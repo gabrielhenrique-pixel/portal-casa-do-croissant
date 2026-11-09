@@ -317,6 +317,8 @@ function calcularMovimento(movimento, contexto) {
       rede: rede || null,
 
       baseCalculo: decimal4(base),
+      criterioBase: 'liquido_baixado',
+      versaoCalculo: VERSAO_CALCULO,
       percentual: regra.percentual / 100,
       regraAplicada: regra.origem,
       comissao: decimal4(comissao)
