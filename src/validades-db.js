@@ -58,3 +58,65 @@ export async function garantirTabelaValidades(env) {
     ON validades_lotes (loja_codigo, situacao, vencimento)
   `).run();
 }
+
+export async function garantirTabelaHistoricoValidades(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS validades_movimentos (
+      id TEXT PRIMARY KEY,
+
+      lote_id TEXT NOT NULL
+        REFERENCES validades_lotes(id),
+
+      tipo TEXT NOT NULL
+        CHECK (tipo IN ('CADASTRO', 'BAIXA')),
+
+      quantidade_anterior INTEGER NOT NULL
+        CHECK (
+          typeof(quantidade_anterior) = 'integer'
+          AND quantidade_anterior >= 0
+        ),
+
+      quantidade_movimentada INTEGER NOT NULL
+        CHECK (
+          typeof(quantidade_movimentada) = 'integer'
+          AND quantidade_movimentada > 0
+        ),
+
+      quantidade_posterior INTEGER NOT NULL
+        CHECK (
+          typeof(quantidade_posterior) = 'integer'
+          AND quantidade_posterior >= 0
+        ),
+
+      motivo TEXT NOT NULL
+        CHECK (length(trim(motivo)) > 0),
+
+      realizado_por TEXT NOT NULL,
+      realizado_em TEXT NOT NULL,
+
+      CHECK (
+        (
+          tipo = 'CADASTRO'
+          AND quantidade_anterior = 0
+          AND quantidade_posterior = quantidade_movimentada
+        )
+        OR
+        (
+          tipo = 'BAIXA'
+          AND quantidade_posterior =
+            quantidade_anterior - quantidade_movimentada
+        )
+      )
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_validades_movimentos_lote
+    ON validades_movimentos (lote_id, realizado_em)
+  `).run();
+}
+
+export async function garantirEstruturaValidades(env) {
+  await garantirTabelaValidades(env);
+  await garantirTabelaHistoricoValidades(env);
+}
