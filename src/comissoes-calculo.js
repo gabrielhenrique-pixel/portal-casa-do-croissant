@@ -6,7 +6,7 @@ import {
   selecionarRegra
 } from './comissoes-cadastro.js';
 
-const VERSAO_CALCULO = 'previa-v1';
+const VERSAO_CALCULO = 'liquido-baixado-v2';
 
 const SEM_COMISSAO = new Set(['sankhya:10']);
 const FORA_DESTA_ETAPA = new Set([
@@ -290,11 +290,9 @@ function calcularMovimento(movimento, contexto) {
       movimento.tipo
     );
 
-    // O destaque já compõe o valor da nota.
-    // Não somar esse campo novamente.
-    const base = movimento.tipo === 'venda'
-      ? baixa - juros - multa
-      : nota;
+    // A baixa já inclui descontos, juros e multas.
+    // Mesma base para comissão e descomissão.
+    const base = baixa;
 
     if (base < 0n) {
       return pendente(
