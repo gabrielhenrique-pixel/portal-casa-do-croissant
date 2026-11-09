@@ -115,6 +115,7 @@ const LOGIN_MAX_FALHAS = 5;
 const LOGIN_JANELA_SEGUNDOS = 15 * 60;
 
 const MODULOS_ACESSO = [
+  ['VALIDADES', 'Controle de validades', 42],
   ['COMISSOES_RELATORIO', 'Demonstrativo de comissões', 39],
   ['COMISSOES_VISAO_GESTOR', 'Comissões — Visão de gestores', 40],
   ['COMISSOES_FECHAMENTO', 'Comissões — Fechamento mensal', 41],
