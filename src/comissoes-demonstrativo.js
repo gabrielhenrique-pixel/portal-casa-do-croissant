@@ -271,7 +271,9 @@ export async function demonstrativoComissoes(
       })
     );
 
-       return resposta({
+          const resumoAtual = resumir(linhas);
+
+    return resposta({
       mes,
       etapa,
       podeVerTodos: Boolean(podeVerTodos),
@@ -297,9 +299,14 @@ export async function demonstrativoComissoes(
         (a, b) => a.nome.localeCompare(b.nome, 'pt-BR')
       ),
 
-      resumo: soFechado
-        ? JSON.parse(fechados[0].resumo_snapshot)
-        : resumir(linhas),
+            resumo: soFechado
+        ? {
+            ...JSON.parse(fechados[0].resumo_snapshot),
+            vendasBaixadas: resumoAtual.vendasBaixadas,
+            devolucoesBaixadas: resumoAtual.devolucoesBaixadas,
+            saldoBaixado: resumoAtual.saldoBaixado
+          }
+        : resumoAtual,
 
       linhas
     });
