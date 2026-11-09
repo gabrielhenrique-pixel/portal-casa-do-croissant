@@ -3,10 +3,8 @@ export async function garantirTabelaValidades(env) {
     CREATE TABLE IF NOT EXISTS validades_lotes (
       id TEXT PRIMARY KEY,
 
-      loja_codigo TEXT NOT NULL,
       loja_nome TEXT NOT NULL,
 
-      produto_codigo TEXT NOT NULL,
       produto_nome TEXT NOT NULL,
 
       quantidade_inicial INTEGER NOT NULL
@@ -55,7 +53,7 @@ export async function garantirTabelaValidades(env) {
 
   await env.DB.prepare(`
     CREATE INDEX IF NOT EXISTS idx_validades_lotes_loja
-    ON validades_lotes (loja_codigo, situacao, vencimento)
+    ON validades_lotes (loja_nome, situacao, vencimento)
   `).run();
 }
 
