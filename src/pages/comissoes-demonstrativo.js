@@ -458,7 +458,7 @@ export function comissoesDemonstrativoPage() {
           <th>Vendedor</th>
           <th>Cliente</th>
           <th>Movimento</th>
-          <th class="numero">Valor da nota</th>
+          <th class="numero">Líquido baixado</th>
           <th class="numero">Base comissão</th>
           <th class="numero">%</th>
           <th class="numero">Comissão</th>
@@ -654,7 +654,7 @@ export function comissoesDemonstrativoPage() {
         linha.vendedorNome,
         linha.clienteNome,
         linha.tipo === 'venda' ? 'Venda' : 'Devolução',
-        moeda(linha.valorNota),
+        moeda(linha.valorBaixa),
         moeda(linha.baseCalculo),
         linha.percentual === null || linha.percentual === undefined
           ? '—'
@@ -902,7 +902,7 @@ export function comissoesDemonstrativoPage() {
         'Vendedor',
         'Cliente',
         'Movimento',
-        'Valor da nota',
+        'Líquido baixado',
         'Base comissão',
         '%',
         'Comissão',
@@ -926,7 +926,7 @@ export function comissoesDemonstrativoPage() {
           String(linha.vendedorNome ?? ''),
           String(linha.clienteNome ?? ''),
           linha.tipo === 'venda' ? 'Venda' : 'Devolução',
-          numeroExcel(linha.valorNota),
+          numeroExcel(linha.valorBaixa),
           numeroExcel(linha.baseCalculo),
           taxa === null ? null : taxa / 100,
           numeroExcel(linha.comissao),
