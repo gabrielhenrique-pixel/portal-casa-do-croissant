@@ -177,6 +177,11 @@ Vencimento: 22/11/2026"
       </button>
 
       <p id="status-lista" role="status" aria-live="polite"></p>
+            <p id="status-baixa" role="status" aria-live="polite"></p>
+
+      <button id="repetir-baixa" type="button" hidden>
+        Tentar confirmar a baixa novamente
+      </button>
 
       <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse;">
@@ -187,6 +192,7 @@ Vencimento: 22/11/2026"
               <th>Saldo</th>
               <th>Vencimento</th>
               <th>Situação</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody id="linhas-validades"></tbody>
@@ -511,6 +517,20 @@ Vencimento: 22/11/2026"
             linha.append(celula);
           });
 
+                    const celulaAcao = document.createElement('td');
+          const botaoBaixa = document.createElement('button');
+
+          botaoBaixa.type = 'button';
+          botaoBaixa.textContent = 'Baixar quantidade';
+          botaoBaixa.style.marginTop = '0';
+
+          botaoBaixa.addEventListener('click', function() {
+            iniciarBaixa(registro);
+          });
+
+          celulaAcao.append(botaoBaixa);
+          linha.append(celulaAcao);
+
           fragmento.append(linha);
         }
 
@@ -518,7 +538,7 @@ Vencimento: 22/11/2026"
           const linha = document.createElement('tr');
           const celula = document.createElement('td');
 
-          celula.colSpan = 5;
+          celula.colSpan = 6;
           celula.textContent = 'Nenhum registro ativo nesta página.';
 
           linha.append(celula);
@@ -570,6 +590,165 @@ Vencimento: 22/11/2026"
     });
 
     carregarValidades();
+
+        const statusBaixa = document.getElementById('status-baixa');
+    const repetirBaixa = document.getElementById('repetir-baixa');
+
+    let tentativaBaixa = null;
+    let enviandoBaixa = false;
+
+    function iniciarBaixa(registro) {
+      if (tentativaBaixa || enviandoBaixa) {
+        statusBaixa.textContent =
+          'Conclua a tentativa pendente antes de iniciar outra baixa.';
+        return;
+      }
+
+      const quantidadeTexto = window.prompt(
+        'Loja: ' + registro.lojaNome +
+        '\nProduto: ' + registro.produtoNome +
+        '\nVencimento: ' + dataBrasileira(registro.vencimento) +
+        '\nSaldo: ' + registro.quantidadeRestante + ' un' +
+        '\n\nQuantas unidades deseja baixar?'
+      );
+
+      if (quantidadeTexto === null) return;
+
+      const texto = quantidadeTexto.trim();
+      const quantidade = Number(texto);
+
+      if (
+        !/^\d+$/.test(texto) ||
+        !Number.isSafeInteger(quantidade) ||
+        quantidade <= 0 ||
+        quantidade > registro.quantidadeRestante
+      ) {
+        statusBaixa.textContent =
+          'Informe uma quantidade inteira entre 1 e ' +
+          registro.quantidadeRestante + '.';
+        return;
+      }
+
+      const motivoTexto = window.prompt(
+        'Informe o motivo da baixa, por exemplo: venda ou retirada.'
+      );
+
+      if (motivoTexto === null) return;
+
+      const motivo = motivoTexto.trim();
+
+      if (!motivo || motivo.length > 500) {
+        statusBaixa.textContent =
+          'Informe um motivo com até 500 caracteres.';
+        return;
+      }
+
+      const confirmou = window.confirm(
+        'Confirmar baixa de ' + quantidade + ' unidades?' +
+        '\n\nLoja: ' + registro.lojaNome +
+        '\nProduto: ' + registro.produtoNome +
+        '\nVencimento: ' + dataBrasileira(registro.vencimento) +
+        '\nSaldo previsto após a baixa: ' +
+        (registro.quantidadeRestante - quantidade) + ' un' +
+        '\nMotivo: ' + motivo
+      );
+
+      if (!confirmou) return;
+
+      tentativaBaixa = {
+        id: registro.id,
+        quantidade,
+        motivo,
+        chaveRequisicao: crypto.randomUUID()
+      };
+
+      enviarBaixa();
+    }
+
+    async function enviarBaixa() {
+      if (!tentativaBaixa || enviandoBaixa) return;
+
+      enviandoBaixa = true;
+      repetirBaixa.hidden = true;
+      repetirBaixa.disabled = true;
+
+      statusBaixa.textContent = 'Registrando baixa...';
+
+      const controladorBaixa = new AbortController();
+      const limiteBaixa = setTimeout(function() {
+        controladorBaixa.abort();
+      }, 20000);
+
+      try {
+        const resposta = await fetch('/api/validades/baixar', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(tentativaBaixa),
+          signal: controladorBaixa.signal
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          // Erros de validação ou acesso encerram esta tentativa.
+          if (resposta.status >= 400 && resposta.status < 500) {
+            tentativaBaixa = null;
+
+            statusBaixa.textContent =
+              dados.error || 'Baixa recusada. Confira os dados.';
+
+            await carregarValidades(paginaAtual);
+            return;
+          }
+
+          throw new Error(
+            dados.error || 'Não foi possível confirmar a baixa.'
+          );
+        }
+
+        if (
+          dados.sucesso !== true ||
+          !Number.isSafeInteger(dados.saldoAposBaixa) ||
+          dados.saldoAposBaixa < 0
+        ) {
+          throw new Error('Resposta de confirmação inválida.');
+        }
+
+        tentativaBaixa = null;
+
+        statusBaixa.textContent =
+          (dados.jaExistia
+            ? 'A baixa já havia sido registrada. Não foi descontada novamente.'
+            : 'Baixa registrada com sucesso.') +
+          ' Saldo após essa operação: ' +
+          dados.saldoAposBaixa + ' un.';
+
+        await carregarValidades(paginaAtual);
+      } catch (erro) {
+        const detalhe = erro.name === 'AbortError'
+          ? 'O tempo de espera terminou.'
+          : erro instanceof SyntaxError
+            ? 'O servidor retornou uma resposta inesperada.'
+            : erro.message || 'Falha de comunicação.';
+
+        statusBaixa.textContent =
+          detalhe +
+          ' O resultado ainda não foi confirmado. Use o botão abaixo ' +
+          'para repetir a mesma tentativa, sem descontar novamente. ' +
+          'Não recarregue a página enquanto ela estiver pendente.';
+
+        repetirBaixa.hidden = false;
+      } finally {
+        clearTimeout(limiteBaixa);
+        enviandoBaixa = false;
+        repetirBaixa.disabled = false;
+      }
+    }
+
+    repetirBaixa.addEventListener('click', enviarBaixa);
     
   </script>
 </body>
