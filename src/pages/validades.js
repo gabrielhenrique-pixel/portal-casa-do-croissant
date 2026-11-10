@@ -91,6 +91,39 @@ export function validadesPage() {
       dd { margin-bottom: 12px; }
       button { width: 100%; }
     }
+
+     th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #dce5ec;
+      vertical-align: top;
+    }
+
+    th {
+      background: #102f49;
+      color: white;
+      white-space: nowrap;
+    }
+
+    td {
+      overflow-wrap: anywhere;
+    }
+
+    .validade-vencida {
+      color: #b91c1c;
+      font-weight: bold;
+    }
+
+    .validade-proxima {
+      color: #855600;
+      font-weight: bold;
+    }
+
+    #pagina-lista {
+      display: inline-block;
+      margin: 0 12px;
+    }
+    
   </style>
 </head>
 <body>
@@ -135,6 +168,44 @@ Vencimento: 22/11/2026"
         Nenhum aviso de WhatsApp será enviado nesta etapa.
       </p>
     </section>
+
+    <section>
+      <h2>Validades em acompanhamento</h2>
+
+      <button id="atualizar-lista" type="button">
+        Atualizar lista
+      </button>
+
+      <p id="status-lista" role="status" aria-live="polite"></p>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Loja</th>
+              <th>Produto</th>
+              <th>Saldo</th>
+              <th>Vencimento</th>
+              <th>Situação</th>
+            </tr>
+          </thead>
+          <tbody id="linhas-validades"></tbody>
+        </table>
+      </div>
+
+      <div>
+        <button id="pagina-anterior" type="button" disabled>
+          Anterior
+        </button>
+
+        <span id="pagina-lista">Página 1</span>
+
+        <button id="pagina-proxima" type="button" disabled>
+          Próxima
+        </button>
+      </div>
+    </section>
+    
   </main>
 
   <script>
@@ -348,6 +419,157 @@ Vencimento: 22/11/2026"
         salvando = false;
       }
     });
+
+        const linhasValidades = document.getElementById('linhas-validades');
+    const statusLista = document.getElementById('status-lista');
+    const atualizarLista = document.getElementById('atualizar-lista');
+    const paginaAnterior = document.getElementById('pagina-anterior');
+    const paginaProxima = document.getElementById('pagina-proxima');
+    const paginaLista = document.getElementById('pagina-lista');
+
+    let paginaAtual = 1;
+    let temProxima = false;
+    let carregandoLista = false;
+
+    function dataBrasileira(valor) {
+      return String(valor).split('-').reverse().join('/');
+    }
+
+    async function carregarValidades(pagina = 1) {
+      if (carregandoLista) return;
+
+      carregandoLista = true;
+      atualizarLista.disabled = true;
+      paginaAnterior.disabled = true;
+      paginaProxima.disabled = true;
+
+      statusLista.textContent = 'Carregando registros...';
+      linhasValidades.replaceChildren();
+
+      const controladorLista = new AbortController();
+      const limiteLista = setTimeout(function() {
+        controladorLista.abort();
+      }, 20000);
+
+      try {
+        const resposta = await fetch(
+          '/api/validades/listar?pagina=' + pagina,
+          {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: controladorLista.signal
+          }
+        );
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          throw new Error(
+            dados.error || 'Não foi possível carregar os registros.'
+          );
+        }
+
+        if (!Array.isArray(dados.registros)) {
+          throw new Error('O servidor retornou uma lista inválida.');
+        }
+
+        const nomesFaixas = {
+          VENCIDO: 'Vencido',
+          VENCE_HOJE: 'Vence hoje',
+          PROXIMOS_5_DIAS: 'Vence nos próximos 5 dias',
+          NO_PRAZO: 'Vence em mais de 5 dias'
+        };
+
+        const fragmento = document.createDocumentFragment();
+
+        for (const registro of dados.registros) {
+          const linha = document.createElement('tr');
+
+          const valores = [
+            registro.lojaNome,
+            registro.produtoNome,
+            registro.quantidadeRestante + ' un',
+            dataBrasileira(registro.vencimento),
+            nomesFaixas[registro.faixa] || 'Verificar'
+          ];
+
+          valores.forEach(function(valor, indice) {
+            const celula = document.createElement('td');
+            celula.textContent = String(valor);
+
+            if (indice === 4) {
+              if (registro.faixa === 'VENCIDO') {
+                celula.className = 'validade-vencida';
+              } else if (
+                registro.faixa === 'VENCE_HOJE' ||
+                registro.faixa === 'PROXIMOS_5_DIAS'
+              ) {
+                celula.className = 'validade-proxima';
+              }
+            }
+
+            linha.append(celula);
+          });
+
+          fragmento.append(linha);
+        }
+
+        if (dados.registros.length === 0) {
+          const linha = document.createElement('tr');
+          const celula = document.createElement('td');
+
+          celula.colSpan = 5;
+          celula.textContent = 'Nenhum registro ativo nesta página.';
+
+          linha.append(celula);
+          fragmento.append(linha);
+        }
+
+        linhasValidades.replaceChildren(fragmento);
+
+        paginaAtual = dados.pagina;
+        temProxima = dados.temProximaPagina === true;
+        paginaLista.textContent = 'Página ' + paginaAtual;
+
+        statusLista.textContent =
+          dados.registros.length + ' registro(s) nesta página. ' +
+          'Referência: ' + dataBrasileira(dados.hoje) +
+          ' — próximos vencimentos até ' +
+          dataBrasileira(dados.limiteAviso) + '.';
+      } catch (erro) {
+        temProxima = false;
+
+        statusLista.textContent = erro.name === 'AbortError'
+          ? 'A consulta demorou demais. Clique em Atualizar lista.'
+          : erro instanceof SyntaxError
+            ? 'Resposta inesperada. Confira seu login e atualize a lista.'
+            : erro.message || 'Não foi possível carregar os registros.';
+      } finally {
+        clearTimeout(limiteLista);
+        carregandoLista = false;
+        atualizarLista.disabled = false;
+        paginaAnterior.disabled = paginaAtual <= 1;
+        paginaProxima.disabled = !temProxima;
+      }
+    }
+
+    atualizarLista.addEventListener('click', function() {
+      carregarValidades(1);
+    });
+
+    paginaAnterior.addEventListener('click', function() {
+      if (paginaAtual > 1) {
+        carregarValidades(paginaAtual - 1);
+      }
+    });
+
+    paginaProxima.addEventListener('click', function() {
+      if (temProxima) {
+        carregarValidades(paginaAtual + 1);
+      }
+    });
+
+    carregarValidades();
     
   </script>
 </body>
