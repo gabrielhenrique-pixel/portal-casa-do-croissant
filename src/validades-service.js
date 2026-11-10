@@ -475,3 +475,76 @@ export async function baixarQuantidadeValidade(env, acesso, entrada) {
     saldoAposBaixa: lote.quantidade_restante - quantidade
   };
 }
+
+export async function consultarHistoricoValidade(env, acesso, url) {
+  if (!acesso?.session || !acesso?.permissions?.view) {
+    throw erroValidacao('Sem permissão para consultar o histórico.', 403);
+  }
+
+  const id = url.searchParams.get('id') || '';
+  const paginaTexto = url.searchParams.get('pagina') || '1';
+
+  const formatoUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (!formatoUUID.test(id)) {
+    throw erroValidacao('Identificador do registro inválido.');
+  }
+
+  if (!/^[1-9]\d{0,5}$/.test(paginaTexto)) {
+    throw erroValidacao('Página inválida.');
+  }
+
+  const pagina = Number(paginaTexto);
+  const porPagina = 50;
+
+  await garantirEstruturaValidades(env);
+
+  const registro = await env.DB.prepare(`
+    SELECT
+      id,
+      loja_nome AS lojaNome,
+      produto_nome AS produtoNome,
+      vencimento,
+      quantidade_inicial AS quantidadeInicial,
+      quantidade_restante AS quantidadeRestante,
+      situacao,
+      mensagem_original AS mensagemOriginal
+    FROM validades_lotes
+    WHERE id = ?
+  `).bind(id).first();
+
+  if (!registro) {
+    throw erroValidacao('Registro não encontrado.', 404);
+  }
+
+  const resultado = await env.DB.prepare(`
+    SELECT
+      id,
+      tipo,
+      quantidade_anterior AS quantidadeAnterior,
+      quantidade_movimentada AS quantidadeMovimentada,
+      quantidade_posterior AS quantidadePosterior,
+      motivo,
+      realizado_por AS usuarioId,
+      realizado_em AS realizadoEm
+    FROM validades_movimentos
+    WHERE lote_id = ?
+    ORDER BY realizado_em DESC, id DESC
+    LIMIT ? OFFSET ?
+  `).bind(
+    id,
+    porPagina + 1,
+    (pagina - 1) * porPagina
+  ).all();
+
+  const movimentos = resultado.results || [];
+
+  return {
+    registro,
+    pagina,
+    porPagina,
+    temProximaPagina: movimentos.length > porPagina,
+    movimentos: movimentos.slice(0, porPagina)
+  };
+}
