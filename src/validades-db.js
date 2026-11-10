@@ -1,7 +1,12 @@
 export async function garantirTabelaValidades(env) {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS validades_lotes (
-      id TEXT PRIMARY KEY,
+            id TEXT PRIMARY KEY,
+
+      mensagem_original TEXT NOT NULL
+        CHECK (length(trim(mensagem_original)) > 0),
+
+      chave_requisicao TEXT NOT NULL UNIQUE,
 
       loja_nome TEXT NOT NULL,
 
