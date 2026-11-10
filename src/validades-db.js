@@ -122,4 +122,22 @@ export async function garantirTabelaHistoricoValidades(env) {
 export async function garantirEstruturaValidades(env) {
   await garantirTabelaValidades(env);
   await garantirTabelaHistoricoValidades(env);
+  await garantirTabelaOrigensValidades(env);
+}
+
+export async function garantirTabelaOrigensValidades(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS validades_origens (
+      lote_id TEXT PRIMARY KEY
+        REFERENCES validades_lotes(id),
+
+      origem TEXT NOT NULL
+        CHECK (origem = 'WHATSAPP_LOCAL'),
+
+      chave_externa TEXT NOT NULL UNIQUE
+        CHECK (length(trim(chave_externa)) > 0),
+
+      sincronizado_em TEXT NOT NULL
+    )
+  `).run();
 }
