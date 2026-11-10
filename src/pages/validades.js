@@ -179,6 +179,68 @@ export function validadesPage() {
       color: #102f49;
       cursor: pointer;
     }
+
+        #janela-historico {
+      width: min(1100px, calc(100% - 24px));
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 0;
+      border-radius: 16px;
+      padding: 24px;
+      color: #102f49;
+      box-shadow: 0 16px 60px #0004;
+    }
+
+    #janela-historico::backdrop {
+      background: #102f4980;
+    }
+
+    #descricao-historico {
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+
+    #mensagem-original-historico {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #f4f6f6;
+      padding: 14px;
+      border-radius: 8px;
+      font: 14px/1.5 Arial, sans-serif;
+    }
+
+    #detalhes-mensagem-original {
+      margin-bottom: 18px;
+    }
+
+    #detalhes-mensagem-original summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #linhas-historico td:last-child {
+      min-width: 140px;
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .acoes-historico {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .acoes-historico button {
+      margin-top: 0;
+    }
+
+    #historico-fechar {
+      background: #e8eef3;
+      color: #102f49;
+    }
     
   </style>
 </head>
@@ -304,6 +366,55 @@ Vencimento: 22/11/2026"
           </button>
         </div>
       </form>
+    </dialog>
+
+        <dialog id="janela-historico" aria-labelledby="titulo-historico">
+      <h2 id="titulo-historico">Histórico da validade</h2>
+
+      <p id="descricao-historico"></p>
+      <p id="status-historico" role="status" aria-live="polite"></p>
+
+      <details id="detalhes-mensagem-original" hidden>
+        <summary>Ver mensagem original</summary>
+        <pre id="mensagem-original-historico"></pre>
+      </details>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Data e hora</th>
+              <th>Operação</th>
+              <th>Antes</th>
+              <th>Quantidade</th>
+              <th>Depois</th>
+              <th>Motivo</th>
+              <th>ID do usuário</th>
+            </tr>
+          </thead>
+          <tbody id="linhas-historico"></tbody>
+        </table>
+      </div>
+
+      <div class="acoes-historico">
+        <button id="historico-anterior" type="button" disabled>
+          Anterior
+        </button>
+
+        <span id="historico-pagina">Página 1</span>
+
+        <button id="historico-proxima" type="button" disabled>
+          Próxima
+        </button>
+
+        <button id="historico-atualizar" type="button">
+          Atualizar
+        </button>
+
+        <button id="historico-fechar" type="button">
+          Fechar
+        </button>
+      </div>
     </dialog>
     
   </main>
@@ -622,7 +733,22 @@ Vencimento: 22/11/2026"
             iniciarBaixa(registro);
           });
 
-          celulaAcao.append(botaoBaixa);
+          const botaoHistorico = document.createElement('button');
+
+          botaoHistorico.type = 'button';
+          botaoHistorico.textContent = 'Histórico';
+          botaoHistorico.style.marginTop = '8px';
+
+          botaoHistorico.addEventListener('click', function() {
+            abrirHistorico(registro);
+          });
+
+          celulaAcao.append(
+            botaoBaixa,
+            document.createElement('br'),
+            botaoHistorico
+          );
+
           linha.append(celulaAcao);
 
           fragmento.append(linha);
@@ -892,6 +1018,214 @@ Vencimento: 22/11/2026"
 
       janelaBaixa.close();
       enviarBaixa();
+    });
+
+        const janelaHistorico = document.getElementById('janela-historico');
+    const descricaoHistorico = document.getElementById('descricao-historico');
+    const statusHistorico = document.getElementById('status-historico');
+    const linhasHistorico = document.getElementById('linhas-historico');
+    const detalhesOriginal =
+      document.getElementById('detalhes-mensagem-original');
+    const mensagemOriginalHistorico =
+      document.getElementById('mensagem-original-historico');
+
+    const historicoAnterior = document.getElementById('historico-anterior');
+    const historicoProxima = document.getElementById('historico-proxima');
+    const historicoAtualizar = document.getElementById('historico-atualizar');
+    const historicoPagina = document.getElementById('historico-pagina');
+
+    let historicoId = null;
+    let paginaHistoricoAtual = 1;
+    let historicoTemProxima = false;
+    let consultaHistorico = null;
+
+    const formatoDataHistorico = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      dateStyle: 'short',
+      timeStyle: 'medium'
+    });
+
+    function abrirHistorico(registro) {
+      historicoId = registro.id;
+      paginaHistoricoAtual = 1;
+      historicoTemProxima = false;
+
+      descricaoHistorico.textContent =
+        registro.lojaNome + ' — ' + registro.produtoNome;
+
+      detalhesOriginal.hidden = true;
+      detalhesOriginal.open = false;
+      mensagemOriginalHistorico.textContent = '';
+      linhasHistorico.replaceChildren();
+      historicoPagina.textContent = 'Página 1';
+
+      if (!janelaHistorico.open) {
+        janelaHistorico.showModal();
+      }
+
+      carregarHistorico(1);
+    }
+
+    async function carregarHistorico(pagina = 1) {
+      if (!historicoId) return;
+
+      if (consultaHistorico) {
+        consultaHistorico.abort();
+      }
+
+      const controlador = new AbortController();
+      consultaHistorico = controlador;
+
+      const idConsultado = historicoId;
+      const limite = setTimeout(function() {
+        controlador.abort();
+      }, 20000);
+
+      historicoAnterior.disabled = true;
+      historicoProxima.disabled = true;
+      historicoAtualizar.disabled = true;
+
+      statusHistorico.textContent = 'Carregando histórico...';
+      linhasHistorico.replaceChildren();
+
+      try {
+        const resposta = await fetch(
+          '/api/validades/historico?id=' +
+          encodeURIComponent(idConsultado) +
+          '&pagina=' + pagina,
+          {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: controlador.signal
+          }
+        );
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok) {
+          throw new Error(
+            dados.error || 'Não foi possível consultar o histórico.'
+          );
+        }
+
+        if (!dados.registro || !Array.isArray(dados.movimentos)) {
+          throw new Error('O servidor retornou um histórico inválido.');
+        }
+
+        if (consultaHistorico !== controlador) return;
+
+        const registro = dados.registro;
+
+        descricaoHistorico.textContent =
+          'Loja: ' + registro.lojaNome +
+          '\nProduto: ' + registro.produtoNome +
+          '\nVencimento: ' + dataBrasileira(registro.vencimento) +
+          '\nSaldo atual: ' + registro.quantidadeRestante + ' un' +
+          '\nSituação: ' +
+          (registro.situacao === 'BAIXADO' ? 'Baixado' : 'Ativo');
+
+        mensagemOriginalHistorico.textContent =
+          registro.mensagemOriginal || '';
+
+        detalhesOriginal.hidden = false;
+
+        const fragmento = document.createDocumentFragment();
+
+        for (const movimento of dados.movimentos) {
+          const linha = document.createElement('tr');
+          const data = new Date(movimento.realizadoEm);
+
+          const valores = [
+            Number.isNaN(data.getTime())
+              ? 'Data indisponível'
+              : formatoDataHistorico.format(data),
+            movimento.tipo === 'CADASTRO' ? 'Cadastro' : 'Baixa',
+            movimento.quantidadeAnterior + ' un',
+            movimento.quantidadeMovimentada + ' un',
+            movimento.quantidadePosterior + ' un',
+            movimento.motivo,
+            movimento.usuarioId
+          ];
+
+          for (const valor of valores) {
+            const celula = document.createElement('td');
+            celula.textContent = String(valor ?? '');
+            linha.append(celula);
+          }
+
+          fragmento.append(linha);
+        }
+
+        if (dados.movimentos.length === 0) {
+          const linha = document.createElement('tr');
+          const celula = document.createElement('td');
+
+          celula.colSpan = 7;
+          celula.textContent = 'Nenhuma movimentação nesta página.';
+
+          linha.append(celula);
+          fragmento.append(linha);
+        }
+
+        linhasHistorico.replaceChildren(fragmento);
+
+        paginaHistoricoAtual = dados.pagina;
+        historicoTemProxima = dados.temProximaPagina === true;
+        historicoPagina.textContent = 'Página ' + paginaHistoricoAtual;
+
+        statusHistorico.textContent =
+          dados.movimentos.length +
+          ' movimentação(ões) nesta página. Mais recentes primeiro.';
+      } catch (erro) {
+        if (consultaHistorico !== controlador) return;
+
+        historicoTemProxima = false;
+
+        statusHistorico.textContent = erro.name === 'AbortError'
+          ? 'A consulta demorou demais. Clique em Atualizar.'
+          : erro instanceof SyntaxError
+            ? 'Resposta inesperada. Confira seu login.'
+            : erro.message || 'Não foi possível carregar o histórico.';
+      } finally {
+        clearTimeout(limite);
+
+        if (consultaHistorico === controlador) {
+          consultaHistorico = null;
+          historicoAtualizar.disabled = false;
+          historicoAnterior.disabled = paginaHistoricoAtual <= 1;
+          historicoProxima.disabled = !historicoTemProxima;
+        }
+      }
+    }
+
+    historicoAnterior.addEventListener('click', function() {
+      if (paginaHistoricoAtual > 1) {
+        carregarHistorico(paginaHistoricoAtual - 1);
+      }
+    });
+
+    historicoProxima.addEventListener('click', function() {
+      if (historicoTemProxima) {
+        carregarHistorico(paginaHistoricoAtual + 1);
+      }
+    });
+
+    historicoAtualizar.addEventListener('click', function() {
+      carregarHistorico(1);
+    });
+
+    document.getElementById('historico-fechar')
+      .addEventListener('click', function() {
+        janelaHistorico.close();
+      });
+
+    janelaHistorico.addEventListener('close', function() {
+      const consulta = consultaHistorico;
+      consultaHistorico = null;
+
+      if (consulta) consulta.abort();
+
+      historicoId = null;
     });
     
   </script>
