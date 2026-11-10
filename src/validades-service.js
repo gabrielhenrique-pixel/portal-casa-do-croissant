@@ -185,3 +185,79 @@ export async function salvarMensagemValidade(env, acesso, entrada) {
     aviso: 'Mensagem salva com sucesso.'
   };
 }
+
+export async function listarValidades(env, acesso, url) {
+  if (!acesso?.session || !acesso?.permissions?.view) {
+    throw erroValidacao('Sem permissão para consultar validades.', 403);
+  }
+
+  const paginaTexto = url.searchParams.get('pagina') || '1';
+
+  if (!/^[1-9]\d{0,5}$/.test(paginaTexto)) {
+    throw erroValidacao('Página inválida.');
+  }
+
+  const pagina = Number(paginaTexto);
+  const porPagina = 100;
+  const deslocamento = (pagina - 1) * porPagina;
+
+  // A classificação usa o dia de São Paulo.
+  const partes = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+
+  const obter = tipo =>
+    partes.find(parte => parte.type === tipo).value;
+
+  const hoje = `${obter('year')}-${obter('month')}-${obter('day')}`;
+
+  const dataLimite = new Date(`${hoje}T00:00:00Z`);
+  dataLimite.setUTCDate(dataLimite.getUTCDate() + 5);
+
+  const limite = dataLimite.toISOString().slice(0, 10);
+
+  await garantirEstruturaValidades(env);
+
+  const resultado = await env.DB.prepare(`
+    SELECT
+      id,
+      loja_nome AS lojaNome,
+      produto_nome AS produtoNome,
+      quantidade_inicial AS quantidadeInicial,
+      quantidade_restante AS quantidadeRestante,
+      unidade,
+      vencimento,
+      situacao,
+      criado_em AS criadoEm,
+      CASE
+        WHEN vencimento < ? THEN 'VENCIDO'
+        WHEN vencimento = ? THEN 'VENCE_HOJE'
+        WHEN vencimento <= ? THEN 'PROXIMOS_5_DIAS'
+        ELSE 'NO_PRAZO'
+      END AS faixa
+    FROM validades_lotes
+    WHERE situacao = 'ATIVO'
+    ORDER BY vencimento ASC, criado_em ASC, id ASC
+    LIMIT ? OFFSET ?
+  `).bind(
+    hoje,
+    hoje,
+    limite,
+    porPagina + 1,
+    deslocamento
+  ).all();
+
+  const registros = resultado.results || [];
+
+  return {
+    hoje,
+    limiteAviso: limite,
+    pagina,
+    porPagina,
+    temProximaPagina: registros.length > porPagina,
+    registros: registros.slice(0, porPagina)
+  };
+}
