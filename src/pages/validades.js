@@ -719,7 +719,7 @@ Vencimento: 22/11/2026"
       document.getElementById('saldo-previsto-baixa').textContent =
         'Informe a quantidade para conferir o saldo restante.';
 
-      janela.showModal();
+      janela.showModal(); 
       quantidade.focus();
     }
 
