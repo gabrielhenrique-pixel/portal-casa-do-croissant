@@ -19,7 +19,8 @@ import { validadesPage } from './pages/validades.js';
 import {
   salvarMensagemValidade,
   listarValidades,
-  baixarQuantidadeValidade
+  baixarQuantidadeValidade,
+  consultarHistoricoValidade
 } from './validades-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
@@ -425,6 +426,46 @@ const portal = {
           }
 
           return validadesPage();
+        }
+
+              if (url.pathname === '/api/validades/historico') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'VALIDADES'
+          );
+
+          if (!acesso?.session || !acesso?.permissions?.view) {
+            return json({
+              error: 'Sem permissão para consultar o histórico.'
+            }, 403);
+          }
+
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405, {
+              Allow: 'GET'
+            });
+          }
+
+          try {
+            return json(
+              await consultarHistoricoValidade(env, acesso, url)
+            );
+          } catch (erro) {
+            const status = Number.isInteger(erro.status)
+              && erro.status >= 400
+              && erro.status < 500
+                ? erro.status
+                : 500;
+
+            return json({
+              error: status === 500
+                ? 'Não foi possível consultar o histórico.'
+                : erro.message
+            }, status);
+          }
         }
 
               if (url.pathname === '/api/validades/listar') {
