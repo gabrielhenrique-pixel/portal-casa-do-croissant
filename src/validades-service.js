@@ -347,6 +347,19 @@ export async function baixarQuantidadeValidade(env, acesso, entrada) {
     return responderBaixaExistente(existente);
   }
 
+    const origemExterna = await env.DB.prepare(`
+    SELECT origem
+    FROM validades_origens
+    WHERE lote_id = ?
+  `).bind(id).first();
+
+  if (origemExterna) {
+    throw erroValidacao(
+      'Este registro veio do WhatsApp. A baixa pelo portal ainda não está habilitada para registros sincronizados.',
+      409
+    );
+  }
+
   const lote = await env.DB.prepare(`
     SELECT id, quantidade_restante, situacao, versao
     FROM validades_lotes
