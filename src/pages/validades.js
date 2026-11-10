@@ -123,6 +123,62 @@ export function validadesPage() {
       display: inline-block;
       margin: 0 12px;
     }
+
+        #janela-baixa {
+      width: min(520px, calc(100% - 24px));
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 0;
+      border-radius: 16px;
+      padding: 24px;
+      color: #102f49;
+      box-shadow: 0 16px 60px #0004;
+    }
+
+    #janela-baixa::backdrop {
+      background: #102f4980;
+    }
+
+    #descricao-baixa {
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+      background: #f4f6f6;
+      padding: 14px;
+      border-radius: 8px;
+    }
+
+    #quantidade-baixa {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 18px;
+      border: 1px solid #bccddd;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    #motivo-baixa {
+      min-height: 90px;
+    }
+
+    #saldo-previsto-baixa {
+      font-weight: bold;
+    }
+
+    #erro-baixa {
+      color: #b91c1c;
+    }
+
+    .acoes-baixa {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    #cancelar-baixa {
+      background: #e8eef3;
+      color: #102f49;
+      cursor: pointer;
+    }
     
   </style>
 </head>
@@ -211,6 +267,44 @@ Vencimento: 22/11/2026"
         </button>
       </div>
     </section>
+
+        <dialog id="janela-baixa" aria-labelledby="titulo-baixa">
+      <form id="formulario-baixa">
+        <h2 id="titulo-baixa">Baixar quantidade</h2>
+
+        <p id="descricao-baixa"></p>
+
+        <label for="quantidade-baixa">Quantidade a baixar</label>
+        <input
+          id="quantidade-baixa"
+          type="number"
+          min="1"
+          step="1"
+          required
+        >
+
+        <label for="motivo-baixa">Motivo da baixa</label>
+        <textarea
+          id="motivo-baixa"
+          maxlength="500"
+          required
+          placeholder="Ex.: venda, retirada ou descarte"
+        ></textarea>
+
+        <p id="saldo-previsto-baixa"></p>
+        <p id="erro-baixa" role="alert"></p>
+
+        <div class="acoes-baixa">
+          <button id="cancelar-baixa" type="button">
+            Cancelar
+          </button>
+
+          <button type="submit">
+            Confirmar baixa
+          </button>
+        </div>
+      </form>
+    </dialog>
     
   </main>
 
@@ -597,6 +691,8 @@ Vencimento: 22/11/2026"
     let tentativaBaixa = null;
     let enviandoBaixa = false;
 
+    let registroBaixaSelecionado = null;
+
     function iniciarBaixa(registro) {
       if (tentativaBaixa || enviandoBaixa) {
         statusBaixa.textContent =
@@ -604,65 +700,27 @@ Vencimento: 22/11/2026"
         return;
       }
 
-      const quantidadeTexto = window.prompt(
+      registroBaixaSelecionado = { ...registro };
+
+      const janela = document.getElementById('janela-baixa');
+      const quantidade = document.getElementById('quantidade-baixa');
+
+      document.getElementById('formulario-baixa').reset();
+
+      document.getElementById('descricao-baixa').textContent =
         'Loja: ' + registro.lojaNome +
         '\nProduto: ' + registro.produtoNome +
         '\nVencimento: ' + dataBrasileira(registro.vencimento) +
-        '\nSaldo: ' + registro.quantidadeRestante + ' un' +
-        '\n\nQuantas unidades deseja baixar?'
-      );
+        '\nSaldo disponível: ' + registro.quantidadeRestante + ' un';
 
-      if (quantidadeTexto === null) return;
+      quantidade.max = String(registro.quantidadeRestante);
 
-      const texto = quantidadeTexto.trim();
-      const quantidade = Number(texto);
+      document.getElementById('erro-baixa').textContent = '';
+      document.getElementById('saldo-previsto-baixa').textContent =
+        'Informe a quantidade para conferir o saldo restante.';
 
-      if (
-        !/^\d+$/.test(texto) ||
-        !Number.isSafeInteger(quantidade) ||
-        quantidade <= 0 ||
-        quantidade > registro.quantidadeRestante
-      ) {
-        statusBaixa.textContent =
-          'Informe uma quantidade inteira entre 1 e ' +
-          registro.quantidadeRestante + '.';
-        return;
-      }
-
-      const motivoTexto = window.prompt(
-        'Informe o motivo da baixa, por exemplo: venda ou retirada.'
-      );
-
-      if (motivoTexto === null) return;
-
-      const motivo = motivoTexto.trim();
-
-      if (!motivo || motivo.length > 500) {
-        statusBaixa.textContent =
-          'Informe um motivo com até 500 caracteres.';
-        return;
-      }
-
-      const confirmou = window.confirm(
-        'Confirmar baixa de ' + quantidade + ' unidades?' +
-        '\n\nLoja: ' + registro.lojaNome +
-        '\nProduto: ' + registro.produtoNome +
-        '\nVencimento: ' + dataBrasileira(registro.vencimento) +
-        '\nSaldo previsto após a baixa: ' +
-        (registro.quantidadeRestante - quantidade) + ' un' +
-        '\nMotivo: ' + motivo
-      );
-
-      if (!confirmou) return;
-
-      tentativaBaixa = {
-        id: registro.id,
-        quantidade,
-        motivo,
-        chaveRequisicao: crypto.randomUUID()
-      };
-
-      enviarBaixa();
+      janela.showModal();
+      quantidade.focus();
     }
 
     async function enviarBaixa() {
@@ -749,6 +807,92 @@ Vencimento: 22/11/2026"
     }
 
     repetirBaixa.addEventListener('click', enviarBaixa);
+
+        const janelaBaixa = document.getElementById('janela-baixa');
+    const formularioBaixa = document.getElementById('formulario-baixa');
+    const quantidadeBaixa = document.getElementById('quantidade-baixa');
+    const motivoBaixa = document.getElementById('motivo-baixa');
+    const erroBaixa = document.getElementById('erro-baixa');
+    const saldoPrevistoBaixa =
+      document.getElementById('saldo-previsto-baixa');
+
+    quantidadeBaixa.addEventListener('input', function() {
+      erroBaixa.textContent = '';
+
+      if (!registroBaixaSelecionado) return;
+
+      const quantidade = quantidadeBaixa.valueAsNumber;
+      const saldo = registroBaixaSelecionado.quantidadeRestante;
+
+      if (
+        !Number.isSafeInteger(quantidade) ||
+        quantidade <= 0 ||
+        quantidade > saldo
+      ) {
+        saldoPrevistoBaixa.textContent =
+          'Informe uma quantidade inteira entre 1 e ' + saldo + '.';
+        return;
+      }
+
+      const restante = saldo - quantidade;
+
+      saldoPrevistoBaixa.textContent = restante === 0
+        ? 'Saldo após a baixa: 0 un. O registro sairá da lista de ativos.'
+        : 'Saldo após a baixa: ' + restante + ' un.';
+    });
+
+    document.getElementById('cancelar-baixa')
+      .addEventListener('click', function() {
+        janelaBaixa.close();
+      });
+
+    janelaBaixa.addEventListener('close', function() {
+      registroBaixaSelecionado = null;
+    });
+
+    formularioBaixa.addEventListener('submit', function(evento) {
+      evento.preventDefault();
+
+      if (
+        !registroBaixaSelecionado ||
+        tentativaBaixa ||
+        enviandoBaixa
+      ) {
+        erroBaixa.textContent =
+          'Já existe uma tentativa pendente. Cancele esta janela e confira a mensagem na lista.';
+        return;
+      }
+
+      const quantidade = quantidadeBaixa.valueAsNumber;
+      const motivo = motivoBaixa.value.trim();
+      const saldo = registroBaixaSelecionado.quantidadeRestante;
+
+      if (
+        !Number.isSafeInteger(quantidade) ||
+        quantidade <= 0 ||
+        quantidade > saldo
+      ) {
+        erroBaixa.textContent =
+          'Informe uma quantidade inteira entre 1 e ' + saldo + '.';
+        return;
+      }
+
+      if (!motivo || motivo.length > 500) {
+        erroBaixa.textContent =
+          'Informe um motivo com até 500 caracteres.';
+        return;
+      }
+
+      tentativaBaixa = {
+        id: registroBaixaSelecionado.id,
+        quantidade,
+        motivo,
+        chaveRequisicao: crypto.randomUUID()
+      };
+
+      janelaBaixa.close();
+      enviarBaixa();
+    });
     
   </script>
 </body>
