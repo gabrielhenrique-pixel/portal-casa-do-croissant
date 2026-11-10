@@ -16,6 +16,9 @@ import {
   interpretarMensagemValidade
 } from './validades-mensagem.js';
 import { validadesPage } from './pages/validades.js';
+import {
+  salvarMensagemValidade
+} from './validades-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
@@ -420,6 +423,131 @@ const portal = {
           }
 
           return validadesPage();
+        }
+
+              if (url.pathname === '/api/validades/salvar') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'VALIDADES'
+          );
+
+          if (
+            !acesso?.session ||
+            !acesso?.permissions?.view ||
+            !acesso?.permissions?.create
+          ) {
+            return json({
+              error: 'Sem permissão para salvar validades.'
+            }, 403);
+          }
+
+          if (request.method !== 'POST') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405, {
+              Allow: 'POST'
+            });
+          }
+
+          // Esta rota recebe salvamentos feitos pela tela do portal.
+          if (request.headers.get('origin') !== url.origin) {
+            return json({
+              error: 'Origem da solicitação não autorizada.'
+            }, 403);
+          }
+
+          const tipoConteudo = (
+            request.headers.get('content-type') || ''
+          ).split(';')[0].trim().toLowerCase();
+
+          if (tipoConteudo !== 'application/json') {
+            return json({
+              error: 'Envie os dados no formato JSON.'
+            }, 415);
+          }
+
+          // Limita o corpo antes de interpretar o JSON.
+          if (!request.body) {
+            return json({
+              error: 'Informe a mensagem para salvar.'
+            }, 400);
+          }
+
+          const leitor = request.body.getReader();
+          const partes = [];
+          let tamanho = 0;
+
+          try {
+            while (true) {
+              const { done, value } = await leitor.read();
+
+              if (done) break;
+
+              tamanho += value.byteLength;
+
+              if (tamanho > 131072) {
+                await leitor.cancel();
+
+                return json({
+                  error: 'A solicitação excedeu o tamanho permitido.'
+                }, 413);
+              }
+
+              partes.push(value);
+            }
+          } catch {
+            return json({
+              error: 'Não foi possível receber a mensagem. Tente novamente.'
+            }, 400);
+          } finally {
+            leitor.releaseLock();
+          }
+
+          const bytes = new Uint8Array(tamanho);
+          let posicao = 0;
+
+          for (const parte of partes) {
+            bytes.set(parte, posicao);
+            posicao += parte.byteLength;
+          }
+
+          let dados;
+
+          try {
+            dados = JSON.parse(
+              new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+            );
+          } catch {
+            return json({
+              error: 'JSON inválido.'
+            }, 400);
+          }
+
+          try {
+            const resultado = await salvarMensagemValidade(
+              env,
+              acesso,
+              dados
+            );
+
+            return json(
+              resultado,
+              resultado.jaExistia ? 200 : 201
+            );
+          } catch (erro) {
+            const status = Number.isInteger(erro.status)
+              && erro.status >= 400
+              && erro.status < 500
+                ? erro.status
+                : 500;
+
+            return json({
+              error: status === 500
+                ? 'Não foi possível confirmar o salvamento. Tente novamente usando a mesma tentativa.'
+                : erro.message
+            }, status);
+          }
         }
 
               if (url.pathname === '/api/validades/interpretar') {
