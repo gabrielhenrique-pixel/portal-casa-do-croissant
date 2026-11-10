@@ -17,7 +17,8 @@ import {
 } from './validades-mensagem.js';
 import { validadesPage } from './pages/validades.js';
 import {
-  salvarMensagemValidade
+  salvarMensagemValidade,
+  listarValidades
 } from './validades-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
@@ -423,6 +424,46 @@ const portal = {
           }
 
           return validadesPage();
+        }
+
+              if (url.pathname === '/api/validades/listar') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'VALIDADES'
+          );
+
+          if (!acesso?.session || !acesso?.permissions?.view) {
+            return json({
+              error: 'Sem permissão para consultar validades.'
+            }, 403);
+          }
+
+          if (request.method !== 'GET') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405, {
+              Allow: 'GET'
+            });
+          }
+
+          try {
+            return json(
+              await listarValidades(env, acesso, url)
+            );
+          } catch (erro) {
+            const status = Number.isInteger(erro.status)
+              && erro.status >= 400
+              && erro.status < 500
+                ? erro.status
+                : 500;
+
+            return json({
+              error: status === 500
+                ? 'Não foi possível consultar as validades.'
+                : erro.message
+            }, status);
+          }
         }
 
               if (url.pathname === '/api/validades/salvar') {
