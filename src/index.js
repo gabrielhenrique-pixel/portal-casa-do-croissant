@@ -18,7 +18,8 @@ import {
 import { validadesPage } from './pages/validades.js';
 import {
   salvarMensagemValidade,
-  listarValidades
+  listarValidades,
+  baixarQuantidadeValidade
 } from './validades-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
@@ -461,6 +462,122 @@ const portal = {
             return json({
               error: status === 500
                 ? 'Não foi possível consultar as validades.'
+                : erro.message
+            }, status);
+          }
+        }
+
+              if (url.pathname === '/api/validades/baixar') {
+          const acesso = await obterAcessoModulo(
+            request,
+            env,
+            'VALIDADES'
+          );
+
+          if (
+            !acesso?.session ||
+            !acesso?.permissions?.view ||
+            !acesso?.permissions?.update
+          ) {
+            return json({
+              error: 'Sem permissão para baixar quantidades.'
+            }, 403);
+          }
+
+          if (request.method !== 'POST') {
+            return json({
+              error: 'Método não permitido.'
+            }, 405, {
+              Allow: 'POST'
+            });
+          }
+
+          if (request.headers.get('origin') !== url.origin) {
+            return json({
+              error: 'Origem da solicitação não autorizada.'
+            }, 403);
+          }
+
+          const tipoConteudo = (
+            request.headers.get('content-type') || ''
+          ).split(';')[0].trim().toLowerCase();
+
+          if (tipoConteudo !== 'application/json') {
+            return json({
+              error: 'Envie os dados no formato JSON.'
+            }, 415);
+          }
+
+          if (!request.body) {
+            return json({
+              error: 'Informe os dados da baixa.'
+            }, 400);
+          }
+
+          const leitor = request.body.getReader();
+          const partes = [];
+          let tamanho = 0;
+
+          try {
+            while (true) {
+              const { done, value } = await leitor.read();
+
+              if (done) break;
+
+              tamanho += value.byteLength;
+
+              if (tamanho > 16384) {
+                await leitor.cancel();
+
+                return json({
+                  error: 'A solicitação excedeu o tamanho permitido.'
+                }, 413);
+              }
+
+              partes.push(value);
+            }
+          } catch {
+            return json({
+              error: 'Não foi possível receber os dados da baixa.'
+            }, 400);
+          } finally {
+            leitor.releaseLock();
+          }
+
+          const bytes = new Uint8Array(tamanho);
+          let posicao = 0;
+
+          for (const parte of partes) {
+            bytes.set(parte, posicao);
+            posicao += parte.byteLength;
+          }
+
+          let dados;
+
+          try {
+            dados = JSON.parse(
+              new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+            );
+          } catch {
+            return json({
+              error: 'JSON inválido.'
+            }, 400);
+          }
+
+          try {
+            return json(
+              await baixarQuantidadeValidade(env, acesso, dados)
+            );
+          } catch (erro) {
+            const status = Number.isInteger(erro.status)
+              && erro.status >= 400
+              && erro.status < 500
+                ? erro.status
+                : 500;
+
+            return json({
+              error: status === 500
+                ? 'Não foi possível confirmar a baixa. Repita usando a mesma tentativa.'
                 : erro.message
             }, status);
           }
