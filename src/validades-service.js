@@ -261,3 +261,217 @@ export async function listarValidades(env, acesso, url) {
     registros: registros.slice(0, porPagina)
   };
 }
+
+export async function baixarQuantidadeValidade(env, acesso, entrada) {
+  if (
+    !acesso?.session?.user_id ||
+    !acesso?.permissions?.view ||
+    !acesso?.permissions?.update
+  ) {
+    throw erroValidacao('Sem permissão para baixar quantidades.', 403);
+  }
+
+  const id = entrada?.id;
+  const quantidade = entrada?.quantidade;
+  const motivo = typeof entrada?.motivo === 'string'
+    ? entrada.motivo.trim()
+    : '';
+  const chave = entrada?.chaveRequisicao;
+
+  const formatoUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (typeof id !== 'string' || !formatoUUID.test(id)) {
+    throw erroValidacao('Registro inválido.');
+  }
+
+  if (!Number.isSafeInteger(quantidade) || quantidade <= 0) {
+    throw erroValidacao('Informe uma quantidade inteira maior que zero.');
+  }
+
+  if (!motivo || motivo.length > 500) {
+    throw erroValidacao('Informe um motivo com até 500 caracteres.');
+  }
+
+  if (typeof chave !== 'string' || !formatoUUID.test(chave)) {
+    throw erroValidacao('Identificador da tentativa inválido.');
+  }
+
+  const usuario = String(acesso.session.user_id);
+
+  const movimentoId = JSON.stringify([
+    'BAIXA',
+    usuario,
+    chave.toLowerCase()
+  ]);
+
+  await garantirEstruturaValidades(env);
+
+  async function buscarBaixa() {
+    return env.DB.prepare(`
+      SELECT
+        lote_id,
+        quantidade_movimentada,
+        quantidade_posterior,
+        motivo,
+        realizado_por
+      FROM validades_movimentos
+      WHERE id = ?
+    `).bind(movimentoId).first();
+  }
+
+  function responderBaixaExistente(baixa) {
+    if (
+      baixa.lote_id !== id ||
+      baixa.quantidade_movimentada !== quantidade ||
+      baixa.motivo !== motivo ||
+      baixa.realizado_por !== usuario
+    ) {
+      throw erroValidacao(
+        'Esta tentativa já foi usada para outra baixa.',
+        409
+      );
+    }
+
+    return {
+      sucesso: true,
+      jaExistia: true,
+      id,
+      saldoAposBaixa: baixa.quantidade_posterior
+    };
+  }
+
+  const existente = await buscarBaixa();
+
+  if (existente) {
+    return responderBaixaExistente(existente);
+  }
+
+  const lote = await env.DB.prepare(`
+    SELECT id, quantidade_restante, situacao, versao
+    FROM validades_lotes
+    WHERE id = ?
+  `).bind(id).first();
+
+  if (!lote) {
+    throw erroValidacao('Registro não encontrado.', 404);
+  }
+
+  if (lote.situacao !== 'ATIVO') {
+    throw erroValidacao('Este registro já está baixado.', 409);
+  }
+
+  if (quantidade > lote.quantidade_restante) {
+    throw erroValidacao(
+      'Quantidade maior que o saldo disponível: ' +
+      lote.quantidade_restante + ' unidades.',
+      409
+    );
+  }
+
+  const agora = new Date().toISOString();
+  let resultados;
+
+  try {
+    resultados = await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO validades_movimentos (
+          id,
+          lote_id,
+          tipo,
+          quantidade_anterior,
+          quantidade_movimentada,
+          quantidade_posterior,
+          motivo,
+          realizado_por,
+          realizado_em
+        )
+        SELECT
+          ?,
+          id,
+          'BAIXA',
+          quantidade_restante,
+          ?,
+          quantidade_restante - ?,
+          ?,
+          ?,
+          ?
+        FROM validades_lotes
+        WHERE id = ?
+          AND versao = ?
+          AND situacao = 'ATIVO'
+          AND quantidade_restante >= ?
+      `).bind(
+        movimentoId,
+        quantidade,
+        quantidade,
+        motivo,
+        usuario,
+        agora,
+        id,
+        lote.versao,
+        quantidade
+      ),
+
+      env.DB.prepare(`
+        UPDATE validades_lotes
+        SET
+          quantidade_restante = quantidade_restante - ?,
+          situacao = CASE
+            WHEN quantidade_restante - ? = 0 THEN 'BAIXADO'
+            ELSE 'ATIVO'
+          END,
+          versao = versao + 1,
+          atualizado_por = ?,
+          atualizado_em = ?
+        WHERE id = ?
+          AND versao = ?
+          AND EXISTS (
+            SELECT 1
+            FROM validades_movimentos
+            WHERE id = ?
+              AND lote_id = validades_lotes.id
+          )
+      `).bind(
+        quantidade,
+        quantidade,
+        usuario,
+        agora,
+        id,
+        lote.versao,
+        movimentoId
+      )
+    ]);
+  } catch (erro) {
+    const baixa = await buscarBaixa();
+
+    if (baixa) {
+      return responderBaixaExistente(baixa);
+    }
+
+    throw erro;
+  }
+
+  if (
+    resultados[0].meta.changes !== 1 ||
+    resultados[1].meta.changes !== 1
+  ) {
+    const baixa = await buscarBaixa();
+
+    if (baixa) {
+      return responderBaixaExistente(baixa);
+    }
+
+    throw erroValidacao(
+      'O saldo foi atualizado por outra operação. Atualize a lista antes de continuar.',
+      409
+    );
+  }
+
+  return {
+    sucesso: true,
+    jaExistia: false,
+    id,
+    saldoAposBaixa: lote.quantidade_restante - quantidade
+  };
+}
