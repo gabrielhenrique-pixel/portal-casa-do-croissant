@@ -127,9 +127,12 @@ Vencimento: 22/11/2026"
     <section id="resultado" hidden>
       <h2 id="titulo-resultado"></h2>
       <div id="conteudo-resultado"></div>
-      <p class="aviso">
-        Esta etapa apenas confere a mensagem.
-        Nenhum registro foi salvo e nenhum aviso foi enviado.
+            <button id="salvar" type="button" hidden>
+        Salvar mensagem
+      </button>
+            <p id="aviso-salvamento" class="aviso">
+        Conferir não salva. Para registrar, clique em Salvar mensagem.
+        Nenhum aviso de WhatsApp será enviado nesta etapa.
       </p>
     </section>
   </main>
@@ -142,6 +145,11 @@ Vencimento: 22/11/2026"
     const resultado = document.getElementById('resultado');
     const titulo = document.getElementById('titulo-resultado');
     const conteudo = document.getElementById('conteudo-resultado');
+    const salvar = document.getElementById('salvar');
+    const avisoSalvamento = document.getElementById('aviso-salvamento');
+
+    let tentativa = null;
+    let salvando = false;
 
     formulario.addEventListener('submit', async function(evento) {
       evento.preventDefault();
@@ -156,6 +164,9 @@ Vencimento: 22/11/2026"
       botao.disabled = true;
       mensagem.disabled = true;
       resultado.hidden = true;
+      salvar.hidden = true;
+      avisoSalvamento.textContent =
+        'Conferir não salva. Nenhum aviso de WhatsApp é enviado nesta etapa.';
       conteudo.replaceChildren();
       status.textContent = 'Conferindo mensagem...';
 
@@ -183,6 +194,21 @@ Vencimento: 22/11/2026"
 
         if (dados.status === 'VALIDO') {
           titulo.textContent = 'Mensagem válida';
+                    if (!tentativa || tentativa.mensagem !== texto) {
+            tentativa = {
+              mensagem: texto,
+              chaveRequisicao: crypto.randomUUID(),
+              salvo: false
+            };
+          }
+
+          salvar.hidden = tentativa.salvo;
+          salvar.disabled = false;
+          salvar.textContent = 'Salvar mensagem';
+
+          avisoSalvamento.textContent = tentativa.salvo
+            ? 'Esta mensagem já foi salva nesta tentativa.'
+            : 'Mensagem conferida, mas ainda não salva. Clique em Salvar mensagem para registrar.';
 
           const lista = document.createElement('dl');
 
@@ -239,6 +265,90 @@ Vencimento: 22/11/2026"
       resultado.hidden = true;
       status.textContent = '';
     });
+
+       salvar.addEventListener('click', async function() {
+      if (!tentativa || tentativa.salvo || salvando) return;
+
+      if (mensagem.value.trim() !== tentativa.mensagem) {
+        status.textContent = 'A mensagem mudou. Confira novamente antes de salvar.';
+        salvar.hidden = true;
+        return;
+      }
+
+      salvando = true;
+      salvar.disabled = true;
+      botao.disabled = true;
+      mensagem.disabled = true;
+
+      status.textContent = 'Salvando mensagem...';
+      avisoSalvamento.textContent = 'Aguarde a confirmação do salvamento.';
+
+      const controlador = new AbortController();
+      const limite = setTimeout(function() {
+        controlador.abort();
+      }, 20000);
+
+      try {
+        const resposta = await fetch('/api/validades/salvar', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            mensagem: tentativa.mensagem,
+            chaveRequisicao: tentativa.chaveRequisicao
+          }),
+          signal: controlador.signal
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok || dados.sucesso !== true || !dados.id) {
+          throw new Error(
+            dados.error || 'O servidor não confirmou o salvamento.'
+          );
+        }
+
+        tentativa.salvo = true;
+        salvar.hidden = true;
+
+        status.textContent = dados.jaExistia
+          ? 'Salvamento confirmado. A tentativa já havia sido registrada.'
+          : 'Mensagem salva com sucesso.';
+
+        avisoSalvamento.textContent =
+          'Registro: ' + dados.id +
+          '. Mensagem e histórico salvos. Nenhum aviso de WhatsApp foi enviado.';
+
+        mensagem.disabled = false;
+        botao.disabled = false;
+      } catch (erro) {
+        const detalhe = erro.name === 'AbortError'
+          ? 'O tempo de espera terminou.'
+          : erro instanceof SyntaxError
+            ? 'O servidor retornou uma resposta inesperada.'
+            : erro.message || 'Falha de comunicação.';
+
+        status.textContent = detalhe;
+
+        avisoSalvamento.textContent =
+          'O salvamento não foi confirmado. Clique em Tentar salvar novamente. ' +
+          'A mesma chave será reutilizada para evitar duplicação. ' +
+          'Não recarregue a página enquanto esta tentativa estiver pendente.';
+
+        salvar.textContent = 'Tentar salvar novamente';
+        salvar.disabled = false;
+
+        // Mantém a mensagem bloqueada até confirmar esta tentativa.
+        mensagem.disabled = true;
+        botao.disabled = true;
+      } finally {
+        clearTimeout(limite);
+        salvando = false;
+      }
+    });
+    
   </script>
 </body>
 </html>`, {
