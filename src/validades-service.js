@@ -561,3 +561,184 @@ export async function consultarHistoricoValidade(env, acesso, url) {
     movimentos: movimentos.slice(0, porPagina)
   };
 }
+
+export async function importarValidadeWhatsApp(env, entrada) {
+  const chaveExterna = entrada?.chaveExterna;
+  const mensagem = entrada?.mensagem;
+
+  const formatoUUID =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  if (
+    typeof chaveExterna !== 'string' ||
+    !formatoUUID.test(chaveExterna)
+  ) {
+    throw erroValidacao('Identificador de origem inválido.');
+  }
+
+  if (
+    typeof mensagem !== 'string' ||
+    !mensagem.trim() ||
+    mensagem.length > 10000
+  ) {
+    throw erroValidacao(
+      'Informe uma mensagem com até 10.000 caracteres.'
+    );
+  }
+
+  const chave = chaveExterna.toLowerCase();
+
+  await garantirEstruturaValidades(env);
+
+  async function buscarImportado() {
+    return env.DB.prepare(`
+      SELECT
+        l.id,
+        l.mensagem_original
+      FROM validades_origens o
+      JOIN validades_lotes l ON l.id = o.lote_id
+      WHERE o.origem = 'WHATSAPP_LOCAL'
+        AND o.chave_externa = ?
+    `).bind(chave).first();
+  }
+
+  function responderExistente(registro) {
+    if (registro.mensagem_original !== mensagem) {
+      throw erroValidacao(
+        'O registro de origem já foi importado com outra mensagem. Revisão necessária.',
+        409
+      );
+    }
+
+    return {
+      sucesso: true,
+      id: registro.id,
+      jaExistia: true
+    };
+  }
+
+  const existente = await buscarImportado();
+
+  if (existente) {
+    return responderExistente(existente);
+  }
+
+  const interpretacao = interpretarMensagemValidade(mensagem);
+
+  if (interpretacao.status !== 'VALIDO') {
+    throw erroValidacao(
+      (interpretacao.motivos || ['Mensagem inválida.']).join(' '),
+      422
+    );
+  }
+
+  const dados = interpretacao.dados;
+  const id = crypto.randomUUID();
+  const movimentoId = crypto.randomUUID();
+  const agora = new Date().toISOString();
+
+  // Identifica a integração, sem atribuir a ação a um usuário humano.
+  const responsavel = 'integracao:whatsapp-local';
+
+  const chaveRequisicao = JSON.stringify([
+    'WHATSAPP_LOCAL',
+    chave
+  ]);
+
+  try {
+    await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO validades_lotes (
+          id,
+          mensagem_original,
+          chave_requisicao,
+          loja_nome,
+          produto_nome,
+          quantidade_inicial,
+          quantidade_restante,
+          unidade,
+          vencimento,
+          situacao,
+          observacao,
+          criado_por,
+          criado_em,
+          atualizado_por,
+          atualizado_em,
+          versao
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?, ?,
+          'UN', ?, 'ATIVO', '',
+          ?, ?, ?, ?, 1
+        )
+      `).bind(
+        id,
+        mensagem,
+        chaveRequisicao,
+        dados.lojaNome,
+        dados.produtoNome,
+        dados.quantidade,
+        dados.quantidade,
+        dados.vencimento,
+        responsavel,
+        agora,
+        responsavel,
+        agora
+      ),
+
+      env.DB.prepare(`
+        INSERT INTO validades_movimentos (
+          id,
+          lote_id,
+          tipo,
+          quantidade_anterior,
+          quantidade_movimentada,
+          quantidade_posterior,
+          motivo,
+          realizado_por,
+          realizado_em
+        )
+        VALUES (
+          ?, ?, 'CADASTRO', 0, ?, ?,
+          'Importação de mensagem recebida pelo WhatsApp',
+          ?, ?
+        )
+      `).bind(
+        movimentoId,
+        id,
+        dados.quantidade,
+        dados.quantidade,
+        responsavel,
+        agora
+      ),
+
+      env.DB.prepare(`
+        INSERT INTO validades_origens (
+          lote_id,
+          origem,
+          chave_externa,
+          sincronizado_em
+        )
+        VALUES (?, 'WHATSAPP_LOCAL', ?, ?)
+      `).bind(
+        id,
+        chave,
+        agora
+      )
+    ]);
+  } catch (erro) {
+    const importado = await buscarImportado();
+
+    if (importado) {
+      return responderExistente(importado);
+    }
+
+    throw erro;
+  }
+
+  return {
+    sucesso: true,
+    id,
+    jaExistia: false
+  };
+}
