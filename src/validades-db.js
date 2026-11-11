@@ -123,6 +123,7 @@ export async function garantirEstruturaValidades(env) {
   await garantirTabelaValidades(env);
   await garantirTabelaHistoricoValidades(env);
   await garantirTabelaOrigensValidades(env);
+  await garantirTabelaFilaBaixasValidades(env);
 }
 
 export async function garantirTabelaOrigensValidades(env) {
@@ -139,5 +140,29 @@ export async function garantirTabelaOrigensValidades(env) {
 
       sincronizado_em TEXT NOT NULL
     )
+  `).run();
+}
+
+export async function garantirTabelaFilaBaixasValidades(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS validades_baixas_sincronizacao (
+      sequencia INTEGER PRIMARY KEY AUTOINCREMENT,
+
+      movimento_id TEXT NOT NULL UNIQUE
+        REFERENCES validades_movimentos(id),
+
+      lote_id TEXT NOT NULL
+        REFERENCES validades_lotes(id),
+
+      criado_em TEXT NOT NULL,
+
+      confirmado_em TEXT
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS idx_validades_baixas_pendentes
+    ON validades_baixas_sincronizacao (sequencia)
+    WHERE confirmado_em IS NULL
   `).run();
 }
