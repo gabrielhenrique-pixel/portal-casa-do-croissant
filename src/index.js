@@ -22,6 +22,9 @@ import {
   baixarQuantidadeValidade,
   consultarHistoricoValidade
 } from './validades-service.js';
+import {
+  receberValidadeIntegracao
+} from './validades-integracao.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
@@ -747,6 +750,10 @@ const portal = {
                 : erro.message
             }, status);
           }
+        }
+
+              if (url.pathname === '/api/integracoes/validades') {
+          return await receberValidadeIntegracao(request, env);
         }
 
               if (url.pathname === '/api/validades/interpretar') {
