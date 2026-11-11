@@ -567,7 +567,7 @@ export async function importarValidadeWhatsApp(env, entrada) {
   const mensagem = entrada?.mensagem;
 
   const formatoUUID =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[45][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
   if (
     typeof chaveExterna !== 'string' ||
