@@ -742,3 +742,36 @@ export async function importarValidadeWhatsApp(env, entrada) {
     jaExistia: false
   };
 }
+
+export async function listarBaixasPendentesIntegracao(env) {
+  await garantirEstruturaValidades(env);
+
+  const resultado = await env.DB.prepare(`
+    SELECT
+      f.sequencia,
+      m.id AS movimentoId,
+      m.lote_id AS registroId,
+      m.quantidade_anterior AS quantidadeAnterior,
+      m.quantidade_movimentada AS quantidadeBaixada,
+      m.quantidade_posterior AS quantidadePosterior,
+      m.motivo,
+      m.realizado_por AS usuarioId,
+      m.realizado_em AS realizadoEm
+    FROM validades_baixas_sincronizacao f
+    JOIN validades_movimentos m
+      ON m.id = f.movimento_id
+      AND m.lote_id = f.lote_id
+    JOIN validades_origens o
+      ON o.lote_id = f.lote_id
+    WHERE f.confirmado_em IS NULL
+      AND m.tipo = 'BAIXA'
+      AND o.origem = 'WHATSAPP_LOCAL'
+    ORDER BY f.sequencia ASC
+    LIMIT 50
+  `).all();
+
+  return {
+    sucesso: true,
+    baixas: resultado.results || []
+  };
+}
