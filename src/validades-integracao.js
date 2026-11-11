@@ -1,5 +1,6 @@
 import {
-  importarValidadeWhatsApp
+  importarValidadeWhatsApp,
+  listarBaixasPendentesIntegracao
 } from './validades-service.js';
 
 function resposta(dados, status = 200, headers = {}) {
@@ -123,5 +124,40 @@ export async function receberValidadeIntegracao(request, env) {
         ? 'Não foi possível confirmar a importação. Repita com a mesma chave de origem.'
         : erro.message
     }, status);
+  }
+}
+
+export async function consultarBaixasIntegracao(request, env) {
+  if (request.method !== 'GET') {
+    return resposta({
+      error: 'Método não permitido.'
+    }, 405, {
+      Allow: 'GET'
+    });
+  }
+
+  const segredo = env.VALIDADES_INTEGRACAO_TOKEN;
+
+  if (typeof segredo !== 'string' || segredo.length < 32) {
+    return resposta({
+      error: 'Integração ainda não configurada.'
+    }, 503);
+  }
+
+  if (
+    request.headers.get('authorization') !== 'Bearer ' + segredo
+  ) {
+    return resposta({
+      error: 'Credencial de integração inválida.'
+    }, 401);
+  }
+
+  try {
+    const resultado = await listarBaixasPendentesIntegracao(env);
+    return resposta(resultado);
+  } catch {
+    return resposta({
+      error: 'Não foi possível consultar as baixas pendentes.'
+    }, 500);
   }
 }
