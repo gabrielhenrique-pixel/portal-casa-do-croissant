@@ -21,10 +21,10 @@ import {
   listarValidades,
   baixarQuantidadeValidade,
   consultarHistoricoValidade
-} from './validades-service.js';
 import {
-  receberValidadeIntegracao
-} from './validades-integracao.js';
+  importarValidadeWhatsApp,
+  listarBaixasPendentesIntegracao
+} from './validades-service.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
@@ -6765,6 +6765,42 @@ button.textContent = '↪ Entrar';
   });
 
   loadSession();
+
+export async function consultarBaixasIntegracao(request, env) {
+  if (request.method !== 'GET') {
+    return resposta({
+      error: 'Método não permitido.'
+    }, 405, {
+      Allow: 'GET'
+    });
+  }
+
+  const segredo = env.VALIDADES_INTEGRACAO_TOKEN;
+
+  if (typeof segredo !== 'string' || segredo.length < 32) {
+    return resposta({
+      error: 'Integração ainda não configurada.'
+    }, 503);
+  }
+
+  if (
+    request.headers.get('authorization') !== 'Bearer ' + segredo
+  ) {
+    return resposta({
+      error: 'Credencial de integração inválida.'
+    }, 401);
+  }
+
+  try {
+    const resultado = await listarBaixasPendentesIntegracao(env);
+    return resposta(resultado);
+  } catch {
+    return resposta({
+      error: 'Não foi possível consultar as baixas pendentes.'
+    }, 500);
+  }
+}
+  
 </script>
   </body>
 </html>`;
