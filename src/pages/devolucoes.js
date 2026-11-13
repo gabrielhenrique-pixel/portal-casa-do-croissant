@@ -1058,6 +1058,16 @@ export function devolucoesPage() {
   text-decoration: underline;
 }
 
+#painelImpacto[hidden] {
+  display: none !important;
+}
+
+@media (min-width: 1251px) {
+  .graficos.sem-impacto {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
   </style>
 </head>
 
@@ -1217,7 +1227,11 @@ export function devolucoesPage() {
 
     <section class="graficos">
       
-      <article class="painel painel-impacto card-impacto">
+<article
+  id="painelImpacto"
+  class="painel painel-impacto card-impacto"
+  hidden
+>
   <h2>Impacto no faturamento</h2>
 
   <div class="card-impacto-corpo">
@@ -1332,6 +1346,7 @@ export function devolucoesPage() {
     var faturamentoPeriodo = 0;
     var faturamentoPorRede = {};
     var tabelaCompleta = false;
+    var podeVerImpacto = false;
 
     aplicarIconesVetoriais();
     configurarPeriodoInicial();
@@ -1432,13 +1447,26 @@ function aplicarIconesVetoriais() {
               return dados;
             });
         })
-        .then(function(dados) {
-          devolucoes = dados.items || [];
-          faturamentoPeriodo = Number(dados.faturamento || 0);
-          faturamentoPorRede = dados.faturamentoPorRede || {};
-          preencherFiltros();
-          aplicarFiltros();
-        })
+          .then(function(dados) {
+            podeVerImpacto =
+              dados.podeVerTodos === true &&
+              dados.podeVerImpacto === true;
+
+            document.getElementById('painelImpacto').hidden =
+              !podeVerImpacto;
+
+            document.querySelector('.graficos').classList.toggle(
+              'sem-impacto',
+              !podeVerImpacto
+            );
+
+            devolucoes = dados.items || [];
+            faturamentoPeriodo = Number(dados.faturamento || 0);
+            faturamentoPorRede = dados.faturamentoPorRede || {};
+
+            preencherFiltros();
+            aplicarFiltros();
+          })
         .catch(function(erro) {
           mostrarErro(erro.message || 'Não foi possível carregar as devoluções do Sankhya.');
         })
@@ -1496,6 +1524,7 @@ function aplicarIconesVetoriais() {
     }
 
     function atualizarImpactoNoFaturamento() {
+      if (!podeVerImpacto) return;
   var valorDevolvido = devolucoesFiltradas.reduce(function(total, item) {
     return total + Number(item.valorTotal || 0);
   }, 0);
