@@ -1068,6 +1068,10 @@ export function devolucoesPage() {
   }
 }
 
+#campoFiltroVendedor[hidden] {
+  display: none !important;
+}
+
   </style>
 </head>
 
@@ -1089,6 +1093,12 @@ export function devolucoesPage() {
     </header>
 
     <section class="filtros">
+          <div class="filtro" id="campoFiltroVendedor" hidden>
+        <label for="filtroVendedor">Vendedor</label>
+        <select id="filtroVendedor">
+          <option value="">Todos os vendedores</option>
+        </select>
+      </div>
       <div class="filtro">
   <label>Data inicial</label>
   <input
@@ -1436,8 +1446,17 @@ function aplicarIconesVetoriais() {
 
   mostrarCarregando(true);
 
-      fetch('/api/devolucoes?inicio=' + encodeURIComponent(inicio) +
-        '&fim=' + encodeURIComponent(fim))
+      var campoVendedor = document.getElementById('filtroVendedor');
+      var vendedor = campoVendedor.disabled
+        ? ''
+        : campoVendedor.value;
+
+      fetch(
+        '/api/devolucoes?inicio=' + encodeURIComponent(inicio) +
+        '&fim=' + encodeURIComponent(fim) +
+        '&vendedor=' + encodeURIComponent(vendedor),
+        { cache: 'no-store' }
+      )
         .then(function(resposta) {
           return resposta.json().catch(function() { return {}; })
             .then(function(dados) {
@@ -1464,6 +1483,7 @@ function aplicarIconesVetoriais() {
             faturamentoPeriodo = Number(dados.faturamento || 0);
             faturamentoPorRede = dados.faturamentoPorRede || {};
 
+            preencherFiltroVendedores(dados);
             preencherFiltros();
             aplicarFiltros();
           })
@@ -1480,6 +1500,30 @@ function aplicarIconesVetoriais() {
   campoInicio.disabled = false;
   campoFim.disabled = false;
 });
+    }
+
+        function preencherFiltroVendedores(dados) {
+      var campo = document.getElementById('campoFiltroVendedor');
+      var select = document.getElementById('filtroVendedor');
+      var permitido = dados.podeVerTodos === true;
+
+      campo.hidden = !permitido;
+      select.disabled = !permitido;
+
+      select.replaceChildren(
+        new Option('Todos os vendedores', '')
+      );
+
+      if (!permitido) return;
+
+      (dados.vendedores || []).forEach(function(vendedor) {
+        select.add(new Option(
+          vendedor.codigo + ' — ' + vendedor.nome,
+          vendedor.codigo
+        ));
+      });
+
+      select.value = String(dados.vendedorSelecionado || '');
     }
 
     function preencherFiltros() {
