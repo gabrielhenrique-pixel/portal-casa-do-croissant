@@ -775,3 +775,78 @@ export async function listarBaixasPendentesIntegracao(env) {
     baixas: resultado.results || []
   };
 }
+
+export async function confirmarBaixaIntegracao(env, entrada) {
+  const sequencia = entrada?.sequencia;
+  const movimentoId = entrada?.movimentoId;
+  const registroId = entrada?.registroId;
+  const saldo = entrada?.quantidadePosterior;
+
+  if (
+    !Number.isSafeInteger(sequencia) ||
+    sequencia <= 0 ||
+    typeof movimentoId !== 'string' ||
+    !movimentoId.trim() ||
+    movimentoId.length > 1000 ||
+    typeof registroId !== 'string' ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(registroId) ||
+    !Number.isSafeInteger(saldo) ||
+    saldo < 0
+  ) {
+    throw erroValidacao('Dados de confirmação inválidos.');
+  }
+
+  await garantirEstruturaValidades(env);
+
+  const baixa = await env.DB.prepare(`
+    SELECT
+      f.movimento_id,
+      f.lote_id,
+      f.confirmado_em,
+      m.quantidade_posterior
+    FROM validades_baixas_sincronizacao f
+    JOIN validades_movimentos m
+      ON m.id = f.movimento_id
+      AND m.lote_id = f.lote_id
+    JOIN validades_origens o
+      ON o.lote_id = f.lote_id
+    WHERE f.sequencia = ?
+      AND m.tipo = 'BAIXA'
+      AND o.origem = 'WHATSAPP_LOCAL'
+  `).bind(sequencia).first();
+
+  if (!baixa) {
+    throw erroValidacao('Baixa não encontrada na fila.', 404);
+  }
+
+  if (
+    baixa.movimento_id !== movimentoId ||
+    baixa.lote_id !== registroId ||
+    baixa.quantidade_posterior !== saldo
+  ) {
+    throw erroValidacao(
+      'A confirmação não corresponde à baixa registrada.',
+      409
+    );
+  }
+
+  await env.DB.prepare(`
+    UPDATE validades_baixas_sincronizacao
+    SET confirmado_em = COALESCE(confirmado_em, ?)
+    WHERE sequencia = ?
+      AND movimento_id = ?
+      AND lote_id = ?
+  `).bind(
+    new Date().toISOString(),
+    sequencia,
+    movimentoId,
+    registroId
+  ).run();
+
+  return {
+    sucesso: true,
+    sequencia,
+    movimentoId,
+    confirmado: true
+  };
+}
