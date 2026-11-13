@@ -23,8 +23,9 @@ import {
   consultarHistoricoValidade
 } from './validades-service.js';
 import {
-  importarValidadeWhatsApp
-} from './validades-service.js';
+  receberValidadeIntegracao,
+  consultarBaixasIntegracao
+} from './validades-integracao.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
 import {conferirBaixasComissoes} from './comissoes-sankhya.js'; 
@@ -754,6 +755,10 @@ const portal = {
 
               if (url.pathname === '/api/integracoes/validades') {
           return await receberValidadeIntegracao(request, env);
+        }
+
+              if (url.pathname === '/api/integracoes/validades/baixas') {
+         return await consultarBaixasIntegracao(request, env);
         }
 
               if (url.pathname === '/api/validades/interpretar') {
