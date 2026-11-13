@@ -4357,6 +4357,48 @@ async function listarDevolucoesDoSankhya(request, env) {
   }
 
   const url = new URL(request.url);
+    const podeVerTodos = ['Administrador', 'Gestor']
+    .includes(session.role);
+
+  const vendedorSolicitado = (
+    url.searchParams.get('vendedor') || ''
+  ).trim();
+
+  if (
+    vendedorSolicitado &&
+    !/^\d{1,10}$/.test(vendedorSolicitado)
+  ) {
+    return json({ error: 'Código de vendedor inválido.' }, 400);
+  }
+
+  let vendedorFiltro = vendedorSolicitado;
+
+  if (!podeVerTodos) {
+    const codigoVinculado = String(
+      await obterVendedorVinculado(env, session.user_id) || ''
+    ).trim();
+
+    if (!/^\d{1,10}$/.test(codigoVinculado)) {
+      return json({
+        error: 'Seu usuário não possui um vendedor válido vinculado.'
+      }, 403);
+    }
+
+    if (
+      vendedorSolicitado &&
+      Number(vendedorSolicitado) !== Number(codigoVinculado)
+    ) {
+      return json({
+        error: 'Você pode consultar somente suas próprias devoluções.'
+      }, 403);
+    }
+
+    vendedorFiltro = codigoVinculado;
+  }
+
+  const filtroVendedorSQL = vendedorFiltro
+    ? '  AND CAB.CODVEND = ' + Number(vendedorFiltro)
+    : '';
   const hoje = new Date();
   const mesAnterior = new Date();
   mesAnterior.setMonth(mesAnterior.getMonth() - 1);
@@ -4421,6 +4463,7 @@ const redePorCodigoParceiro = new Map(
       '  AND CAB.CODTIPOPER = 1202',
       "  AND CAB.TIPMOV = 'D'",
       "  AND CAB.STATUSNOTA = 'L'",
+      filtroVendedorSQL,
       'ORDER BY CAB.DTNEG DESC'
     ].join('\n'); 
 
@@ -4437,12 +4480,15 @@ const redePorCodigoParceiro = new Map(
   "  AND CAB.TIPMOV = 'V'",
   "  AND CAB.STATUSNOTA = 'L'",
   "  AND UPPER(TRIM(TOP.DESCROPER)) = 'VENDA NF-E'",
+  filtroVendedorSQL,
   'GROUP BY CAB.CODPARC'
 ].join(String.fromCharCode(10));
 
     const resultados = await Promise.all([
       executarConsultaSankhya(accessToken, sqlDevolucoes),
-      executarConsultaSankhya(accessToken, sqlFaturamento)
+      podeVerTodos
+        ? executarConsultaSankhya(accessToken, sqlFaturamento)
+        : Promise.resolve([])
     ]);
 
     const itens = resultados[0].map(function(linha) {
@@ -4478,11 +4524,17 @@ const faturamento = Object.keys(faturamentoPorRede).reduce(
   0
 );
 
-    return json({
-  items: itens,
-  faturamento: faturamento,
-  faturamentoPorRede: faturamentoPorRede
-});
+    const resposta = json({
+      items: itens,
+      podeVerTodos,
+      vendedorSelecionado: vendedorFiltro,
+      podeVerImpacto: podeVerTodos,
+      faturamento: podeVerTodos ? faturamento : null,
+      faturamentoPorRede: podeVerTodos ? faturamentoPorRede : {}
+    });
+
+    resposta.headers.set('Cache-Control', 'no-store');
+    return resposta;
   } catch (error) {
   console.error('Falha na consulta ao Sankhya:', error);
 
