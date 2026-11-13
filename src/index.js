@@ -21,7 +21,7 @@ import {
   listarValidades,
   baixarQuantidadeValidade,
   consultarHistoricoValidade
-} from './validade-service.js';
+} from './validades-service.js';
 import {
   importarValidadeWhatsApp
 } from './validades-service.js';
