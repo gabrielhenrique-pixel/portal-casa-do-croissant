@@ -752,7 +752,7 @@ const portal = {
             }, status);
           }
         }
-
+ 
               if (url.pathname === '/api/integracoes/validades') {
           return await receberValidadeIntegracao(request, env);
         }
