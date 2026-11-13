@@ -4484,12 +4484,34 @@ const redePorCodigoParceiro = new Map(
   'GROUP BY CAB.CODPARC'
 ].join(String.fromCharCode(10));
 
+    const sqlVendedores = [
+      'SELECT',
+      '  CODVEND,',
+      '  APELIDO',
+      'FROM TGFVEN',
+      'ORDER BY APELIDO, CODVEND'
+    ].join('\n');
+
     const resultados = await Promise.all([
       executarConsultaSankhya(accessToken, sqlDevolucoes),
+
       podeVerTodos
         ? executarConsultaSankhya(accessToken, sqlFaturamento)
+        : Promise.resolve([]),
+
+      podeVerTodos
+        ? executarConsultaSankhya(accessToken, sqlVendedores)
         : Promise.resolve([])
     ]);
+
+    const vendedores = resultados[2].map(function(linha) {
+      return {
+        codigo: String(linha[0] ?? '').trim(),
+        nome: String(linha[1] ?? '').trim()
+      };
+    }).filter(function(vendedor) {
+      return /^\d{1,10}$/.test(vendedor.codigo);
+    });
 
     const itens = resultados[0].map(function(linha) {
       return {
@@ -4526,6 +4548,7 @@ const faturamento = Object.keys(faturamentoPorRede).reduce(
 
     const resposta = json({
       items: itens,
+      vendedores,
       podeVerTodos,
       vendedorSelecionado: vendedorFiltro,
       podeVerImpacto: podeVerTodos,
