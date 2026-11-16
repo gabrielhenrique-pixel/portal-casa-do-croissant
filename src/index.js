@@ -24,7 +24,8 @@ import {
 } from './validades-service.js';
 import {
   receberValidadeIntegracao,
-  consultarBaixasIntegracao
+  consultarBaixasIntegracao,
+  confirmarRecebimentoBaixaIntegracao
 } from './validades-integracao.js';
 import { cadastroComissoes } from './comissoes-cadastro.js';
 import { comissoesVendedoresPage } from './pages/comissoes-vendedores.js';
@@ -759,6 +760,15 @@ const portal = {
 
               if (url.pathname === '/api/integracoes/validades/baixas') {
          return await consultarBaixasIntegracao(request, env);
+        }
+
+              if (
+          url.pathname === '/api/integracoes/validades/baixas/confirmar'
+        ) {
+          return await confirmarRecebimentoBaixaIntegracao(
+            request,
+            env
+          );
         }
 
               if (url.pathname === '/api/validades/interpretar') {
