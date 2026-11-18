@@ -1332,12 +1332,12 @@ export function devolucoesPage() {
           <table>
             <thead>
               <tr>
-                <th>Data</th>
-                <th>Parceiro</th>
-                <th>Produto</th>
-                <th>Qtd.</th>
-                <th>Valor</th>
-                <th>Status</th>
+                <th data-filtro-devolucao="data">Data</th>
+                <th data-filtro-devolucao="parceiro">Parceiro</th>
+                <th data-filtro-devolucao="produto">Produto</th>
+                <th data-filtro-devolucao="quantidade">Qtd.</th>
+                <th data-filtro-devolucao="valorTotal">Valor</th>
+                <th data-filtro-devolucao="status">Status</th>
               </tr>
             </thead>
             <tbody id="linhasTabela"></tbody>
