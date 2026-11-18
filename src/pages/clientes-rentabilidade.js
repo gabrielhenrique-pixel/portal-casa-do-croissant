@@ -317,16 +317,70 @@ export function clientesRentabilidadePage() {
     aberto = div;
 
     var busca = div.querySelector('input[type=search]');
+    var marcarTodos = div.querySelector('.marcar');
+
+    function opcoesVisiveis() {
+      return Array.from(
+        div.querySelectorAll('[data-opcao]')
+      ).filter(function (opcao) {
+        return !opcao.hidden;
+      });
+    }
+
+    function atualizarMarcarTodos() {
+      var visiveis = opcoesVisiveis();
+
+      var quantidadeMarcada = visiveis.filter(function (opcao) {
+        return opcao.querySelector('input').checked;
+      }).length;
+
+      marcarTodos.disabled = visiveis.length === 0;
+
+      marcarTodos.checked =
+        visiveis.length > 0 &&
+        quantidadeMarcada === visiveis.length;
+
+      marcarTodos.indeterminate =
+        quantidadeMarcada > 0 &&
+        quantidadeMarcada < visiveis.length;
+    }
 
     busca.addEventListener('input', function () {
-      var texto = busca.value.toLocaleLowerCase('pt-BR');
+      var texto = busca.value.trim().toLocaleLowerCase('pt-BR');
 
-      div.querySelectorAll('[data-opcao]').forEach(function (item) {
-        item.hidden = !item.textContent
+      div.querySelectorAll('[data-opcao]').forEach(function (opcao) {
+        var corresponde = opcao.textContent
           .toLocaleLowerCase('pt-BR')
           .includes(texto);
+
+        opcao.hidden = !corresponde;
+
+        // Evita que o CSS dos labels mantenha opções ocultas visíveis.
+        if (corresponde) {
+          opcao.style.removeProperty('display');
+        } else {
+          opcao.style.setProperty('display', 'none', 'important');
+        }
       });
+
+      atualizarMarcarTodos();
     });
+
+    marcarTodos.addEventListener('change', function () {
+      var marcar = marcarTodos.checked;
+
+      opcoesVisiveis().forEach(function (opcao) {
+        opcao.querySelector('input').checked = marcar;
+      });
+
+      atualizarMarcarTodos();
+    });
+
+    div.querySelectorAll('[data-opcao] input').forEach(function (input) {
+      input.addEventListener('change', atualizarMarcarTodos);
+    });
+
+    atualizarMarcarTodos();
 
     div.querySelector('.marcar').addEventListener('change', function (evento) {
       div.querySelectorAll('[data-opcao]:not([hidden]) input')
