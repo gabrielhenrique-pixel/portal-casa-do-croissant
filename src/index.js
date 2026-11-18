@@ -108,6 +108,7 @@ import {listarBscVolumeProduto,
         listarBscPositivacaoProduto
        } from './bsc-comercial-service.js';
 import { dashboardsPage } from './pages/dashboards.js';
+import { fluxoCaixaPage } from './pages/fluxo-caixa.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 import { produtosPainelPage } from './pages/produtos-painel.js';
@@ -1158,6 +1159,33 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
 }
+
+      if (url.pathname === '/fluxo-caixa') {
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'FLUXO_CAIXA'
+  );
+
+  const podeVerDashboards = permitido
+    ? await podeConsultarModulo(request, env, 'DASHBOARDS')
+    : false;
+
+  if (!permitido || !podeVerDashboards) {
+    return redirectToPortal();
+  }
+
+  if (request.method !== 'GET') {
+    return json(
+      { error: 'Método não permitido.' },
+      405,
+      { Allow: 'GET' }
+    );
+  }
+
+  return fluxoCaixaPage();
+}
+      
  if (url.pathname === '/dashboards' && request.method === 'GET') {
   const permitido = await podeConsultarModulo(
     request,
@@ -1173,7 +1201,8 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
       podeVerRentabilidade,
       podeVerVendas,
       podeVerDevolucoes,
-      podeVerBsc
+      podeVerBsc,
+      podeVerFluxoCaixa
     ] = await Promise.all([
       podeConsultarModulo(
         request,
@@ -1194,6 +1223,11 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
         request,
         env,
         'BSC_COMERCIAL'
+      ),
+      podeConsultarModulo(
+        request,
+        env,
+        'FLUXO_CAIXA'
       )
     ]);
 
@@ -1201,7 +1235,8 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
       podeVerRentabilidade,
       podeVerVendas,
       podeVerDevolucoes,
-      podeVerBsc
+      podeVerBsc,
+      podeVerFluxoCaixa
     });
 }
 
