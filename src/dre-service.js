@@ -97,7 +97,7 @@ export async function listarDre(request, env) {
   const token = await obterTokenSankhya(env);
 
   const sql = montarSqlDre(
-    inicioComparacao,
+    inicio,
     fim,
     empresa
   );
@@ -400,6 +400,20 @@ const grupos = Array.from(
 }
 
 function montarSqlDre(inicio, fim, empresa) {
+    const inicioAnterior = subtrairUmAno(inicio);
+  const fimAnterior = subtrairUmAno(fim);
+
+  function filtroPeriodo(campo) {
+    return [
+      '    AND (',
+      `      (${campo} >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
+      `       AND ${campo} < TO_DATE('${fim}', 'YYYY-MM-DD') + 1)`,
+      '      OR',
+      `      (${campo} >= TO_DATE('${inicioAnterior}', 'YYYY-MM-DD')`,
+      `       AND ${campo} < TO_DATE('${fimAnterior}', 'YYYY-MM-DD') + 1)`,
+      '    )'
+    ].join(String.fromCharCode(10));
+  }
   const filtroEmpresaFinanceiro = empresa
     ? `  AND FIN.CODEMP = ${Number(empresa)}`
     : '';
@@ -430,8 +444,7 @@ function montarSqlDre(inicio, fim, empresa) {
     '  LEFT JOIN TGFNAT NAT',
     '    ON NAT.CODNAT = FIN.CODNAT',
     "  WHERE FIN.PROVISAO = 'N'",
-    `    AND TFIN.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
-    `    AND TFIN.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
+    filtroPeriodo('TFIN.DTNEG'),
     '    AND NVL(FIN.CODNAT, 0) <> 1010000',
     filtroEmpresaFinanceiro,
     '  GROUP BY',
@@ -452,8 +465,8 @@ function montarSqlDre(inicio, fim, empresa) {
     '  FROM TGFCAB CAB',
     '  INNER JOIN TGFITE ITE',
     '    ON ITE.NUNOTA = CAB.NUNOTA',
-    `  WHERE CAB.DTNEG >= TO_DATE('${inicio}', 'YYYY-MM-DD')`,
-    `    AND CAB.DTNEG < TO_DATE('${fim}', 'YYYY-MM-DD') + 1`,
+    '  WHERE 1 = 1',
+    filtroPeriodo('CAB.DTNEG'),
     "    AND CAB.TIPMOV = 'V'",
     "    AND CAB.STATUSNOTA = 'L'",
     '    AND CAB.CODTIPOPER IN (1101, 1107)',
