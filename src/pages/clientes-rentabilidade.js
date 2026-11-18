@@ -291,7 +291,7 @@ export function clientesRentabilidadePage() {
         return coluna[0] === campo;
       })[1]) +
       '</strong>' +
-      '<input type="search" placeholder="Pesquisar">' +
+     '<input type="search" placeholder="Pesquisar opções da coluna">' +
       '<label><input class="marcar" type="checkbox"> Selecionar tudo</label>' +
       '<div class="opcoes-filtro">' +
       valores.map(function (valor) {
@@ -381,13 +381,6 @@ export function clientesRentabilidadePage() {
     });
 
     atualizarMarcarTodos();
-
-    div.querySelector('.marcar').addEventListener('change', function (evento) {
-      div.querySelectorAll('[data-opcao]:not([hidden]) input')
-        .forEach(function (input) {
-          input.checked = evento.target.checked;
-        });
-    });
 
     div.querySelector('.limpar').onclick = function () {
       delete filtros[campo];
