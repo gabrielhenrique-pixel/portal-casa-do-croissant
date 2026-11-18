@@ -1072,6 +1072,107 @@ export function devolucoesPage() {
   display: none !important;
 }
 
+/* Botões dos filtros nos cabeçalhos da tabela */
+.botao-filtro-devolucao {
+  margin-left: 6px;
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.botao-filtro-devolucao[aria-pressed="true"] {
+  background: #fff;
+  color: #0d4b2b;
+}
+
+/* Menu de pesquisa e seleção */
+.menu-filtro-devolucao {
+  position: fixed;
+  z-index: 10000;
+  box-sizing: border-box;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid #b9c9d4;
+  border-radius: 8px;
+  background: #fff;
+  color: #173247;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  font-size: 14px;
+}
+
+.menu-filtro-devolucao strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.menu-filtro-devolucao input[type="search"] {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 9px;
+  border: 1px solid #b9c9d4;
+  border-radius: 5px;
+}
+
+.menu-filtro-devolucao label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 2px;
+  cursor: pointer;
+}
+
+.menu-filtro-devolucao input[type="checkbox"] {
+  flex-shrink: 0;
+}
+
+.menu-filtro-devolucao [hidden] {
+  display: none !important;
+}
+
+.opcoes-filtro-devolucao {
+  max-height: 220px;
+  overflow-y: auto;
+  margin-top: 6px;
+  padding: 4px;
+  border: 1px solid #dbe4e9;
+}
+
+.acoes-filtro-devolucao {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.acoes-filtro-devolucao button {
+  padding: 8px 12px;
+  border: 1px solid #b9c9d4;
+  border-radius: 5px;
+  background: #fff;
+  color: #173247;
+  cursor: pointer;
+}
+
+.acoes-filtro-devolucao .aplicar {
+  border-color: #0d4b2b;
+  background: #0d4b2b;
+  color: #fff;
+}
+
+.menu-filtro-devolucao button:focus-visible,
+.menu-filtro-devolucao input:focus-visible,
+.botao-filtro-devolucao:focus-visible {
+  outline: 2px solid #2185d0;
+  outline-offset: 2px;
+}
+
   </style>
 </head>
 
@@ -1357,6 +1458,246 @@ export function devolucoesPage() {
     var faturamentoPorRede = {};
     var tabelaCompleta = false;
     var podeVerImpacto = false;
+
+    var filtrosTabelaDevolucoes = {};
+var menuFiltroDevolucao = null;
+
+function valorFiltroDevolucao(item, campo) {
+  if (campo === 'data') return formatarData(item.data);
+  if (campo === 'quantidade') return formatarNumero(item.quantidade);
+  if (campo === 'valorTotal') return formatarMoeda(item.valorTotal);
+
+  // A tabela atual apresenta todos os registros como Devolvido.
+  if (campo === 'status') return 'Devolvido';
+
+  return String(item[campo] || '');
+}
+
+function filtrarLinhasDevolucoes() {
+  return devolucoesFiltradas.filter(function(item) {
+    return Object.keys(filtrosTabelaDevolucoes).every(function(campo) {
+      return filtrosTabelaDevolucoes[campo].has(
+        valorFiltroDevolucao(item, campo)
+      );
+    });
+  });
+}
+
+function fecharFiltroDevolucao() {
+  if (menuFiltroDevolucao) {
+    menuFiltroDevolucao.remove();
+    menuFiltroDevolucao = null;
+  }
+}
+
+function atualizarBotoesFiltrosDevolucoes() {
+  document.querySelectorAll('[data-filtro-devolucao]').forEach(
+    function(cabecalho) {
+      var campo = cabecalho.dataset.filtroDevolucao;
+      var botao = cabecalho.querySelector('button');
+
+      if (botao) {
+        botao.setAttribute(
+          'aria-pressed',
+          String(Object.prototype.hasOwnProperty.call(
+            filtrosTabelaDevolucoes,
+            campo
+          ))
+        );
+      }
+    }
+  );
+}
+
+function abrirFiltroDevolucao(campo, titulo, botao) {
+  fecharFiltroDevolucao();
+
+  var valores = Array.from(new Set(
+    devolucoesFiltradas.map(function(item) {
+      return valorFiltroDevolucao(item, campo);
+    })
+  )).sort(function(a, b) {
+    return a.localeCompare(b, 'pt-BR', { numeric: true });
+  });
+
+  var atual = filtrosTabelaDevolucoes[campo];
+  var selecionados = new Set(atual || valores);
+  var menu = document.createElement('section');
+
+  menu.className = 'menu-filtro-devolucao';
+  menu.setAttribute('role', 'dialog');
+  menu.setAttribute('aria-label', 'Filtro: ' + titulo);
+
+  menu.innerHTML =
+    '<strong></strong>' +
+    '<input type="search" placeholder="Pesquisar" aria-label="Pesquisar opções">' +
+    '<label><input class="selecionar-todos" type="checkbox">' +
+      'Selecionar tudo da pesquisa</label>' +
+    '<div class="opcoes-filtro-devolucao"></div>' +
+    '<p class="sem-opcoes" hidden>Nenhuma opção encontrada.</p>' +
+    '<div class="acoes-filtro-devolucao">' +
+      '<button type="button" class="limpar">Limpar filtro</button>' +
+      '<button type="button" class="aplicar">Aplicar</button>' +
+    '</div>';
+
+  menu.querySelector('strong').textContent = 'Filtro: ' + titulo;
+
+  var lista = menu.querySelector('.opcoes-filtro-devolucao');
+  var busca = menu.querySelector('input[type="search"]');
+  var todos = menu.querySelector('.selecionar-todos');
+
+  var opcoes = valores.map(function(valor) {
+    var label = document.createElement('label');
+    var input = document.createElement('input');
+
+    input.type = 'checkbox';
+    input.checked = selecionados.has(valor);
+    label.appendChild(input);
+    label.appendChild(document.createTextNode(
+      valor === '' ? '(Não informado)' : valor
+    ));
+    lista.appendChild(label);
+
+    input.addEventListener('change', function() {
+      if (input.checked) {
+        selecionados.add(valor);
+      } else {
+        selecionados.delete(valor);
+      }
+
+      atualizarSelecaoVisivel();
+    });
+
+    return { valor: valor, label: label, input: input };
+  });
+
+  function opcoesVisiveis() {
+    return opcoes.filter(function(opcao) {
+      return !opcao.label.hidden;
+    });
+  }
+
+  function atualizarSelecaoVisivel() {
+    var visiveis = opcoesVisiveis();
+    var marcadas = visiveis.filter(function(opcao) {
+      return opcao.input.checked;
+    }).length;
+
+    todos.disabled = visiveis.length === 0;
+    todos.checked =
+      visiveis.length > 0 && marcadas === visiveis.length;
+    todos.indeterminate =
+      marcadas > 0 && marcadas < visiveis.length;
+
+    menu.querySelector('.sem-opcoes').hidden = visiveis.length > 0;
+  }
+
+  busca.addEventListener('input', function() {
+    var texto = busca.value.trim().toLocaleLowerCase('pt-BR');
+
+    opcoes.forEach(function(opcao) {
+      opcao.label.hidden = !opcao.label.textContent
+        .toLocaleLowerCase('pt-BR')
+        .includes(texto);
+    });
+
+    atualizarSelecaoVisivel();
+  });
+
+  todos.addEventListener('change', function() {
+    var marcar = todos.checked;
+
+    opcoesVisiveis().forEach(function(opcao) {
+      opcao.input.checked = marcar;
+
+      if (marcar) {
+        selecionados.add(opcao.valor);
+      } else {
+        selecionados.delete(opcao.valor);
+      }
+    });
+
+    atualizarSelecaoVisivel();
+  });
+
+  menu.querySelector('.limpar').onclick = function() {
+    delete filtrosTabelaDevolucoes[campo];
+    concluir();
+  };
+
+  menu.querySelector('.aplicar').onclick = function() {
+    // Todas marcadas equivale a não restringir esta coluna.
+    if (valores.every(function(valor) {
+      return selecionados.has(valor);
+    })) {
+      delete filtrosTabelaDevolucoes[campo];
+    } else {
+      filtrosTabelaDevolucoes[campo] = new Set(selecionados);
+    }
+
+    concluir();
+  };
+
+  function concluir() {
+    fecharFiltroDevolucao();
+    tabelaCompleta = false;
+    atualizarBotoesFiltrosDevolucoes();
+    montarTabela();
+    botao.focus();
+  }
+
+  document.body.appendChild(menu);
+  menuFiltroDevolucao = menu;
+  atualizarSelecaoVisivel();
+
+  var posicao = botao.getBoundingClientRect();
+
+  menu.style.left = Math.max(
+    12,
+    Math.min(posicao.left, innerWidth - menu.offsetWidth - 12)
+  ) + 'px';
+
+  menu.style.top = Math.max(
+    12,
+    Math.min(posicao.bottom + 6, innerHeight - menu.offsetHeight - 12)
+  ) + 'px';
+
+  busca.focus();
+}
+
+document.querySelectorAll('[data-filtro-devolucao]').forEach(
+  function(cabecalho) {
+    var campo = cabecalho.dataset.filtroDevolucao;
+    var titulo = cabecalho.textContent.trim();
+    var botao = document.createElement('button');
+
+    botao.type = 'button';
+    botao.className = 'botao-filtro-devolucao';
+    botao.textContent = '▾';
+    botao.setAttribute('aria-label', 'Filtrar ' + titulo);
+    botao.setAttribute('aria-pressed', 'false');
+
+    botao.addEventListener('click', function() {
+      abrirFiltroDevolucao(campo, titulo, botao);
+    });
+
+    cabecalho.appendChild(botao);
+  }
+);
+
+document.addEventListener('click', function(evento) {
+  if (
+    menuFiltroDevolucao &&
+    !menuFiltroDevolucao.contains(evento.target) &&
+    !evento.target.closest('.botao-filtro-devolucao')
+  ) {
+    fecharFiltroDevolucao();
+  }
+});
+
+document.addEventListener('keydown', function(evento) {
+  if (evento.key === 'Escape') fecharFiltroDevolucao();
+});
 
     aplicarIconesVetoriais();
     configurarPeriodoInicial();
@@ -1901,11 +2242,12 @@ function aplicarIconesVetoriais() {
     function montarTabela() {
   var corpo = document.getElementById('linhasTabela');
   var rodape = document.getElementById('tabelaRodape');
-  var total = devolucoesFiltradas.length;
+  var dadosTabela = filtrarLinhasDevolucoes();
+  var total = dadosTabela.length;
 
   var itens = tabelaCompleta
-    ? devolucoesFiltradas
-    : devolucoesFiltradas.slice(0, 5);
+    ? dadosTabela
+    : dadosTabela.slice(0, 5);
 
   if (!itens.length) {
     corpo.innerHTML =
