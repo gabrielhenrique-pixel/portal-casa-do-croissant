@@ -1173,6 +1173,29 @@ export function devolucoesPage() {
   outline-offset: 2px;
 }
 
+.card-quantidade .card-quantidade-principal {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.card-quantidade .card-quantidade-principal .icone-quantidade {
+  position: static;
+  flex: 0 0 43px;
+}
+
+#cardQuantidade {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  text-align: left;
+  font-size: 20px;
+  line-height: 1.35;
+}
+
   </style>
 </head>
 
@@ -2076,7 +2099,7 @@ function aplicarIconesVetoriais() {
 
       document.getElementById('cardQuantidade').textContent =
         partesQuantidade.length
-          ? partesQuantidade.join(' / ')
+          ? partesQuantidade.join(String.fromCharCode(10))
           : '0';
 
       document.getElementById('cardOcorrencias').textContent =
