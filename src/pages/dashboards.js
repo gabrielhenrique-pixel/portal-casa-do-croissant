@@ -2,7 +2,8 @@ export function dashboardsPage({
   podeVerRentabilidade = false,
   podeVerVendas = false,
   podeVerDevolucoes = false,
-  podeVerBsc = false
+  podeVerBsc = false,
+  podeVerFluxoCaixa = false
 } = {}) {
   return new Response(String.raw`<!doctype html>
 <html lang="pt-BR">
@@ -117,6 +118,11 @@ export function dashboardsPage({
         grid-column:auto;
       }
     }
+
+        .fluxo-caixa {
+      background: linear-gradient(135deg, #153c54, #218b91);
+    }
+    
   </style>
 </head>
 <body>
@@ -152,6 +158,12 @@ export function dashboardsPage({
   <strong>BSC Comercial</strong>
 </a>
 ` : ''}
+            ${podeVerFluxoCaixa ? `
+      <a class="card fluxo-caixa" href="/fluxo-caixa">
+        <span class="icone" aria-hidden="true">R$</span>
+        <strong>Fluxo de Caixa</strong>
+      </a>
+      ` : ''}
     </section>
   </main>
 </body>
