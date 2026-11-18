@@ -52,6 +52,13 @@ export function clientesRentabilidadePage() {
     .campo input,.campo select{min-height:38px;border:1px solid #b9cce0;border-radius:6px;padding:8px;font:inherit}
     .rodape-modal{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
     @media(max-width:650px){main{padding:6px}.topo{padding:14px}.topo h1{font-size:20px}.contagem{margin-left:0;width:100%}.grade{grid-template-columns:1fr}}
+  
+  #cabecalho button.filtro[aria-pressed="true"] {
+  background: #ffffff;
+  color: #204f75;
+  border: 1px solid #ffffff;
+}
+  
   </style>
 </head>
 <body>
@@ -221,7 +228,10 @@ export function clientesRentabilidadePage() {
         '<button data-ordenar="' + coluna[0] + '" type="button">' +
         esc(coluna[1]) + seta +
         '</button>' +
-        '<button class="filtro" data-filtrar="' + coluna[0] + '" type="button">▾</button>' +
+                '<button class="filtro" data-filtrar="' + coluna[0] + '"' +
+        ' aria-pressed="' +
+        Object.prototype.hasOwnProperty.call(filtros, coluna[0]) +
+        '" type="button">▾</button>' +
         '</span></th>';
     }).join('');
 
