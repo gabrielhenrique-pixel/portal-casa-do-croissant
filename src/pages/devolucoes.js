@@ -1462,9 +1462,63 @@ export function devolucoesPage() {
     var filtrosTabelaDevolucoes = {};
 var menuFiltroDevolucao = null;
 
+function quantidadeApresentacaoDevolucao(item) {
+  var quantidade = Number(item.quantidade);
+  var unidadeItem = String(item.unidadeItem || '').trim();
+  var unidadeBase = String(item.unidadeBase || '').trim();
+  var fator = Number(item.fatorConversao);
+  var cadastros = Number(item.quantidadeConversoes);
+  var operacao = String(item.operacaoConversao || '')
+    .trim()
+    .toUpperCase();
+
+  if (
+    !Number.isFinite(quantidade) ||
+    !unidadeItem ||
+    !unidadeBase
+  ) {
+    return null;
+  }
+
+  // Mesma unidade: não precisa de conversão.
+  if (unidadeItem === unidadeBase) {
+    return {
+      quantidade: quantidade,
+      unidade: unidadeItem
+    };
+  }
+
+  // Regra confirmada na nota usada no teste.
+  if (
+    cadastros === 1 &&
+    operacao === 'M' &&
+    Number.isFinite(fator) &&
+    fator > 0
+  ) {
+    return {
+      quantidade: quantidade / fator,
+      unidade: unidadeItem
+    };
+  }
+
+  // Não inventar uma conversão para regras ainda não verificadas.
+  return null;
+}
+
+function textoQuantidadeDevolucao(item) {
+  var resultado = quantidadeApresentacaoDevolucao(item);
+
+  if (!resultado) {
+    return 'Conversão pendente';
+  }
+
+  return formatarNumero(resultado.quantidade) +
+    ' ' + resultado.unidade;
+}
+
 function valorFiltroDevolucao(item, campo) {
   if (campo === 'data') return formatarData(item.data);
-  if (campo === 'quantidade') return formatarNumero(item.quantidade);
+  if (campo === 'quantidade') return textoQuantidadeDevolucao(item);
   if (campo === 'valorTotal') return formatarMoeda(item.valorTotal);
 
   // A tabela atual apresenta todos os registros como Devolvido.
@@ -1969,9 +2023,40 @@ function aplicarIconesVetoriais() {
         return total + Number(item.valorTotal || 0);
       }, 0);
 
-      var quantidade = devolucoesFiltradas.reduce(function(total, item) {
-        return total + Number(item.quantidade || 0);
-      }, 0);
+      var quantidadesPorUnidade = new Map();
+      var conversoesPendentes = 0;
+
+      devolucoesFiltradas.forEach(function(item) {
+        var resultado = quantidadeApresentacaoDevolucao(item);
+
+        if (!resultado) {
+          conversoesPendentes += 1;
+          return;
+        }
+
+        var acumulado = quantidadesPorUnidade.get(
+          resultado.unidade
+        ) || 0;
+
+        quantidadesPorUnidade.set(
+          resultado.unidade,
+          acumulado + resultado.quantidade
+        );
+      });
+
+      var partesQuantidade = Array.from(
+        quantidadesPorUnidade.entries()
+      ).sort(function(a, b) {
+        return a[0].localeCompare(b[0], 'pt-BR');
+      }).map(function(par) {
+        return formatarNumero(par[1]) + ' ' + par[0];
+      });
+
+      if (conversoesPendentes > 0) {
+        partesQuantidade.push(
+          conversoesPendentes + ' item(ns) com conversão pendente'
+        );
+      }
 
       var notas = {};
 
@@ -1990,7 +2075,9 @@ function aplicarIconesVetoriais() {
         formatarMoeda(valorTotal);
 
       document.getElementById('cardQuantidade').textContent =
-        formatarNumero(quantidade);
+        partesQuantidade.length
+          ? partesQuantidade.join(' / ')
+          : '0';
 
       document.getElementById('cardOcorrencias').textContent =
         formatarNumero(ocorrencias);
@@ -2263,7 +2350,7 @@ function aplicarIconesVetoriais() {
         '<td>' + formatarData(item.data) + '</td>' +
         '<td>' + escaparHtml(item.parceiro) + '</td>' +
         '<td>' + escaparHtml(item.produto) + '</td>' +
-        '<td>' + formatarNumero(item.quantidade) + '</td>' +
+        '<td>' + escaparHtml(textoQuantidadeDevolucao(item)) + '</td>' +
         '<td>' + formatarMoeda(item.valorTotal) + '</td>' +
         '<td><span class="status">Devolvido</span></td>' +
       '</tr>'
