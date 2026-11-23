@@ -112,6 +112,9 @@ import { fluxoCaixaPage } from './pages/fluxo-caixa.js';
 import {
   listarContasSankhya
 } from './fluxo-caixa/providers/sankhya.js';
+import {
+  validarFiltrosFluxoCaixa
+} from './fluxo-caixa/filtros.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 import { produtosPainelPage } from './pages/produtos-painel.js';
@@ -1161,6 +1164,87 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
+}
+
+      if (url.pathname === '/api/fluxo-caixa/validar') {
+  const headers = {
+    'Cache-Control': 'no-store'
+  };
+
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'FLUXO_CAIXA'
+  );
+
+  const podeVerDashboards = permitido
+    ? await podeConsultarModulo(request, env, 'DASHBOARDS')
+    : false;
+
+  if (!permitido || !podeVerDashboards) {
+    return json({
+      error: 'Sem permissão para consultar o fluxo de caixa.'
+    }, 403, headers);
+  }
+
+  if (request.method !== 'GET') {
+    return json({
+      error: 'Método não permitido.'
+    }, 405, {
+      ...headers,
+      Allow: 'GET'
+    });
+  }
+
+  let filtros;
+
+  try {
+    filtros = validarFiltrosFluxoCaixa(url.searchParams);
+  } catch (erro) {
+    return json({
+      error: erro.status === 400
+        ? erro.message
+        : 'Não foi possível validar os filtros.'
+    }, erro.status === 400 ? 400 : 500, headers);
+  }
+
+  let contasDisponiveis;
+
+  try {
+    contasDisponiveis = await listarContasSankhya(env);
+  } catch {
+    return json({
+      error: 'Não foi possível conferir as contas no Sankhya. Tente novamente.'
+    }, 502, headers);
+  }
+
+  const idsDisponiveis = new Set(
+    contasDisponiveis.map(function (conta) {
+      return conta.id;
+    })
+  );
+
+  const possuiContaInvalida = filtros.contas.some(
+    function (id) {
+      return !idsDisponiveis.has(id);
+    }
+  );
+
+  if (possuiContaInvalida) {
+    return json({
+      error: 'Uma das contas selecionadas não existe na lista atual. Atualize a lista e tente novamente.'
+    }, 400, headers);
+  }
+
+  return json({
+    sucesso: true,
+    origem: 'sankhya',
+    filtros,
+    contas: contasDisponiveis.filter(function (conta) {
+      return filtros.contas.includes(conta.id);
+    }),
+    aviso: 'Filtros validados. Nenhum saldo foi calculado.'
+  }, 200, headers);
 }
 
       if (url.pathname === '/api/fluxo-caixa/contas') {
