@@ -143,6 +143,58 @@ export function fluxoCaixaPage() {
         grid-template-columns: 1fr;
       }
     }
+
+        .periodo-fluxo {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 240px));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .periodo-fluxo label {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .periodo-fluxo input {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid #b9cbd8;
+      border-radius: 6px;
+      background: #fff;
+      color: #173247;
+      font: inherit;
+    }
+
+    .opcoes-fluxo {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+
+    .opcoes-fluxo label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .opcoes-fluxo input {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    @media (max-width: 540px) {
+      .periodo-fluxo,
+      .opcoes-fluxo {
+        grid-template-columns: 1fr;
+      }
+    }
     
   </style>
 </head>
@@ -156,6 +208,63 @@ export function fluxoCaixaPage() {
       >←</a>
       <h1>Fluxo de Caixa</h1>
     </header>
+
+            <section class="painel" aria-labelledby="tituloFiltros">
+      <h2 id="tituloFiltros">Período e opções</h2>
+
+      <div class="periodo-fluxo">
+        <label>
+          Data inicial
+          <input id="fluxoInicio" type="date" required>
+        </label>
+
+        <label>
+          Data final
+          <input id="fluxoFim" type="date" required>
+        </label>
+      </div>
+
+      <div class="opcoes-fluxo">
+        <label>
+          <input id="fluxoProvisoes" type="checkbox">
+          Incluir provisões
+        </label>
+
+        <label>
+          <input id="fluxoBaixados" type="checkbox" checked>
+          Considerar títulos baixados
+        </label>
+
+        <label>
+          <input id="fluxoCarencia" type="checkbox" checked>
+          Considerar carência (Float)
+        </label>
+
+        <label>
+          <input id="fluxoConciliado" type="checkbox">
+          Apenas saldo inicial conciliado
+        </label>
+      </div>
+
+      <p class="observacao">
+        A carência será aplicada às receitas pendentes.
+        Sábados e domingos serão ajustados para segunda-feira,
+        sem considerar feriados.
+      </p>
+
+      <p class="observacao">
+        A opção de conciliação se refere ao saldo inicial,
+        como no SQL do relatório original.
+        Ela não significa que todos os lançamentos do período
+        estejam conciliados.
+      </p>
+
+      <p class="aviso">
+        Os filtros estão em preparação.
+        Alterar estas opções ainda não executa a consulta financeira.
+      </p>
+    </section>
+
 
         <section class="painel" aria-labelledby="tituloContas">
       <h2 id="tituloContas">Contas e caixas</h2>
@@ -212,6 +321,33 @@ export function fluxoCaixaPage() {
   var contasDisponiveis = [];
   var contasSelecionadas = new Set();
   var carregandoContas = false;
+
+    function configurarPeriodoFluxo() {
+    var partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+
+    function parte(tipo) {
+      return partes.find(function(item) {
+        return item.type === tipo;
+      }).value;
+    }
+
+    var ano = parte('year');
+    var mes = parte('month');
+    var dia = parte('day');
+
+    document.getElementById('fluxoInicio').value =
+      ano + '-' + mes + '-01';
+
+    document.getElementById('fluxoFim').value =
+      ano + '-' + mes + '-' + dia;
+  }
+
+  configurarPeriodoFluxo();
 
   function atualizarResumoContas() {
     document.getElementById('resumoContas').textContent =
