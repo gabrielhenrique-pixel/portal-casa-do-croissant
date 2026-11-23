@@ -109,6 +109,9 @@ import {listarBscVolumeProduto,
        } from './bsc-comercial-service.js';
 import { dashboardsPage } from './pages/dashboards.js';
 import { fluxoCaixaPage } from './pages/fluxo-caixa.js';
+import {
+  listarContasSankhya
+} from './fluxo-caixa/providers/sankhya.js';
 import {listarMonitoramentoVendasSankhya,salvarMetaVendedor,salvarMetaProduto,salvarMetaEmpresaVendas} from './vendas-monitoramento-service.js';
 import { clientesRentabilidadePage } from './pages/clientes-rentabilidade.js';
 import { produtosPainelPage } from './pages/produtos-painel.js';
@@ -1158,6 +1161,63 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
+}
+
+      if (url.pathname === '/api/fluxo-caixa/contas') {
+  const cabecalhos = {
+    'Cache-Control': 'no-store'
+  };
+
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'FLUXO_CAIXA'
+  );
+
+  const podeVerDashboards = permitido
+    ? await podeConsultarModulo(request, env, 'DASHBOARDS')
+    : false;
+
+  if (!permitido || !podeVerDashboards) {
+    return json(
+      { error: 'Sem permissão para consultar o Fluxo de Caixa.' },
+      403,
+      cabecalhos
+    );
+  }
+
+  if (request.method !== 'GET') {
+    return json(
+      { error: 'Método não permitido.' },
+      405,
+      { ...cabecalhos, Allow: 'GET' }
+    );
+  }
+
+  try {
+    const contas = await listarContasSankhya(env);
+
+    return json(
+      {
+        origem: 'sankhya',
+        contas: contas
+      },
+      200,
+      cabecalhos
+    );
+  } catch (erro) {
+    const status = erro.status === 503 ? 503 : 502;
+
+    return json(
+      {
+        error: status === 503
+          ? 'A integração com o Sankhya não está configurada.'
+          : 'Não foi possível carregar a lista completa de contas.'
+      },
+      status,
+      cabecalhos
+    );
+  }
 }
 
       if (url.pathname === '/fluxo-caixa') {
