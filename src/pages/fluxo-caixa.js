@@ -294,6 +294,18 @@ export function fluxoCaixaPage() {
       <button id="recarregarContas" type="button">
         Atualizar lista de contas
       </button>
+
+      <button id="validarFiltrosFluxo" type="button">
+  Validar filtros
+</button>
+
+<p
+  id="resultadoValidacaoFluxo"
+  class="observacao"
+  role="status"
+  aria-live="polite"
+></p>
+      
     </section>
 
     <section class="painel" aria-labelledby="tituloDisponibilidade">
@@ -469,6 +481,125 @@ export function fluxoCaixaPage() {
     .addEventListener('click', carregarContas);
 
   carregarContas();
+
+  var validandoFiltrosFluxo = false;
+
+document.getElementById('validarFiltrosFluxo')
+  .addEventListener('click', async function () {
+    if (validandoFiltrosFluxo) return;
+
+    var botao = document.getElementById('validarFiltrosFluxo');
+    var resultado = document.getElementById('resultadoValidacaoFluxo');
+    var inicio = document.getElementById('fluxoInicio');
+    var fim = document.getElementById('fluxoFim');
+
+    resultado.textContent = '';
+
+    if (!inicio.reportValidity() || !fim.reportValidity()) {
+      return;
+    }
+
+    if (inicio.value > fim.value) {
+      resultado.textContent =
+        'A data inicial não pode ser posterior à data final.';
+      return;
+    }
+
+    if (carregandoContas) {
+      resultado.textContent =
+        'Aguarde o carregamento das contas.';
+      return;
+    }
+
+    if (contasSelecionadas.size === 0) {
+      resultado.textContent =
+        'Selecione pelo menos uma conta.';
+      return;
+    }
+
+    var parametros = new URLSearchParams();
+
+    parametros.set('inicio', inicio.value);
+    parametros.set('fim', fim.value);
+    parametros.set(
+      'contas',
+      Array.from(contasSelecionadas).join(',')
+    );
+
+    [
+      ['provisoes', 'fluxoProvisoes'],
+      ['baixados', 'fluxoBaixados'],
+      ['carencia', 'fluxoCarencia'],
+      ['conciliado', 'fluxoConciliado']
+    ].forEach(function (opcao) {
+      parametros.set(
+        opcao[0],
+        document.getElementById(opcao[1]).checked ? '1' : '0'
+      );
+    });
+
+    validandoFiltrosFluxo = true;
+    botao.disabled = true;
+    resultado.textContent = 'Validando filtros...';
+
+    try {
+      var resposta = await fetch(
+        '/api/fluxo-caixa/validar?' + parametros.toString(),
+        {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        }
+      );
+
+      var dados;
+
+      try {
+        dados = await resposta.json();
+      } catch {
+        throw new Error(
+          'O servidor retornou uma resposta inesperada. Atualize a página e tente novamente.'
+        );
+      }
+
+      if (!resposta.ok) {
+        throw new Error(
+          dados.error || 'Não foi possível validar os filtros.'
+        );
+      }
+
+      if (
+        dados.sucesso !== true ||
+        !dados.filtros ||
+        !Array.isArray(dados.contas)
+      ) {
+        throw new Error('Resposta de validação inválida.');
+      }
+
+      var nomes = dados.contas.map(function (conta) {
+        return conta.id + ' — ' + conta.descricao;
+      }).join('; ');
+
+      function formatarDataValidada(data) {
+        return data.split('-').reverse().join('/');
+      }
+
+      resultado.textContent =
+        'Filtros validados para ' +
+        formatarDataValidada(dados.filtros.inicio) +
+        ' a ' +
+        formatarDataValidada(dados.filtros.fim) +
+        '. Contas: ' + nomes +
+        '. Nenhum saldo foi calculado. ' +
+        'Se alterar os filtros, valide novamente.';
+    } catch (erro) {
+      resultado.textContent = erro.message ||
+        'Não foi possível validar os filtros.';
+    } finally {
+      validandoFiltrosFluxo = false;
+      botao.disabled = false;
+    }
+  });
+  
 </script>
   
 </body>
