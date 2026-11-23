@@ -481,11 +481,12 @@ function mostrarToast(texto) {
 }
 
     const PAINEIS_DASHBOARD = [
-  'DASHBOARD_RENTABILIDADE',
-  'DASHBOARD_VENDAS',
-  'DEVOLUCOES',
-  'BSC_COMERCIAL'
-];
+      'DASHBOARD_RENTABILIDADE',
+      'DASHBOARD_VENDAS',
+      'DEVOLUCOES',
+      'BSC_COMERCIAL',
+      'FLUXO_CAIXA'
+    ];
 
     function esc(valor) {
       const no = document.createElement('span');
