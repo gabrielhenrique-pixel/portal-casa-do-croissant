@@ -111,7 +111,8 @@ import { dashboardsPage } from './pages/dashboards.js';
 import { fluxoCaixaPage } from './pages/fluxo-caixa.js';
 import {
   listarContasSankhya,
-  consultarSaldoInicialSankhya
+  consultarSaldoInicialSankhya,
+  consultarMovimentosDiariosSankhya
 } from './fluxo-caixa/providers/sankhya.js';
 import {
   validarFiltrosFluxoCaixa
@@ -1165,6 +1166,143 @@ if (url.pathname === '/api/devolucoes' && request.method === 'GET') {
 }
       if (url.pathname === '/api/rentabilidade/vendas' && request.method === 'GET') {
   return listarVendasRentabilidadeSankhya(request, env);
+}
+
+      if (url.pathname === '/api/fluxo-caixa/movimentos-diarios') {
+  const headers = {
+    'Cache-Control': 'no-store'
+  };
+
+  const permitido = await podeConsultarModulo(
+    request,
+    env,
+    'FLUXO_CAIXA'
+  );
+
+  const podeVerDashboards = permitido
+    ? await podeConsultarModulo(request, env, 'DASHBOARDS')
+    : false;
+
+  if (!permitido || !podeVerDashboards) {
+    return json({
+      error: 'Sem permissão para consultar o fluxo de caixa.'
+    }, 403, headers);
+  }
+
+  if (request.method !== 'GET') {
+    return json({
+      error: 'Método não permitido.'
+    }, 405, {
+      ...headers,
+      Allow: 'GET'
+    });
+  }
+
+  let filtros;
+
+  try {
+    filtros = validarFiltrosFluxoCaixa(url.searchParams);
+  } catch (erro) {
+    return json({
+      error: erro.status === 400
+        ? erro.message
+        : 'Não foi possível validar os filtros.'
+    }, erro.status === 400 ? 400 : 500, headers);
+  }
+
+  try {
+    const contasDisponiveis = await listarContasSankhya(env);
+
+    const idsDisponiveis = new Set(
+      contasDisponiveis.map(function (conta) {
+        return conta.id;
+      })
+    );
+
+    if (filtros.contas.some(function (id) {
+      return !idsDisponiveis.has(id);
+    })) {
+      return json({
+        error: 'Uma das contas selecionadas não existe na lista atual.'
+      }, 400, headers);
+    }
+
+    const movimentos = await consultarMovimentosDiariosSankhya(
+      env,
+      filtros
+    );
+
+    const totaisPorConta = new Map();
+
+    contasDisponiveis.forEach(function (conta) {
+      if (!filtros.contas.includes(conta.id)) return;
+
+      totaisPorConta.set(conta.id, {
+        contaId: conta.id,
+        descricao: conta.descricao,
+        diasComMovimento: 0,
+        quantidadeMovimentos: 0,
+        entradasCentavos: 0,
+        saidasCentavos: 0,
+        diferencaCentavos: 0
+      });
+    });
+
+    function somarInteiros(a, b) {
+      const resultado = a + b;
+
+      if (!Number.isSafeInteger(resultado)) {
+        throw new Error('Total fora do limite permitido.');
+      }
+
+      return resultado;
+    }
+
+    movimentos.forEach(function (movimento) {
+      const total = totaisPorConta.get(movimento.contaId);
+
+      if (!total) {
+        throw new Error('Conta inesperada na consulta.');
+      }
+
+      total.diasComMovimento += 1;
+
+      total.quantidadeMovimentos = somarInteiros(
+        total.quantidadeMovimentos,
+        movimento.quantidadeMovimentos
+      );
+
+      total.entradasCentavos = somarInteiros(
+        total.entradasCentavos,
+        movimento.entradasCentavos
+      );
+
+      total.saidasCentavos = somarInteiros(
+        total.saidasCentavos,
+        movimento.saidasCentavos
+      );
+
+      total.diferencaCentavos = somarInteiros(
+        total.entradasCentavos,
+        -total.saidasCentavos
+      );
+    });
+
+    return json({
+      sucesso: true,
+      origem: 'sankhya',
+      inicio: filtros.inicio,
+      fim: filtros.fim,
+      unidadeValores: 'centavos',
+      totaisPorConta: Array.from(totaisPorConta.values()),
+      movimentos,
+      aviso: 'Movimentação bancária por conta, incluindo transferências e movimentos conciliados e não conciliados. Esta consulta de conferência não aplica as opções de provisões, títulos baixados, carência ou conciliação do saldo inicial.'
+    }, 200, headers);
+  } catch {
+    return json({
+      error: 'Não foi possível consultar os movimentos bancários. Tente novamente.'
+    }, 502, headers);
+  }
 }
 
       if (url.pathname === '/api/fluxo-caixa/saldo-inicial') {
