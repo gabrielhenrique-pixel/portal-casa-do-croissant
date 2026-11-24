@@ -195,6 +195,53 @@ export function fluxoCaixaPage() {
         grid-template-columns: 1fr;
       }
     }
+
+     .tabela-fluxo-container {
+  overflow-x: auto;
+  margin: 14px 0 24px;
+}
+
+.tabela-fluxo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabela-fluxo th,
+.tabela-fluxo td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #dce6ec;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabela-fluxo th {
+  background: #173c54;
+  color: #fff;
+}
+
+.tabela-fluxo th:first-child,
+.tabela-fluxo td:first-child {
+  text-align: left;
+}
+
+.tabela-fluxo tbody tr:nth-child(even) {
+  background: #f3f7fa;
+}
+
+.tabela-fluxo .linha-saldo {
+  background: #e8f0f6;
+  font-weight: bold;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+#estadoContas:empty,
+#estadoDiarioFluxo:empty {
+  display: none;
+}
     
   </style>
 </head>
@@ -245,34 +292,13 @@ export function fluxoCaixaPage() {
           Apenas saldo inicial conciliado
         </label>
       </div>
-
-      <p class="observacao">
-        A carência será aplicada às receitas pendentes.
-        Sábados e domingos serão ajustados para segunda-feira,
-        sem considerar feriados.
-      </p>
-
-      <p class="observacao">
-        A opção de conciliação se refere ao saldo inicial,
-        como no SQL do relatório original.
-        Ela não significa que todos os lançamentos do período
-        estejam conciliados.
-      </p>
-
-      <p class="aviso">
-        Os filtros estão em preparação.
-        Alterar estas opções ainda não executa a consulta financeira.
-      </p>
+      
     </section>
 
 
         <section class="painel" aria-labelledby="tituloContas">
       <h2 id="tituloContas">Contas e caixas</h2>
 
-      <p class="observacao">
-        Selecione as contas que deseja consultar.
-        Nesta etapa, a seleção ainda não calcula saldos.
-      </p>
 
       <p id="estadoContas" role="status" aria-live="polite">
         Carregando contas...
@@ -283,71 +309,27 @@ export function fluxoCaixaPage() {
         <div id="listaContas"></div>
       </fieldset>
 
-      <p id="resumoContas" class="observacao"></p>
-
-      <p class="aviso">
-        Contas de cartão também aparecem nesta lista.
-        Seus saldos não serão tratados automaticamente como
-        dinheiro disponível.
-      </p>
-
       <button id="recarregarContas" type="button">
         Atualizar lista de contas
       </button>
-
-      <button id="validarFiltrosFluxo" type="button">
-  Validar filtros
-</button>
-
-<p
-  id="resultadoValidacaoFluxo"
-  class="observacao"
-  role="status"
-  aria-live="polite"
-></p>
       
     </section>
 
-    <section class="painel" aria-labelledby="tituloDisponibilidade">
-      <h2 id="tituloDisponibilidade">Módulo em preparação</h2>
+  <section class="painel">
+  <h2>Movimentação bancária diária</h2>
 
-      <p class="aviso">
-        A consulta financeira ainda não está disponível.
-        Nenhum saldo ou lançamento está sendo apresentado nesta etapa.
-      </p>
-
-      <p>
-        Aqui serão exibidos o saldo inicial, as entradas, as saídas
-        e o saldo acumulado por dia, conforme o período e as contas
-        selecionadas.
-      </p>
-
-      <p class="observacao">
-        A opção de carência ajustará sábados e domingos,
-        sem considerar feriados.
-      </p>
-    </section>
-
-    <section class="painel">
-  <h2>Saldos iniciais por conta</h2>
-
-  <p class="observacao">
-    Valores registrados no sistema antes dos movimentos da data inicial.
-    Saldos de cartões não representam automaticamente dinheiro disponível.
-  </p>
-
-  <button id="consultarSaldosFluxo" type="button">
-    Consultar saldos iniciais
+  <button id="consultarDiarioFluxo" type="button">
+    Consultar movimentação diária
   </button>
 
   <p
-    id="estadoSaldosFluxo"
+    id="estadoDiarioFluxo"
     class="observacao"
     role="status"
     aria-live="polite"
   ></p>
 
-  <div id="listaSaldosFluxo"></div>
+  <div id="resultadoDiarioFluxo"></div>
 </section>
     
   </main>
@@ -384,11 +366,6 @@ export function fluxoCaixaPage() {
 
   configurarPeriodoFluxo();
 
-  function atualizarResumoContas() {
-    document.getElementById('resumoContas').textContent =
-      contasSelecionadas.size + ' conta(s) selecionada(s).';
-  }
-
   function montarListaContas() {
     var lista = document.getElementById('listaContas');
     lista.replaceChildren();
@@ -411,15 +388,11 @@ export function fluxoCaixaPage() {
         } else {
           contasSelecionadas.delete(conta.id);
         }
-
-        atualizarResumoContas();
       });
 
       label.append(input, texto);
       lista.appendChild(label);
     });
-
-    atualizarResumoContas();
   }
 
   async function carregarContas() {
@@ -485,8 +458,9 @@ export function fluxoCaixaPage() {
       montarListaContas();
 
       seletor.disabled = contasDisponiveis.length === 0;
-      estado.textContent =
-        contasDisponiveis.length + ' conta(s) carregada(s).';
+      estado.textContent = contasDisponiveis.length
+      ? ''
+      : 'Nenhuma conta disponível.';
     } catch (erro) {
       contasDisponiveis = [];
       contasSelecionadas.clear();
@@ -504,126 +478,6 @@ export function fluxoCaixaPage() {
     .addEventListener('click', carregarContas);
 
   carregarContas();
-
-  var validandoFiltrosFluxo = false;
-
-document.getElementById('validarFiltrosFluxo')
-  .addEventListener('click', async function () {
-    if (validandoFiltrosFluxo) return;
-
-    var botao = document.getElementById('validarFiltrosFluxo');
-    var resultado = document.getElementById('resultadoValidacaoFluxo');
-    var inicio = document.getElementById('fluxoInicio');
-    var fim = document.getElementById('fluxoFim');
-
-    resultado.textContent = '';
-
-    if (!inicio.reportValidity() || !fim.reportValidity()) {
-      return;
-    }
-
-    if (inicio.value > fim.value) {
-      resultado.textContent =
-        'A data inicial não pode ser posterior à data final.';
-      return;
-    }
-
-    if (carregandoContas) {
-      resultado.textContent =
-        'Aguarde o carregamento das contas.';
-      return;
-    }
-
-    if (contasSelecionadas.size === 0) {
-      resultado.textContent =
-        'Selecione pelo menos uma conta.';
-      return;
-    }
-
-    var parametros = new URLSearchParams();
-
-    parametros.set('inicio', inicio.value);
-    parametros.set('fim', fim.value);
-    parametros.set(
-      'contas',
-      Array.from(contasSelecionadas).join(',')
-    );
-
-    [
-      ['provisoes', 'fluxoProvisoes'],
-      ['baixados', 'fluxoBaixados'],
-      ['carencia', 'fluxoCarencia'],
-      ['conciliado', 'fluxoConciliado']
-    ].forEach(function (opcao) {
-      parametros.set(
-        opcao[0],
-        document.getElementById(opcao[1]).checked ? '1' : '0'
-      );
-    });
-
-    validandoFiltrosFluxo = true;
-    botao.disabled = true;
-    resultado.textContent = 'Validando filtros...';
-
-    try {
-      var resposta = await fetch(
-        '/api/fluxo-caixa/validar?' + parametros.toString(),
-        {
-          credentials: 'same-origin',
-          cache: 'no-store'
-        }
-      );
-
-      var dados;
-
-      try {
-        dados = await resposta.json();
-      } catch {
-        throw new Error(
-          'O servidor retornou uma resposta inesperada. Atualize a página e tente novamente.'
-        );
-      }
-
-      if (!resposta.ok) {
-        throw new Error(
-          dados.error || 'Não foi possível validar os filtros.'
-        );
-      }
-
-      if (
-        dados.sucesso !== true ||
-        !dados.filtros ||
-        !Array.isArray(dados.contas)
-      ) {
-        throw new Error('Resposta de validação inválida.');
-      }
-
-      var nomes = dados.contas.map(function (conta) {
-        return conta.id + ' — ' + conta.descricao;
-      }).join('; ');
-
-      function formatarDataValidada(data) {
-        return data.split('-').reverse().join('/');
-      }
-
-      resultado.textContent =
-        'Filtros validados para ' +
-        formatarDataValidada(dados.filtros.inicio) +
-        ' a ' +
-        formatarDataValidada(dados.filtros.fim) +
-        '. Contas: ' + nomes +
-        '. Nenhum saldo foi calculado. ' +
-        'Se alterar os filtros, valide novamente.';
-    } catch (erro) {
-      resultado.textContent = erro.message ||
-        'Não foi possível validar os filtros.';
-    } finally {
-      validandoFiltrosFluxo = false;
-      botao.disabled = false;
-    }
-  });
-
-    var consultandoSaldosFluxo = false;
 
 function parametrosSaldosFluxo() {
   var inicio = document.getElementById('fluxoInicio');
@@ -663,114 +517,16 @@ function parametrosSaldosFluxo() {
   return parametros;
 }
 
-document.getElementById('consultarSaldosFluxo')
-  .addEventListener('click', async function () {
-    if (consultandoSaldosFluxo) return;
+  var consultandoDiarioFluxo = false;
+var revisaoDiarioFluxo = 0;
 
-    var botao = document.getElementById('consultarSaldosFluxo');
-    var estado = document.getElementById('estadoSaldosFluxo');
-    var lista = document.getElementById('listaSaldosFluxo');
+function invalidarDiarioFluxo() {
+  revisaoDiarioFluxo += 1;
 
-    lista.replaceChildren();
-    estado.textContent = '';
+  document.getElementById('resultadoDiarioFluxo')
+    .replaceChildren();
 
-    try {
-      var parametros = parametrosSaldosFluxo();
-
-      if (!parametros) return;
-
-      var consultaEnviada = parametros.toString();
-
-      consultandoSaldosFluxo = true;
-      botao.disabled = true;
-      estado.textContent = 'Consultando saldos iniciais...';
-
-      var resposta = await fetch(
-        '/api/fluxo-caixa/saldo-inicial?' + consultaEnviada,
-        {
-          credentials: 'same-origin',
-          cache: 'no-store'
-        }
-      );
-
-      var dados;
-
-      try {
-        dados = await resposta.json();
-      } catch {
-        throw new Error('O servidor retornou uma resposta inesperada.');
-      }
-
-      if (!resposta.ok) {
-        throw new Error(
-          dados.error || 'Não foi possível consultar os saldos.'
-        );
-      }
-
-      if (
-        dados.sucesso !== true ||
-        dados.unidadeValores !== 'centavos' ||
-        !Array.isArray(dados.contas) ||
-        dados.contas.length === 0 ||
-        dados.contas.some(function (conta) {
-          return !Number.isSafeInteger(conta.saldoInicialCentavos);
-        })
-      ) {
-        throw new Error('Resposta de saldos inválida.');
-      }
-
-      var parametrosAtuais = parametrosSaldosFluxo();
-
-      if (
-        !parametrosAtuais ||
-        parametrosAtuais.toString() !== consultaEnviada
-      ) {
-        estado.textContent =
-          'Os filtros mudaram durante a consulta. Consulte novamente.';
-        return;
-      }
-
-      var moeda = new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      });
-
-      var fragmento = document.createDocumentFragment();
-
-      dados.contas.forEach(function (conta) {
-        var linha = document.createElement('p');
-
-        linha.textContent =
-          conta.id + ' — ' + conta.descricao + ': ' +
-          moeda.format(conta.saldoInicialCentavos / 100);
-
-        fragmento.appendChild(linha);
-      });
-
-      lista.replaceChildren(fragmento);
-
-      estado.textContent =
-        'Saldo inicial em ' +
-        dados.inicio.split('-').reverse().join('/') +
-        (dados.apenasSaldoInicialConciliado
-          ? ' — considerando apenas movimentos conciliados.'
-          : ' — considerando movimentos conciliados e não conciliados.') +
-        ' Entradas e saídas do período ainda não foram calculadas.';
-    } catch (erro) {
-      lista.replaceChildren();
-      estado.textContent = erro.message ||
-        'Não foi possível consultar os saldos.';
-    } finally {
-      consultandoSaldosFluxo = false;
-      botao.disabled = false;
-    }
-  });
-
-function invalidarSaldosFluxo() {
-  document.getElementById('listaSaldosFluxo').replaceChildren();
-
-  document.getElementById('estadoSaldosFluxo').textContent =
-    'Filtros alterados. Consulte os saldos novamente.';
+document.getElementById('estadoDiarioFluxo').textContent = '';
 }
 
 [
@@ -779,14 +535,275 @@ function invalidarSaldosFluxo() {
   'fluxoConciliado'
 ].forEach(function (id) {
   document.getElementById(id)
-    .addEventListener('input', invalidarSaldosFluxo);
+    .addEventListener('input', invalidarDiarioFluxo);
 });
 
 document.getElementById('listaContas')
-  .addEventListener('change', invalidarSaldosFluxo);
+  .addEventListener('change', invalidarDiarioFluxo);
 
 document.getElementById('recarregarContas')
-  .addEventListener('click', invalidarSaldosFluxo);
+  .addEventListener('click', invalidarDiarioFluxo);
+
+async function buscarJsonDiarioFluxo(caminho, parametros) {
+  var resposta = await fetch(caminho + '?' + parametros, {
+    credentials: 'same-origin',
+    cache: 'no-store'
+  });
+
+  var dados;
+
+  try {
+    dados = await resposta.json();
+  } catch {
+    throw new Error('O servidor retornou uma resposta inesperada.');
+  }
+
+  if (!resposta.ok || dados.sucesso !== true) {
+    throw new Error(
+      dados.error || 'Não foi possível consultar a movimentação.'
+    );
+  }
+
+  if (dados.unidadeValores !== 'centavos') {
+    throw new Error('Formato de valores inesperado.');
+  }
+
+  return dados;
+}
+
+document.getElementById('consultarDiarioFluxo')
+  .addEventListener('click', async function () {
+    if (consultandoDiarioFluxo) return;
+
+    var botao = document.getElementById('consultarDiarioFluxo');
+    var estado = document.getElementById('estadoDiarioFluxo');
+    var resultado = document.getElementById('resultadoDiarioFluxo');
+    var revisaoConsulta = revisaoDiarioFluxo;
+
+    resultado.replaceChildren();
+    estado.textContent = '';
+
+    try {
+      var parametros = parametrosSaldosFluxo();
+
+      if (!parametros) return;
+
+      var consulta = parametros.toString();
+
+      consultandoDiarioFluxo = true;
+      botao.disabled = true;
+      estado.textContent = 'Consultando saldos e movimentos...';
+
+      var respostas = await Promise.all([
+        buscarJsonDiarioFluxo(
+          '/api/fluxo-caixa/saldo-inicial',
+          consulta
+        ),
+        buscarJsonDiarioFluxo(
+          '/api/fluxo-caixa/movimentos-diarios',
+          consulta
+        )
+      ]);
+
+      if (revisaoConsulta !== revisaoDiarioFluxo) {
+        estado.textContent =
+          'Os filtros mudaram durante a consulta. Consulte novamente.';
+        return;
+      }
+
+      var saldos = respostas[0];
+      var diario = respostas[1];
+
+      if (
+        !Array.isArray(saldos.contas) ||
+        !Array.isArray(diario.movimentos) ||
+        saldos.inicio !== parametros.get('inicio') ||
+        diario.inicio !== parametros.get('inicio') ||
+        diario.fim !== parametros.get('fim') ||
+        saldos.apenasSaldoInicialConciliado !==
+          (parametros.get('conciliado') === '1')
+      ) {
+        throw new Error('Resposta incompatível com os filtros enviados.');
+      }
+
+      var idsEsperados = new Set(
+        parametros.get('contas').split(',')
+      );
+      var idsRecebidos = new Set();
+      var chavesMovimentos = new Set();
+
+      saldos.contas.forEach(function (conta) {
+        if (
+          !idsEsperados.has(conta.id) ||
+          idsRecebidos.has(conta.id) ||
+          !Number.isSafeInteger(conta.saldoInicialCentavos)
+        ) {
+          throw new Error('Resposta de saldos inválida.');
+        }
+
+        idsRecebidos.add(conta.id);
+      });
+
+      if (idsRecebidos.size !== idsEsperados.size) {
+        throw new Error('Faltam contas na resposta de saldos.');
+      }
+
+      diario.movimentos.forEach(function (movimento) {
+        var chave = movimento.contaId + ':' + movimento.data;
+
+        if (
+          !idsEsperados.has(movimento.contaId) ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(movimento.data) ||
+          movimento.data < diario.inicio ||
+          movimento.data > diario.fim ||
+          !Number.isSafeInteger(movimento.entradasCentavos) ||
+          !Number.isSafeInteger(movimento.saidasCentavos) ||
+          !Number.isSafeInteger(movimento.diferencaCentavos) ||
+          movimento.entradasCentavos - movimento.saidasCentavos !==
+            movimento.diferencaCentavos ||
+          chavesMovimentos.has(chave)
+        ) {
+          throw new Error('Resposta de movimentos inválida.');
+        }
+
+        chavesMovimentos.add(chave);
+      });
+
+      var moeda = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+
+      function dinheiro(centavos) {
+        return moeda.format(centavos / 100);
+      }
+
+      function somar(a, b) {
+        var valor = a + b;
+
+        if (!Number.isSafeInteger(valor)) {
+          throw new Error('Valor acumulado fora do limite permitido.');
+        }
+
+        return valor;
+      }
+
+      function inserirLinha(destino, valores, classe) {
+        var linha = document.createElement('tr');
+
+        if (classe) linha.className = classe;
+
+        valores.forEach(function (valor) {
+          var celula = document.createElement('td');
+          celula.textContent = valor;
+          linha.appendChild(celula);
+        });
+
+        destino.appendChild(linha);
+      }
+
+      var fragmento = document.createDocumentFragment();
+
+      saldos.contas.forEach(function (conta) {
+        var titulo = document.createElement('h3');
+        titulo.textContent = conta.id + ' — ' + conta.descricao;
+        fragmento.appendChild(titulo);
+
+        var container = document.createElement('div');
+        container.className = 'tabela-fluxo-container';
+
+        var tabela = document.createElement('table');
+        tabela.className = 'tabela-fluxo';
+        tabela.setAttribute(
+          'aria-label',
+          'Movimentação diária da conta ' + conta.descricao
+        );
+
+        var cabecalho = tabela.createTHead().insertRow();
+
+        [
+          'Data',
+          'Entradas',
+          'Saídas',
+          'Diferença diária',
+          saldos.apenasSaldoInicialConciliado
+          ? 'Saldo acumulado (inicial conciliado)'
+          : 'Saldo acumulado'
+        ].forEach(function (nome) {
+          var celula = document.createElement('th');
+          celula.scope = 'col';
+          celula.textContent = nome;
+          cabecalho.appendChild(celula);
+        });
+
+        var corpo = tabela.createTBody();
+        var acumulado = conta.saldoInicialCentavos;
+        var entradas = 0;
+        var saidas = 0;
+
+        inserirLinha(corpo, [
+          'Saldo inicial',
+          '—',
+          '—',
+          '—',
+          dinheiro(acumulado)
+        ], 'linha-saldo');
+
+        var movimentosConta = diario.movimentos
+          .filter(function (movimento) {
+            return movimento.contaId === conta.id;
+          })
+          .sort(function (a, b) {
+            return a.data.localeCompare(b.data);
+          });
+
+        movimentosConta.forEach(function (movimento) {
+          entradas = somar(entradas, movimento.entradasCentavos);
+          saidas = somar(saidas, movimento.saidasCentavos);
+          acumulado = somar(acumulado, movimento.diferencaCentavos);
+
+          inserirLinha(corpo, [
+            movimento.data.split('-').reverse().join('/'),
+            dinheiro(movimento.entradasCentavos),
+            dinheiro(movimento.saidasCentavos),
+            dinheiro(movimento.diferencaCentavos),
+            dinheiro(acumulado)
+          ]);
+        });
+
+        inserirLinha(tabela.createTFoot(), [
+          'Total do período / saldo final calculado',
+          dinheiro(entradas),
+          dinheiro(saidas),
+          dinheiro(somar(entradas, -saidas)),
+          dinheiro(acumulado)
+        ], 'linha-saldo');
+
+        container.appendChild(tabela);
+        fragmento.appendChild(container);
+
+        if (movimentosConta.length === 0) {
+          var aviso = document.createElement('p');
+          aviso.textContent =
+            'Nenhum movimento bancário encontrado para esta conta no período.';
+          fragmento.appendChild(aviso);
+        }
+      });
+
+      resultado.replaceChildren(fragmento);
+      
+      estado.textContent = '';
+    } catch (erro) {
+      if (revisaoConsulta === revisaoDiarioFluxo) {
+        resultado.replaceChildren();
+        estado.textContent = erro.message ||
+          'Não foi possível consultar a movimentação.';
+      }
+    } finally {
+      consultandoDiarioFluxo = false;
+      botao.disabled = false;
+    }
+  });
   
 </script>
   
