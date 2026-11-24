@@ -242,6 +242,269 @@ export function fluxoCaixaPage() {
 #estadoDiarioFluxo:empty {
   display: none;
 }
+
+.filtros-caixa {
+  padding: 20px;
+}
+
+.barra-filtros-caixa {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(160px, 220px) auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.campo-caixa {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.campo-caixa label {
+  color: #29475d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campo-caixa input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #cbd8e3;
+  border-radius: 9px;
+  background: #fff;
+  color: #173247;
+  font: inherit;
+}
+
+.campo-caixa input:focus-visible {
+  outline: 2px solid #2d739c;
+  outline-offset: 2px;
+}
+
+.botao-consultar-caixa {
+  justify-self: end;
+  min-width: 140px;
+  height: 44px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 9px;
+  background: #173f59;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botao-consultar-caixa:hover:not(:disabled) {
+  background: #215574;
+}
+
+.botao-consultar-caixa:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.opcoes-caixa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.opcao-caixa {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #dce6ec;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.opcao-caixa input,
+.opcao-conta input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #173f59;
+}
+
+.opcao-caixa.indisponivel {
+  color: #71808d;
+  background: #f1f4f7;
+  cursor: not-allowed;
+}
+
+.contas-caixa {
+  margin-top: 18px;
+  border: 1px solid #dce6ec;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.contas-caixa summary {
+  padding: 13px 16px;
+  background: #f5f8fb;
+  color: #173f59;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.conteudo-contas-caixa {
+  padding: 14px;
+}
+
+.acoes-contas-caixa {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+#recarregarContas {
+  padding: 7px 12px;
+  border: 1px solid #cbd8e3;
+  border-radius: 7px;
+  background: #fff;
+  color: #29475d;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#recarregarContas:hover:not(:disabled) {
+  background: #eef4f8;
+}
+
+#seletorContas {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+#seletorContas legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+#listaContas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.opcao-conta {
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #dce6ec;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.opcao-conta:has(input:checked) {
+  border-color: #2d739c;
+  background: #eaf3f9;
+}
+
+.opcao-conta:focus-within {
+  outline: 2px solid #2d739c;
+  outline-offset: 2px;
+}
+
+.mensagem-caixa,
+#estadoContas {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+#estadoDiarioFluxo:empty,
+#estadoContas:empty {
+  display: none;
+}
+
+.painel-tabela-caixa {
+  padding: 20px;
+}
+
+.painel-tabela-caixa > h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+#resultadoDiarioFluxo h3 {
+  margin: 18px 0 10px;
+  color: #29475d;
+  font-size: 14px;
+}
+
+.tabela-fluxo-container {
+  margin: 0 0 20px;
+  border: 1px solid #dce6ec;
+  border-radius: 9px;
+  overflow-x: auto;
+}
+
+.tabela-fluxo {
+  font-size: 13px;
+}
+
+.tabela-fluxo th,
+.tabela-fluxo td {
+  padding: 11px 14px;
+}
+
+.tabela-fluxo th {
+  font-weight: 600;
+}
+
+.tabela-fluxo tbody tr:hover {
+  background: #eaf3f9;
+}
+
+@media (max-width: 650px) {
+  .barra-filtros-caixa {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .botao-consultar-caixa {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .opcoes-caixa {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opcao-caixa {
+    font-size: 12px;
+  }
+
+  .filtros-caixa,
+  .painel-tabela-caixa {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  #listaContas,
+  .opcoes-caixa {
+    grid-template-columns: 1fr;
+  }
+}
     
   </style>
 </head>
@@ -254,84 +517,84 @@ export function fluxoCaixaPage() {
         aria-label="Voltar para Dashboards"
       >←</a>
       <h1>Fluxo de Caixa</h1>
-    </header>
-
-            <section class="painel" aria-labelledby="tituloFiltros">
-      <h2 id="tituloFiltros">Período e opções</h2>
-
-      <div class="periodo-fluxo">
-        <label>
-          Data inicial
-          <input id="fluxoInicio" type="date" required>
-        </label>
-
-        <label>
-          Data final
-          <input id="fluxoFim" type="date" required>
-        </label>
-      </div>
-
-      <div class="opcoes-fluxo">
-        <label>
-          <input id="fluxoProvisoes" type="checkbox">
-          Incluir provisões
-        </label>
-
-        <label>
-          <input id="fluxoBaixados" type="checkbox" checked>
-          Considerar títulos baixados
-        </label>
-
-        <label>
-          <input id="fluxoCarencia" type="checkbox" checked>
-          Considerar carência (Float)
-        </label>
-
-        <label>
-          <input id="fluxoConciliado" type="checkbox">
-          Apenas saldo inicial conciliado
-        </label>
-      </div>
       
-    </section>
+    </header>
+<section class="painel filtros-caixa">
+  <div class="barra-filtros-caixa">
+    <div class="campo-caixa">
+      <label for="fluxoInicio">Data inicial</label>
+      <input id="fluxoInicio" type="date" required>
+    </div>
 
+    <div class="campo-caixa">
+      <label for="fluxoFim">Data final</label>
+      <input id="fluxoFim" type="date" required>
+    </div>
 
-        <section class="painel" aria-labelledby="tituloContas">
-      <h2 id="tituloContas">Contas e caixas</h2>
+    <button
+      id="consultarDiarioFluxo"
+      class="botao-consultar-caixa"
+      type="button"
+    >
+      Consultar
+    </button>
+  </div>
 
+  <div class="opcoes-caixa">
+    <label class="opcao-caixa indisponivel">
+      <input id="fluxoProvisoes" type="checkbox" disabled>
+      Provisões
+    </label>
+
+    <label class="opcao-caixa indisponivel">
+      <input id="fluxoBaixados" type="checkbox" checked disabled>
+      Títulos baixados
+    </label>
+
+    <label class="opcao-caixa indisponivel">
+      <input id="fluxoCarencia" type="checkbox" checked disabled>
+      Carência
+    </label>
+
+    <label class="opcao-caixa">
+      <input id="fluxoConciliado" type="checkbox">
+      Saldo inicial conciliado
+    </label>
+  </div>
+
+  <details class="contas-caixa" open>
+    <summary>Contas e caixas</summary>
+
+    <div class="conteudo-contas-caixa">
+      <div class="acoes-contas-caixa">
+        <button id="recarregarContas" type="button">
+          Atualizar contas
+        </button>
+      </div>
 
       <p id="estadoContas" role="status" aria-live="polite">
         Carregando contas...
       </p>
 
       <fieldset id="seletorContas" disabled>
-        <legend>Contas disponíveis</legend>
+        <legend>Selecionar contas</legend>
         <div id="listaContas"></div>
       </fieldset>
-
-      <button id="recarregarContas" type="button">
-        Atualizar lista de contas
-      </button>
-      
-    </section>
-
-  <section class="painel">
-  <h2>Movimentação bancária diária</h2>
-
-  <button id="consultarDiarioFluxo" type="button">
-    Consultar movimentação diária
-  </button>
+    </div>
+  </details>
 
   <p
     id="estadoDiarioFluxo"
-    class="observacao"
+    class="mensagem-caixa"
     role="status"
     aria-live="polite"
   ></p>
+</section>
 
+<section class="painel painel-tabela-caixa">
+  <h2>Movimentação bancária</h2>
   <div id="resultadoDiarioFluxo"></div>
 </section>
-    
   </main>
 
     <script>
