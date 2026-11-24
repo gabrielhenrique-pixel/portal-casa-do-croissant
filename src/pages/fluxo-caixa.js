@@ -327,6 +327,29 @@ export function fluxoCaixaPage() {
         sem considerar feriados.
       </p>
     </section>
+
+    <section class="painel">
+  <h2>Saldos iniciais por conta</h2>
+
+  <p class="observacao">
+    Valores registrados no sistema antes dos movimentos da data inicial.
+    Saldos de cartões não representam automaticamente dinheiro disponível.
+  </p>
+
+  <button id="consultarSaldosFluxo" type="button">
+    Consultar saldos iniciais
+  </button>
+
+  <p
+    id="estadoSaldosFluxo"
+    class="observacao"
+    role="status"
+    aria-live="polite"
+  ></p>
+
+  <div id="listaSaldosFluxo"></div>
+</section>
+    
   </main>
 
     <script>
@@ -599,6 +622,171 @@ document.getElementById('validarFiltrosFluxo')
       botao.disabled = false;
     }
   });
+
+    var consultandoSaldosFluxo = false;
+
+function parametrosSaldosFluxo() {
+  var inicio = document.getElementById('fluxoInicio');
+  var fim = document.getElementById('fluxoFim');
+
+  if (!inicio.reportValidity() || !fim.reportValidity()) {
+    return null;
+  }
+
+  if (inicio.value > fim.value) {
+    throw new Error(
+      'A data inicial não pode ser posterior à data final.'
+    );
+  }
+
+  if (carregandoContas) {
+    throw new Error('Aguarde o carregamento das contas.');
+  }
+
+  if (contasSelecionadas.size === 0) {
+    throw new Error('Selecione pelo menos uma conta.');
+  }
+
+  var parametros = new URLSearchParams();
+
+  parametros.set('inicio', inicio.value);
+  parametros.set('fim', fim.value);
+  parametros.set(
+    'contas',
+    Array.from(contasSelecionadas).sort().join(',')
+  );
+  parametros.set(
+    'conciliado',
+    document.getElementById('fluxoConciliado').checked ? '1' : '0'
+  );
+
+  return parametros;
+}
+
+document.getElementById('consultarSaldosFluxo')
+  .addEventListener('click', async function () {
+    if (consultandoSaldosFluxo) return;
+
+    var botao = document.getElementById('consultarSaldosFluxo');
+    var estado = document.getElementById('estadoSaldosFluxo');
+    var lista = document.getElementById('listaSaldosFluxo');
+
+    lista.replaceChildren();
+    estado.textContent = '';
+
+    try {
+      var parametros = parametrosSaldosFluxo();
+
+      if (!parametros) return;
+
+      var consultaEnviada = parametros.toString();
+
+      consultandoSaldosFluxo = true;
+      botao.disabled = true;
+      estado.textContent = 'Consultando saldos iniciais...';
+
+      var resposta = await fetch(
+        '/api/fluxo-caixa/saldo-inicial?' + consultaEnviada,
+        {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        }
+      );
+
+      var dados;
+
+      try {
+        dados = await resposta.json();
+      } catch {
+        throw new Error('O servidor retornou uma resposta inesperada.');
+      }
+
+      if (!resposta.ok) {
+        throw new Error(
+          dados.error || 'Não foi possível consultar os saldos.'
+        );
+      }
+
+      if (
+        dados.sucesso !== true ||
+        dados.unidadeValores !== 'centavos' ||
+        !Array.isArray(dados.contas) ||
+        dados.contas.length === 0 ||
+        dados.contas.some(function (conta) {
+          return !Number.isSafeInteger(conta.saldoInicialCentavos);
+        })
+      ) {
+        throw new Error('Resposta de saldos inválida.');
+      }
+
+      var parametrosAtuais = parametrosSaldosFluxo();
+
+      if (
+        !parametrosAtuais ||
+        parametrosAtuais.toString() !== consultaEnviada
+      ) {
+        estado.textContent =
+          'Os filtros mudaram durante a consulta. Consulte novamente.';
+        return;
+      }
+
+      var moeda = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+
+      var fragmento = document.createDocumentFragment();
+
+      dados.contas.forEach(function (conta) {
+        var linha = document.createElement('p');
+
+        linha.textContent =
+          conta.id + ' — ' + conta.descricao + ': ' +
+          moeda.format(conta.saldoInicialCentavos / 100);
+
+        fragmento.appendChild(linha);
+      });
+
+      lista.replaceChildren(fragmento);
+
+      estado.textContent =
+        'Saldo inicial em ' +
+        dados.inicio.split('-').reverse().join('/') +
+        (dados.apenasSaldoInicialConciliado
+          ? ' — considerando apenas movimentos conciliados.'
+          : ' — considerando movimentos conciliados e não conciliados.') +
+        ' Entradas e saídas do período ainda não foram calculadas.';
+    } catch (erro) {
+      lista.replaceChildren();
+      estado.textContent = erro.message ||
+        'Não foi possível consultar os saldos.';
+    } finally {
+      consultandoSaldosFluxo = false;
+      botao.disabled = false;
+    }
+  });
+
+function invalidarSaldosFluxo() {
+  document.getElementById('listaSaldosFluxo').replaceChildren();
+
+  document.getElementById('estadoSaldosFluxo').textContent =
+    'Filtros alterados. Consulte os saldos novamente.';
+}
+
+[
+  'fluxoInicio',
+  'fluxoFim',
+  'fluxoConciliado'
+].forEach(function (id) {
+  document.getElementById(id)
+    .addEventListener('input', invalidarSaldosFluxo);
+});
+
+document.getElementById('listaContas')
+  .addEventListener('change', invalidarSaldosFluxo);
+
+document.getElementById('recarregarContas')
+  .addEventListener('click', invalidarSaldosFluxo);
   
 </script>
   
