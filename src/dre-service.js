@@ -3,6 +3,65 @@ import {
   identificarGrupoDre
 } from './dre-config.js';
 
+import {
+  carregarClientesRentabilidade,
+  listarRedesRentabilidade
+} from './clientes-rentabilidade.js';
+
+const CONTRATO = 'CONTRATO_ESTIMADO';
+const NOME_CONTRATO = 'Descontos de contrato de clientes (estimado)';
+
+async function consultarContrato(env, token, inicio, fim, empresa, detalhe) {
+  const janela = (a, b) =>
+    "(C.DTNEG >= DATE '" + a + "' AND C.DTNEG < DATE '" + b + "' + 1)";
+
+  const mes = "TO_CHAR(C.DTNEG,'YYYY-MM')";
+  const campos = detalhe ? ', TRUNC(C.DTNEG), C.NUNOTA, P.NOMEPARC' : '';
+
+  const sql =
+    'SELECT ' + mes + ', C.CODPARC,' +
+    ' SUM(NVL(I.VLRTOT,0)-NVL(I.VLRDESC,0)+NVL(I.VLRSUBST,0)),' +
+    ' COUNT(*) OVER ()' +
+    (detalhe ? ", TO_CHAR(TRUNC(C.DTNEG),'DD/MM/YYYY'), C.NUNOTA, P.NOMEPARC" : '') +
+    ' FROM TGFCAB C JOIN TGFITE I ON I.NUNOTA=C.NUNOTA' +
+    (detalhe ? ' LEFT JOIN TGFPAR P ON P.CODPARC=C.CODPARC' : '') +
+    " WHERE C.TIPMOV='V' AND C.STATUSNOTA='L' AND C.CODTIPOPER IN (1101,1107)" +
+    (empresa ? ' AND C.CODEMP=' + Number(empresa) : '') +
+    ' AND (' + janela(inicio, fim) +
+    (detalhe ? '' : ' OR ' + janela(subtrairUmAno(inicio), subtrairUmAno(fim))) +
+    ') GROUP BY ' + mes + ', C.CODPARC' + campos;
+
+  const [cadastros, redes, linhas] = await Promise.all([
+    carregarClientesRentabilidade(env),
+    listarRedesRentabilidade(env),
+    executarConsultaSankhya(token, sql)
+  ]);
+
+  if (linhas.length && Number(linhas[0][3]) !== linhas.length) {
+    throw new Error('Consulta de contratos incompleta.');
+  }
+
+  const redesValidas = new Set(redes.filter(rede => rede !== 'SEM REDE'));
+  const taxas = new Map(
+    cadastros
+      .filter(c => redesValidas.has(String(c.rede || '').trim()))
+      .map(c => [String(c.codigoParceiro).trim(), Number(c.percentualContrato)])
+  );
+
+  return linhas.flatMap(([mesLinha, parceiro, base, , data, documento, nome]) => {
+    const taxa = taxas.get(String(parceiro));
+    if (!(taxa > 0 && taxa <= 1)) return [];
+
+    const valor = -Number(base) * taxa;
+    if (!Number.isFinite(valor)) throw new Error('Base de contrato inválida.');
+
+    return [detalhe
+      ? [mesLinha, data, documento, nome, NOME_CONTRATO, valor]
+      : [mesLinha, CONTRATO, NOME_CONTRATO, valor]
+    ];
+  });
+}
+
 const DRE_NV2 = Object.freeze({
   receitaBruta: {
     nome: 'Receita Bruta',
@@ -107,7 +166,14 @@ export async function listarDre(request, env) {
     sql
   );
 
-  return montarRelatorioDre(linhas, { inicio, fim });
+  const contratos = await consultarContrato(env, token, inicio, fim, empresa, false);
+
+  return montarRelatorioDre(linhas.concat(contratos), {
+    inicio,
+    fim,
+    classificar: codigo =>
+      codigo === CONTRATO ? 3 : identificarGrupoDre(codigo)
+  });
 }
 
 // Contrato comum da apresentação. O adaptador de cada ERP resolve a classificação.
@@ -522,7 +588,7 @@ export async function listarAuditoriaDre(request, env) {
     return { error: 'Empresa inválida.', status: 400 };
   }
 
-  if (!/^\d+$/.test(natureza)) {
+  if (natureza !== CONTRATO && !/^\d+$/.test(natureza)) {
     return { error: 'Natureza inválida.', status: 400 };
   }
 
@@ -537,11 +603,12 @@ export async function listarAuditoriaDre(request, env) {
     };
   }
 
-  const token = await obterTokenSankhya(env);
-  const linhas = await executarConsultaSankhya(
-    token,
-    montarSqlAuditoriaDre(inicio, fim, empresa, natureza)
-  );
+  const linhas = natureza === CONTRATO
+    ? await consultarContrato(env, token, inicio, fim, empresa, true)
+    : await executarConsultaSankhya(
+        token,
+        montarSqlAuditoriaDre(inicio, fim, empresa, natureza)
+      );
 
   return {
     natureza,
