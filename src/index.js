@@ -57,6 +57,7 @@ import {
 import {
   reabrirComissao
 } from './comissoes-reabrir.js';
+import { salvarClassificacaoCompetencia } from './dre-competencia-classificacao.js';
 import {carregarClientesRentabilidade,
         atualizarPercentuaisClienteRentabilidade,
         atualizarClientesRentabilidadeEmLote,
@@ -1685,10 +1686,55 @@ if (vendedorVinculado) {
   });
 }
 
+      if (url.pathname === '/api/dre/competencia/classificacao') {
+  if (request.method !== 'POST') {
+    return json({ error: 'Método não permitido.' }, 405, { Allow: 'POST' });
+  }
+
+  const acesso = await obterAcessoModulo(request, env, 'DRE');
+
+  if (acesso?.session?.role !== 'Administrador') {
+    return json({ error: 'Somente administradores podem mover categorias.' }, 403);
+  }
+
+  if (request.headers.get('origin') !== url.origin) {
+    return json({ error: 'Origem da solicitação não autorizada.' }, 403);
+  }
+
+  const tipo = (request.headers.get('content-type') || '')
+    .split(';')[0].trim().toLowerCase();
+
+  if (tipo !== 'application/json') {
+    return json({ error: 'Envie os dados no formato JSON.' }, 415);
+  }
+
+  let dados;
+  try {
+    dados = await request.json();
+  } catch {
+    return json({ error: 'JSON inválido.' }, 400);
+  }
+
+  try {
+    const resultado = await salvarClassificacaoCompetencia(
+      env, acesso.session, dados
+    );
+
+    if (resultado.error) {
+      return json({ error: resultado.error }, resultado.status);
+    }
+
+    return json(resultado);
+  } catch {
+    return json({ error: 'Não foi possível salvar a classificação.' }, 500);
+  }
+}
+
       if (
   url.pathname === '/api/dre' &&
   request.method === 'GET'
 ) {
+        
   const acesso = await obterAcessoModulo(
     request,
     env,
