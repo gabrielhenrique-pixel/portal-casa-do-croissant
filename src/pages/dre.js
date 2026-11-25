@@ -1992,14 +1992,134 @@ async function carregarLancamentos(id, natureza) {
 ${podeMoverCategoria ? `
   <dialog id="moverCategoriaDre" aria-labelledby="tituloMoverCategoria">
     <h2 id="tituloMoverCategoria">Mover categoria de grupo</h2>
-    <form method="dialog">
-      <button type="submit">Fechar</button>
+
+    <form id="formMoverCategoria">
+      <label for="categoriaMoverDre">Categoria</label>
+      <select id="categoriaMoverDre" required></select>
+
+      <p>Grupo atual: <strong id="grupoAtualMoverDre"></strong></p>
+
+      <label for="destinoMoverDre">Mover para</label>
+      <select id="destinoMoverDre" required></select>
+
+      <p id="avisoMoverDre" role="status"></p>
+
+      <div>
+        <button type="button" id="cancelarMoverDre">Cancelar</button>
+        <button type="submit" id="salvarMoverDre" disabled>Salvar</button>
+      </div>
     </form>
   </dialog>
+
   <script>
-    document.getElementById('abrirMoverCategoria').addEventListener('click', () => {
-      document.getElementById('moverCategoriaDre').showModal();
-    });
+    (() => {
+      const el = id => document.getElementById(id);
+      const janela = el('moverCategoriaDre');
+      const categoria = el('categoriaMoverDre');
+      const destino = el('destinoMoverDre');
+      const salvar = el('salvarMoverDre');
+      const cancelar = el('cancelarMoverDre');
+      const aviso = el('avisoMoverDre');
+
+      let categorias = [];
+      let grupos = [];
+      let enviando = false;
+
+      function selecionada() {
+        return categorias.find(item => item.codigo === categoria.value);
+      }
+
+      function mostrarDestinos() {
+        const atual = selecionada();
+        const grupoAtual = grupos.find(g => Number(g.codigo) === atual?.grupoId);
+
+        el('grupoAtualMoverDre').textContent = grupoAtual?.nome || '—';
+        destino.replaceChildren(new Option('Selecione o grupo de destino', ''));
+
+        for (const grupo of grupos) {
+          if (Number(grupo.codigo) !== atual?.grupoId) {
+            destino.add(new Option(grupo.nome, String(grupo.codigo)));
+          }
+        }
+
+        aviso.textContent = '';
+        salvar.disabled = true;
+      }
+
+      el('abrirMoverCategoria').addEventListener('click', () => {
+        if (atualizar.disabled || !resultadoConsultado?.categoriasParaMover) {
+          alert('Atualize a DRE antes de mover uma categoria.');
+          return;
+        }
+
+        categorias = [...resultadoConsultado.categoriasParaMover]
+          .sort((a, b) => (a.nome || a.codigo).localeCompare(
+            b.nome || b.codigo, 'pt-BR', { numeric: true }
+          ));
+        grupos = resultadoConsultado.grupos;
+
+        categoria.replaceChildren();
+        for (const item of categorias) {
+          const texto = item.nome
+            ? item.nome + ' — ' + item.codigo
+            : item.codigo;
+          categoria.add(new Option(texto, item.codigo));
+        }
+
+        mostrarDestinos();
+        janela.showModal();
+      });
+
+      categoria.addEventListener('change', mostrarDestinos);
+      destino.addEventListener('change', () => {
+        salvar.disabled = enviando || !destino.value;
+      });
+
+      cancelar.addEventListener('click', () => janela.close());
+      janela.addEventListener('cancel', evento => {
+        if (enviando) evento.preventDefault();
+      });
+
+      el('formMoverCategoria').addEventListener('submit', async evento => {
+        evento.preventDefault();
+        const item = selecionada();
+        const grupoId = Number(destino.value);
+
+        if (enviando || !item || !destino.value || grupoId === item.grupoId) return;
+
+        const nomeDestino = destino.options[destino.selectedIndex].text;
+        if (!confirm(
+          'Mover ' + (item.nome || item.codigo) + ' para ' + nomeDestino +
+          '? A mudança também vale para períodos anteriores da DRE Competência.'
+        )) return;
+
+        enviando = true;
+        categoria.disabled = destino.disabled = cancelar.disabled = salvar.disabled = true;
+        aviso.textContent = 'Salvando…';
+
+        try {
+          const resposta = await fetch('/api/dre/competencia/classificacao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categoria: item.codigo, grupoId })
+          });
+
+          const dados = await resposta.json();
+          if (!resposta.ok || !dados.sucesso) {
+            throw new Error(dados.error || 'Não foi possível salvar.');
+          }
+
+          janela.close();
+          await carregarDre();
+        } catch (erro) {
+          aviso.textContent = erro.message || 'Não foi possível salvar.';
+        } finally {
+          enviando = false;
+          categoria.disabled = destino.disabled = cancelar.disabled = false;
+          salvar.disabled = !destino.value;
+        }
+      });
+    })();
   </script>
 ` : ''}
 
