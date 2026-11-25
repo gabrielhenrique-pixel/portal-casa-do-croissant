@@ -504,6 +504,52 @@ tbody .linha-resultado td.coluna-total {
 }
 #moverCategoriaDre::backdrop { background: rgb(15 35 52 / 38%); }
 #moverCategoriaDre h2 { margin: 0 0 16px; font-size: 18px; }
+
+.mover-categoria-linha {
+  display: none;
+}
+
+body.editando-grupos-dre .mover-categoria-linha {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border: 1px solid #aac4d8;
+  border-radius: 5px;
+  background: #fff;
+  color: #245678;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#abrirMoverCategoria[aria-pressed="true"] {
+  background: #16466b;
+  outline: 2px solid #8ec5eb;
+  outline-offset: 2px;
+}
+
+.editor-grupo-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.editor-grupo-linha select {
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px;
+}
+
+.editor-grupo-linha button {
+  padding: 5px 9px;
+  cursor: pointer;
+}
+
+.editor-grupo-linha [role="status"] {
+  flex-basis: 100%;
+  color: #923737;
+}
     
   </style>
 </head>
@@ -812,6 +858,11 @@ function montarLinhaDre(registro, opcoes, meses) {
           opcoes.auditoria
         ) +
         escaparHtml(registro.nome) +
+        (opcoes.nivel === 2 && document.getElementById('abrirMoverCategoria')
+          ? ' <button type="button" class="mover-categoria-linha" ' +
+            'data-mover-categoria="' + escaparHtml(String(registro.codigo)) + '">' +
+            'Mover</button>'
+          : '') +
       '</td>' +
       montarCelulas(registro, meses) +
     '</tr>'
@@ -1990,134 +2041,133 @@ async function carregarLancamentos(id, natureza) {
 </script>
 
 ${podeMoverCategoria ? `
-  <dialog id="moverCategoriaDre" aria-labelledby="tituloMoverCategoria">
-    <h2 id="tituloMoverCategoria">Mover categoria de grupo</h2>
-
-    <form id="formMoverCategoria">
-      <label for="categoriaMoverDre">Categoria</label>
-      <select id="categoriaMoverDre" required></select>
-
-      <p>Grupo atual: <strong id="grupoAtualMoverDre"></strong></p>
-
-      <label for="destinoMoverDre">Mover para</label>
-      <select id="destinoMoverDre" required></select>
-
-      <p id="avisoMoverDre" role="status"></p>
-
-      <div>
-        <button type="button" id="cancelarMoverDre">Cancelar</button>
-        <button type="submit" id="salvarMoverDre" disabled>Salvar</button>
-      </div>
-    </form>
-  </dialog>
-
   <script>
     (() => {
-      const el = id => document.getElementById(id);
-      const janela = el('moverCategoriaDre');
-      const categoria = el('categoriaMoverDre');
-      const destino = el('destinoMoverDre');
-      const salvar = el('salvarMoverDre');
-      const cancelar = el('cancelarMoverDre');
-      const aviso = el('avisoMoverDre');
+      const lapis = document.getElementById('abrirMoverCategoria');
+      let editando = false;
+      let salvando = false;
 
-      let categorias = [];
-      let grupos = [];
-      let enviando = false;
-
-      function selecionada() {
-        return categorias.find(item => item.codigo === categoria.value);
+      function fecharEditor() {
+        document.querySelector('.editor-grupo-linha')?.remove();
       }
 
-      function mostrarDestinos() {
-        const atual = selecionada();
-        const grupoAtual = grupos.find(g => Number(g.codigo) === atual?.grupoId);
+      function modoEdicao(ativo) {
+        fecharEditor();
+        editando = ativo;
+        document.body.classList.toggle('editando-grupos-dre', ativo);
+        lapis.setAttribute('aria-pressed', String(ativo));
+        lapis.title = ativo ? 'Encerrar edição de grupos' : 'Mover categoria de grupo';
+        lapis.setAttribute('aria-label', lapis.title);
+      }
 
-        el('grupoAtualMoverDre').textContent = grupoAtual?.nome || '—';
-        destino.replaceChildren(new Option('Selecione o grupo de destino', ''));
+      modoEdicao(false);
 
-        for (const grupo of grupos) {
-          if (Number(grupo.codigo) !== atual?.grupoId) {
+      lapis.addEventListener('click', () => {
+        if (salvando || atualizar.disabled) return;
+
+        if (!editando && !resultadoConsultado?.categoriasParaMover) {
+          alert('Atualize a DRE antes de editar os grupos.');
+          return;
+        }
+
+        modoEdicao(!editando);
+      });
+
+      linhasDre.addEventListener('click', evento => {
+        const botao = evento.target.closest('[data-mover-categoria]');
+        if (!botao || !editando || salvando || atualizar.disabled) return;
+
+        const dados = resultadoConsultado;
+        const item = dados?.categoriasParaMover?.find(
+          categoria => categoria.codigo === botao.dataset.moverCategoria
+        );
+        if (!item) return;
+
+        fecharEditor();
+
+        const editor = document.createElement('form');
+        editor.className = 'editor-grupo-linha';
+
+        const destino = document.createElement('select');
+        destino.setAttribute('aria-label', 'Grupo de destino');
+        destino.add(new Option('Mover para…', ''));
+
+        for (const grupo of dados.grupos) {
+          if (Number(grupo.codigo) !== Number(item.grupoId)) {
             destino.add(new Option(grupo.nome, String(grupo.codigo)));
           }
         }
 
-        aviso.textContent = '';
+        const salvar = document.createElement('button');
+        salvar.type = 'submit';
+        salvar.textContent = 'Salvar';
         salvar.disabled = true;
-      }
 
-      el('abrirMoverCategoria').addEventListener('click', () => {
-        if (atualizar.disabled || !resultadoConsultado?.categoriasParaMover) {
-          alert('Atualize a DRE antes de mover uma categoria.');
-          return;
-        }
+        const cancelar = document.createElement('button');
+        cancelar.type = 'button';
+        cancelar.textContent = 'Cancelar';
 
-        categorias = [...resultadoConsultado.categoriasParaMover]
-          .sort((a, b) => (a.nome || a.codigo).localeCompare(
-            b.nome || b.codigo, 'pt-BR', { numeric: true }
-          ));
-        grupos = resultadoConsultado.grupos;
+        const aviso = document.createElement('span');
+        aviso.setAttribute('role', 'status');
 
-        categoria.replaceChildren();
-        for (const item of categorias) {
-          const texto = item.nome
-            ? item.nome + ' — ' + item.codigo
-            : item.codigo;
-          categoria.add(new Option(texto, item.codigo));
-        }
+        editor.append(destino, salvar, cancelar, aviso);
+        botao.closest('td').appendChild(editor);
+        destino.focus();
 
-        mostrarDestinos();
-        janela.showModal();
-      });
-
-      categoria.addEventListener('change', mostrarDestinos);
-      destino.addEventListener('change', () => {
-        salvar.disabled = enviando || !destino.value;
-      });
-
-      cancelar.addEventListener('click', () => janela.close());
-      janela.addEventListener('cancel', evento => {
-        if (enviando) evento.preventDefault();
-      });
-
-      el('formMoverCategoria').addEventListener('submit', async evento => {
-        evento.preventDefault();
-        const item = selecionada();
-        const grupoId = Number(destino.value);
-
-        if (enviando || !item || !destino.value || grupoId === item.grupoId) return;
-
-        const nomeDestino = destino.options[destino.selectedIndex].text;
-        if (!confirm(
-          'Mover ' + (item.nome || item.codigo) + ' para ' + nomeDestino +
-          '? A mudança também vale para períodos anteriores da DRE Competência.'
-        )) return;
-
-        enviando = true;
-        categoria.disabled = destino.disabled = cancelar.disabled = salvar.disabled = true;
-        aviso.textContent = 'Salvando…';
-
-        try {
-          const resposta = await fetch('/api/dre/competencia/classificacao', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ categoria: item.codigo, grupoId })
-          });
-
-          const dados = await resposta.json();
-          if (!resposta.ok || !dados.sucesso) {
-            throw new Error(dados.error || 'Não foi possível salvar.');
-          }
-
-          janela.close();
-          await carregarDre();
-        } catch (erro) {
-          aviso.textContent = erro.message || 'Não foi possível salvar.';
-        } finally {
-          enviando = false;
-          categoria.disabled = destino.disabled = cancelar.disabled = false;
+        destino.addEventListener('change', () => {
           salvar.disabled = !destino.value;
-        }
+          aviso.textContent = '';
+        });
+
+        cancelar.addEventListener('click', () => {
+          fecharEditor();
+          botao.focus();
+        });
+
+        editor.addEventListener('submit', async e => {
+          e.preventDefault();
+          if (salvando || !destino.value || atualizar.disabled) return;
+
+          const atual = dados.grupos.find(
+            grupo => Number(grupo.codigo) === Number(item.grupoId)
+          );
+          const nomeDestino = destino.selectedOptions[0].text;
+
+          if (!confirm(
+            'Mover ' + (item.nome || item.codigo) +
+            ' de ' + (atual?.nome || item.grupoId) +
+            ' para ' + nomeDestino + '?' +
+            '\\nEssa classificação também vale para períodos anteriores.'
+          )) return;
+
+          salvando = true;
+          salvar.disabled = cancelar.disabled = destino.disabled = true;
+          aviso.textContent = 'Salvando…';
+
+          try {
+            const resposta = await fetch('/api/dre/competencia/classificacao', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                categoria: item.codigo,
+                grupoId: Number(destino.value)
+              })
+            });
+
+            const retorno = await resposta.json();
+            if (!resposta.ok || !retorno.sucesso) {
+              throw new Error(retorno.error || 'Não foi possível mover a categoria.');
+            }
+
+            modoEdicao(false);
+            await carregarDre();
+          } catch (erro) {
+            aviso.textContent = erro.message || 'Não foi possível salvar.';
+          } finally {
+            salvando = false;
+            salvar.disabled = cancelar.disabled = destino.disabled = false;
+          }
+        });
       });
     })();
   </script>
