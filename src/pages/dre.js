@@ -1,5 +1,6 @@
-export function drePage({ regime = 'competencia' } = {}) {
+export function drePage({ regime = 'competencia', administrador = false } = {}) {
   const caixa = regime === 'caixa';
+  const podeMoverCategoria = administrador && !caixa;
   const titulo = caixa ? 'DRE Caixa' : 'DRE Competência';
   const api = caixa ? '/api/dre/caixa' : '/api/dre';
   return new Response(String.raw`<!doctype html>
@@ -474,6 +475,35 @@ tbody .linha-resultado td.coluna-total {
 .busca-dre label{font-size:13px}.busca-dre [hidden]{display:none}
 @media(max-width:1100px){.resumo-dre{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){.resumo-dre{grid-template-columns:repeat(2,minmax(0,1fr))}.indicador-dre:last-child{grid-column:1/-1}.indicador-dre strong{font-size:18px}.cabecalho{padding:18px;gap:12px}h1{font-size:24px}.busca-dre input{min-width:0;width:100%}}
+
+  .acoes-titulo .acao-categoria {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: white;
+}
+.acao-categoria.adicionar { background: #188447; font-size: 25px; }
+.acao-categoria.editar { background: #337bad; cursor: pointer; }
+.acao-categoria.excluir { background: #cf514a; }
+.acao-categoria:disabled { opacity: .55; cursor: not-allowed; }
+.acao-categoria svg {
+  width: 19px; height: 19px; fill: none;
+  stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+#moverCategoriaDre {
+  width: min(420px, 92vw);
+  padding: 20px;
+  border: 1px solid #ccdce7;
+  border-radius: 12px;
+  color: #163a5a;
+}
+#moverCategoriaDre::backdrop { background: rgb(15 35 52 / 38%); }
+#moverCategoriaDre h2 { margin: 0 0 16px; font-size: 18px; }
     
   </style>
 </head>
@@ -553,6 +583,26 @@ tbody .linha-resultado td.coluna-total {
         <span>Resultado por período</span>
 
         <div class="acoes-titulo">
+
+      ${podeMoverCategoria ? `
+  <button type="button" class="acao-categoria adicionar"
+    aria-label="Adicionar categoria" title="Adicionar categoria — indisponível" disabled>
+    <span aria-hidden="true">+</span>
+  </button>
+  <button type="button" class="acao-categoria editar" id="abrirMoverCategoria"
+    aria-label="Mover categoria de grupo" title="Mover categoria de grupo">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15z"/>
+    </svg>
+  </button>
+  <button type="button" class="acao-categoria excluir"
+    aria-label="Excluir categoria" title="Excluir categoria — indisponível" disabled>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>
+    </svg>
+  </button>
+` : ''}
+        
           <button
             id="abrirExportacao"
             class="exportar-excel"
@@ -1938,6 +1988,21 @@ async function carregarLancamentos(id, natureza) {
 
   carregarDre();
 </script>
+
+${podeMoverCategoria ? `
+  <dialog id="moverCategoriaDre" aria-labelledby="tituloMoverCategoria">
+    <h2 id="tituloMoverCategoria">Mover categoria de grupo</h2>
+    <form method="dialog">
+      <button type="submit">Fechar</button>
+    </form>
+  </dialog>
+  <script>
+    document.getElementById('abrirMoverCategoria').addEventListener('click', () => {
+      document.getElementById('moverCategoriaDre').showModal();
+    });
+  </script>
+` : ''}
+
 </body>
 </html>`, {
     headers: {
