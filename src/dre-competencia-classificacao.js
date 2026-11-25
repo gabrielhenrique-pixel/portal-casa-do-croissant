@@ -27,9 +27,15 @@ export async function carregarClassificacaoCompetencia(env) {
   );
 }
 
-export async function salvarClassificacaoCompetencia(env, session, dados) {
-  if (session?.role !== 'Administrador' || !session.user_id) {
-    return { status: 403, error: 'Somente administradores podem mover categorias.' };
+export async function salvarClassificacaoCompetencia(env, acesso, dados) {
+  const session = acesso?.session;
+
+  if (
+    !session?.user_id ||
+    Number(acesso?.permissions?.view) !== 1 ||
+    Number(acesso?.permissions?.update) !== 1
+  ) {
+    return { status: 403, error: 'Sem permissão para alterar categorias da DRE.' };
   }
 
   const categoria = typeof dados?.categoria === 'string'
