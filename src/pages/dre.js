@@ -505,50 +505,101 @@ tbody .linha-resultado td.coluna-total {
 #moverCategoriaDre::backdrop { background: rgb(15 35 52 / 38%); }
 #moverCategoriaDre h2 { margin: 0 0 16px; font-size: 18px; }
 
-.mover-categoria-linha {
+/* Lápis ao lado do nome: aparece apenas no modo de edição. */
+button.mover-categoria-linha {
   display: none;
 }
 
-body.editando-grupos-dre .mover-categoria-linha {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 3px 8px;
-  border: 1px solid #aac4d8;
-  border-radius: 5px;
-  background: #fff;
-  color: #245678;
-  font-size: 12px;
+body.editando-grupos-dre button.mover-categoria-linha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  width: 22px;
+  min-width: 0;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #286185;
   cursor: pointer;
+}
+
+body.editando-grupos-dre button.mover-categoria-linha:hover {
+  background: #dcebf5;
+}
+
+.mover-categoria-linha svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Seletor, confirmar e cancelar permanecem na mesma linha. */
+form.editor-grupo-linha {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px 24px;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 245px;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+form.editor-grupo-linha select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 26px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 3px;
+  border: 1px solid #aac4d8;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+form.editor-grupo-linha button {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  min-width: 0;
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: white;
+  font: 700 16px/1 Arial, sans-serif;
+  cursor: pointer;
+}
+
+form.editor-grupo-linha .confirmar-movimento-dre { background: #167443; }
+form.editor-grupo-linha .cancelar-movimento-dre { background: #b63838; }
+form.editor-grupo-linha button:disabled { opacity: .4; cursor: default; }
+
+form.editor-grupo-linha [role="status"] {
+  grid-column: 1 / -1;
+  color: #923737;
+}
+
+form.editor-grupo-linha [role="status"]:empty {
+  display: none;
 }
 
 #abrirMoverCategoria[aria-pressed="true"] {
   background: #16466b;
   outline: 2px solid #8ec5eb;
   outline-offset: 2px;
-}
-
-.editor-grupo-linha {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.editor-grupo-linha select {
-  min-width: 0;
-  max-width: 100%;
-  padding: 5px;
-}
-
-.editor-grupo-linha button {
-  padding: 5px 9px;
-  cursor: pointer;
-}
-
-.editor-grupo-linha [role="status"] {
-  flex-basis: 100%;
-  color: #923737;
 }
     
   </style>
@@ -859,9 +910,11 @@ function montarLinhaDre(registro, opcoes, meses) {
         ) +
         escaparHtml(registro.nome) +
         (opcoes.nivel === 2 && document.getElementById('abrirMoverCategoria')
-          ? ' <button type="button" class="mover-categoria-linha" ' +
+          ? '&nbsp;<button type="button" class="mover-categoria-linha" title="Mover categoria" aria-label="Mover categoria de grupo" ' +
             'data-mover-categoria="' + escaparHtml(String(registro.codigo)) + '">' +
-            'Mover</button>'
+            '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+              '<path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15z"/>' +
+            '</svg></button>'
           : '') +
       '</td>' +
       montarCelulas(registro, meses) +
@@ -2100,12 +2153,18 @@ ${podeMoverCategoria ? `
 
         const salvar = document.createElement('button');
         salvar.type = 'submit';
-        salvar.textContent = 'Salvar';
+        salvar.textContent = '✓';
+        salvar.className = 'confirmar-movimento-dre';
+        salvar.title = 'Confirmar mudança';
+        salvar.setAttribute('aria-label', 'Confirmar mudança de grupo');
         salvar.disabled = true;
 
         const cancelar = document.createElement('button');
         cancelar.type = 'button';
-        cancelar.textContent = 'Cancelar';
+        cancelar.textContent = '×';
+        cancelar.className = 'cancelar-movimento-dre';
+        cancelar.title = 'Cancelar';
+        cancelar.setAttribute('aria-label', 'Cancelar mudança de grupo');
 
         const aviso = document.createElement('span');
         aviso.setAttribute('role', 'status');
