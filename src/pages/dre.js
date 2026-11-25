@@ -616,6 +616,26 @@ form.editor-grupo-linha [role="status"]:empty {
   outline: 2px solid #8ec5eb;
   outline-offset: 2px;
 }
+
+.barra-edicao-dre {
+  flex-wrap: wrap;
+}
+
+.barra-edicao-dre .acao-grupos-dre {
+  width: auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #cbd9e2;
+  border-radius: 7px;
+  background: #edf3f7;
+  color: #163a5a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.barra-edicao-dre .acao-grupos-dre:hover {
+  background: #dceaf3;
+}
     
   </style>
 </head>
@@ -709,6 +729,12 @@ form.editor-grupo-linha [role="status"]:empty {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>
     </svg>
+  </button>
+    <button type="button" class="acao-grupos-dre" id="expandirGruposCompetencia">
+    Expandir grupos
+  </button>
+  <button type="button" class="acao-grupos-dre" id="recolherGruposCompetencia">
+    Recolher grupos
   </button>
   </div>
 ` : ''}
@@ -2064,6 +2090,12 @@ async function carregarLancamentos(id, natureza) {
         total.anoAnterior === 0 ? 'Sem base no ano anterior' : formatarPercentual(total.ah) + ' vs. ano anterior';
     }
   }
+
+    document.getElementById('expandirGruposCompetencia')
+    ?.addEventListener('click', () => expandirGrupos(true));
+
+  document.getElementById('recolherGruposCompetencia')
+    ?.addEventListener('click', () => expandirGrupos(false));
 
   function expandirGrupos(aberto) {
     linhasDre.querySelectorAll('tr[data-linha]:not(.linha-auditoria)').forEach(linha => {
