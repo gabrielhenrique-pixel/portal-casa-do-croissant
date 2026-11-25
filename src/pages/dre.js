@@ -1662,6 +1662,42 @@ function montarCelulasLancamento(lancamento, meses) {
 }
 
 function montarLinhasLancamentos(id, lancamentos, meses) {
+      if (lancamentos.length && lancamentos.every(
+      item => item.origem === 'Contrato por rede'
+      )) {
+        const redes = new Map();
+
+    for (const item of lancamentos) {
+      const rede = item.parceiro;
+      if (!redes.has(rede)) redes.set(rede, new Map());
+
+      const valores = redes.get(rede);
+      valores.set(item.mes, (valores.get(item.mes) || 0) + item.valor);
+    }
+
+    return Array.from(redes.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
+      .map(([rede, valores], indice) => {
+        let total = 0;
+
+        const celulas = meses.map(mes => {
+          const valor = valores.get(mes);
+          if (valor === undefined) return '<td></td><td></td><td></td>';
+
+          total += valor;
+          return '<td class="' + classeResultado(valor) + '">' +
+            formatarNumero(valor) + '</td><td></td><td></td>';
+        }).join('');
+
+        return '<tr class="linha-filho linha-nivel-3 linha-auditoria" ' +
+          'data-linha="rede-contrato-' + id + '-' + indice +
+          '" data-pai="' + id + '">' +
+          '<td><strong>' + escaparHtml(rede) + '</strong></td>' +
+          celulas +
+          '<td class="coluna-total ' + classeResultado(total) + '">' +
+          formatarNumero(total) + '</td><td></td><td></td></tr>';
+      }).join('');
+  }
   if (!lancamentos.length) {
     return (
       '<tr class="linha-filho linha-nivel-3 linha-auditoria" ' +
