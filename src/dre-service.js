@@ -1,5 +1,6 @@
 import {
   DRE_GRUPOS,
+  DRE_NATUREZAS_POR_GRUPO,
   identificarGrupoDre
 } from './dre-config.js';
 import { carregarClassificacaoCompetencia } from './dre-competencia-classificacao.js';
@@ -178,7 +179,7 @@ export async function listarDre(request, env) {
 
   const gruposEscolhidos = await carregarClassificacaoCompetencia(env);
 
-  return montarRelatorioDre(linhas.concat(contratos), {
+  const relatorio = montarRelatorioDre(linhas.concat(contratos), {
     inicio,
     fim,
     classificar: codigo => {
@@ -191,6 +192,30 @@ export async function listarDre(request, env) {
       return categoria === CONTRATO ? 3 : identificarGrupoDre(categoria);
     }
   });
+
+    const nomesCategorias = new Map();
+
+  for (const grupo of relatorio.grupos) {
+    for (const detalhe of grupo.detalhes || []) {
+      nomesCategorias.set(String(detalhe.codigo), detalhe.nome);
+    }
+  }
+
+  const categorias = Object.entries(DRE_NATUREZAS_POR_GRUPO)
+    .flatMap(([grupo, codigos]) =>
+      codigos.map(codigo => [String(codigo), Number(grupo)])
+    );
+
+  categorias.push([CONTRATO, 3]);
+  nomesCategorias.set(CONTRATO, NOME_CONTRATO);
+
+  relatorio.categoriasParaMover = categorias.map(([codigo, padrao]) => ({
+    codigo,
+    nome: nomesCategorias.get(codigo) || '',
+    grupoId: gruposEscolhidos.get(codigo) ?? padrao
+  }));
+
+  return relatorio;
 }
 
 // Contrato comum da apresentação. O adaptador de cada ERP resolve a classificação.
