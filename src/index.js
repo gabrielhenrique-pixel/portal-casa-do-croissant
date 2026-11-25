@@ -1655,7 +1655,10 @@ if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
   }
 
   if (url.pathname === '/dre') return dreInicioPage();
-  return drePage({ regime: url.pathname === '/dre/caixa' ? 'caixa' : 'competencia' });
+  return drePage({
+  regime: url.pathname === '/dre/caixa' ? 'caixa' : 'competencia',
+  administrador: acesso.session?.role === 'Administrador'
+});
 }
 
 if (
