@@ -1657,7 +1657,7 @@ if (url.pathname === '/dashboard-rentabilidade' && request.method === 'GET') {
   if (url.pathname === '/dre') return dreInicioPage();
   return drePage({
   regime: url.pathname === '/dre/caixa' ? 'caixa' : 'competencia',
-  administrador: acesso.session?.role === 'Administrador'
+  podeAlterar: acesso.permissions?.update === true || Number(acesso.permissions?.update) === 1
 });
 }
 
@@ -1696,8 +1696,10 @@ if (vendedorVinculado) {
 
   const acesso = await obterAcessoModulo(request, env, 'DRE');
 
-  if (acesso?.session?.role !== 'Administrador') {
-    return json({ error: 'Somente administradores podem mover categorias.' }, 403);
+  const podeAlterar = Number(acesso?.permissions?.update) === 1;
+
+  if (!acesso?.session || Number(acesso.permissions?.view) !== 1 || !podeAlterar) {
+    return json({ error: 'Sem permissão para alterar categorias da DRE.' }, 403);
   }
 
   if (request.headers.get('origin') !== url.origin) {
@@ -1720,7 +1722,7 @@ if (vendedorVinculado) {
 
   try {
     const resultado = await salvarClassificacaoCompetencia(
-      env, acesso.session, dados
+      env, acesso, dados
     );
 
     if (resultado.error) {
