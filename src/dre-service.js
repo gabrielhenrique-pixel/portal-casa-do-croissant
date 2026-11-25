@@ -48,6 +48,13 @@ async function consultarContrato(env, token, inicio, fim, empresa, detalhe) {
       .map(c => [String(c.codigoParceiro).trim(), Number(c.percentualContrato)])
   );
 
+     const redePorParceiro = new Map(
+    cadastros.map(c => [
+      String(c.codigoParceiro).trim(),
+      String(c.rede || '').trim()
+    ])
+  );
+
   return linhas.flatMap(([mesLinha, parceiro, base, , data, documento, nome]) => {
     const taxa = taxas.get(String(parceiro));
     if (!(taxa > 0 && taxa <= 1)) return [];
@@ -56,7 +63,7 @@ async function consultarContrato(env, token, inicio, fim, empresa, detalhe) {
     if (!Number.isFinite(valor)) throw new Error('Base de contrato inválida.');
 
     return [detalhe
-      ? [mesLinha, data, documento, nome, NOME_CONTRATO, valor]
+      ? [mesLinha, '', '', redePorParceiro.get(String(parceiro).trim()), 'Contrato por rede', valor]
       : [mesLinha, CONTRATO, NOME_CONTRATO, valor]
     ];
   });
@@ -602,13 +609,13 @@ export async function listarAuditoriaDre(request, env) {
       status: 503
     };
   }
-
-  const linhas = natureza === CONTRATO
-    ? await consultarContrato(env, token, inicio, fim, empresa, true)
-    : await executarConsultaSankhya(
-        token,
-        montarSqlAuditoriaDre(inicio, fim, empresa, natureza)
-      );
+     const token = await obterTokenSankhya(env);
+     const linhas = natureza === CONTRATO
+       ? await consultarContrato(env, token, inicio, fim, empresa, true)
+       : await executarConsultaSankhya(
+          token,
+          montarSqlAuditoriaDre(inicio, fim, empresa, natureza)
+       );
 
   return {
     natureza,
