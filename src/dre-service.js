@@ -2,6 +2,7 @@ import {
   DRE_GRUPOS,
   identificarGrupoDre
 } from './dre-config.js';
+import { carregarClassificacaoCompetencia } from './dre-competencia-classificacao.js';
 
 import {
   carregarClientesRentabilidade,
@@ -175,11 +176,20 @@ export async function listarDre(request, env) {
 
   const contratos = await consultarContrato(env, token, inicio, fim, empresa, false);
 
+  const gruposEscolhidos = await carregarClassificacaoCompetencia(env);
+
   return montarRelatorioDre(linhas.concat(contratos), {
     inicio,
     fim,
-    classificar: codigo =>
-      codigo === CONTRATO ? 3 : identificarGrupoDre(codigo)
+    classificar: codigo => {
+      const categoria = String(codigo).trim();
+
+      if (gruposEscolhidos.has(categoria)) {
+        return gruposEscolhidos.get(categoria);
+      }
+
+      return categoria === CONTRATO ? 3 : identificarGrupoDre(categoria);
+    }
   });
 }
 
