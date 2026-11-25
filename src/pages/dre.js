@@ -1,6 +1,7 @@
-export function drePage({ regime = 'competencia', administrador = false } = {}) {
+export function drePage({ regime = 'competencia', podeAlterar = false } = {}) {
   const caixa = regime === 'caixa';
-  const podeMoverCategoria = administrador && !caixa;
+  const mostrarBarraCategorias = !caixa;
+  const podeMoverCategoria = mostrarBarraCategorias && podeAlterar;
   const titulo = caixa ? 'DRE Caixa' : 'DRE Competência';
   const api = caixa ? '/api/dre/caixa' : '/api/dre';
   return new Response(String.raw`<!doctype html>
@@ -689,14 +690,16 @@ form.editor-grupo-linha [role="status"]:empty {
       ${[['receitaBruta', 'Receita Bruta'], ['receitaLiquida', 'Receita Líquida'], ['custosProducao', 'Custos'], ['despesasGerais', 'Despesas'], ['resultadoOperacional', 'Resultado Operacional']].map(([chave, nome]) => `<article class="indicador-dre"><h2>${nome}</h2><strong id="kpi-${chave}">—</strong><small id="comparacao-${chave}">vs. ano anterior</small></article>`).join('')}
     </section>` : ''}
 
-    ${podeMoverCategoria ? `
+    ${mostrarBarraCategorias ? `
     <div class="barra-edicao-dre" role="group" aria-label="Edição de categorias">
   <button type="button" class="acao-categoria adicionar"
     aria-label="Adicionar categoria" title="Adicionar categoria — indisponível" disabled>
     <span aria-hidden="true">+</span>
   </button>
   <button type="button" class="acao-categoria editar" id="abrirMoverCategoria"
-    aria-label="Mover categoria de grupo" title="Mover categoria de grupo">
+    ${podeMoverCategoria ? '' : 'disabled'}
+    aria-label="Mover categoria de grupo"
+    title="${podeMoverCategoria ? 'Mover categoria de grupo' : 'Sem permissão para alterar'}">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15z"/>
     </svg>
