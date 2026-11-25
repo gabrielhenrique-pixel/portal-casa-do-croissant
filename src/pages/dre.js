@@ -476,7 +476,15 @@ tbody .linha-resultado td.coluna-total {
 @media(max-width:1100px){.resumo-dre{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){.resumo-dre{grid-template-columns:repeat(2,minmax(0,1fr))}.indicador-dre:last-child{grid-column:1/-1}.indicador-dre strong{font-size:18px}.cabecalho{padding:18px;gap:12px}h1{font-size:24px}.busca-dre input{min-width:0;width:100%}}
 
-  .acoes-titulo .acao-categoria {
+  .barra-edicao-dre {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.barra-edicao-dre .acao-categoria {
   display: inline-grid;
   place-items: center;
   width: 36px;
@@ -675,13 +683,8 @@ form.editor-grupo-linha [role="status"]:empty {
       ${[['receitaBruta', 'Receita Bruta'], ['receitaLiquida', 'Receita Líquida'], ['custosProducao', 'Custos'], ['despesasGerais', 'Despesas'], ['resultadoOperacional', 'Resultado Operacional']].map(([chave, nome]) => `<article class="indicador-dre"><h2>${nome}</h2><strong id="kpi-${chave}">—</strong><small id="comparacao-${chave}">vs. ano anterior</small></article>`).join('')}
     </section>` : ''}
 
-    <section class="painel">
-      <div class="titulo-painel">
-        <span>Resultado por período</span>
-
-        <div class="acoes-titulo">
-
-      ${podeMoverCategoria ? `
+    ${podeMoverCategoria ? `
+    <div class="barra-edicao-dre" role="group" aria-label="Edição de categorias">
   <button type="button" class="acao-categoria adicionar"
     aria-label="Adicionar categoria" title="Adicionar categoria — indisponível" disabled>
     <span aria-hidden="true">+</span>
@@ -698,7 +701,14 @@ form.editor-grupo-linha [role="status"]:empty {
       <path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/>
     </svg>
   </button>
+  </div>
 ` : ''}
+
+    <section class="painel">
+      <div class="titulo-painel">
+        <span>Resultado por período</span>
+
+        <div class="acoes-titulo">
         
           <button
             id="abrirExportacao"
