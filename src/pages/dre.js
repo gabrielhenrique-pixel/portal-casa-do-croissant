@@ -476,19 +476,25 @@ tbody .linha-resultado td.coluna-total {
 @media(max-width:1100px){.resumo-dre{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:680px){.resumo-dre{grid-template-columns:repeat(2,minmax(0,1fr))}.indicador-dre:last-child{grid-column:1/-1}.indicador-dre strong{font-size:18px}.cabecalho{padding:18px;gap:12px}h1{font-size:24px}.busca-dre input{min-width:0;width:100%}}
 
-  .barra-edicao-dre {
+.barra-edicao-dre {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  padding: 0 2px;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  margin: 14px 0 24px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(22, 58, 90, 0.06);
 }
 
 .barra-edicao-dre .acao-categoria {
   display: inline-grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 0;
   border-radius: 7px;
